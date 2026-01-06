@@ -7,19 +7,31 @@ int pnl_term_available(void)
     return 0;
 }
 
-int pnl_term_enter(struct pnl_term *term, pnl_alloc_fn alloc_fn, void *alloc_ctx)
+int pnl_term_enter(struct pnl_term *term)
 {
     (void)term;
-    (void)alloc_fn;
-    (void)alloc_ctx;
     return PNL_ERR_TTY;
 }
 
-void pnl_term_leave(struct pnl_term *term, pnl_free_fn free_fn, void *alloc_ctx)
+void pnl_term_leave(struct pnl_term *term)
 {
     (void)term;
-    (void)free_fn;
-    (void)alloc_ctx;
+}
+
+void pnl_term_suspend(struct pnl_term *term)
+{
+    (void)term;
+}
+
+int pnl_term_resized(void)
+{
+    return 0;
+}
+
+void pnl_term_size(int *out_width, int *out_height)
+{
+    *out_width = 80;
+    *out_height = 24;
 }
 
 int pnl_term_write(const char *data, size_t data_len)
@@ -41,32 +53,82 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
 
 #include <errno.h>
 #include <poll.h>
+#include <signal.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+
+#define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l"
+#define PNL_TERM_END "\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l"
+
+static const int pnl_term_signals[] = {SIGTERM, SIGHUP, SIGQUIT, SIGINT};
+#define PNL_TERM_SIGNALS (sizeof(pnl_term_signals) / sizeof(pnl_term_signals[0]))
+
+static struct termios pnl_term_saved;
+static volatile sig_atomic_t pnl_term_raw;
+static volatile sig_atomic_t pnl_term_winch;
+static struct sigaction pnl_term_old[PNL_TERM_SIGNALS];
+static struct sigaction pnl_term_old_winch;
+
+static void pnl_term_restore(void)
+{
+    if (!pnl_term_raw)
+        return;
+    pnl_term_raw = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &pnl_term_saved);
+    if (write(STDOUT_FILENO, PNL_TERM_END, sizeof(PNL_TERM_END) - 1) < 0)
+        return;
+}
+
+static void pnl_term_on_signal(int sig)
+{
+    pnl_term_restore();
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void pnl_term_on_winch(int sig)
+{
+    (void)sig;
+    pnl_term_winch = 1;
+}
+
+static void pnl_term_catch(void)
+{
+    struct sigaction sa;
+    size_t i;
+
+    memset(&sa, 0, sizeof(sa));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = pnl_term_on_signal;
+    for (i = 0; i < PNL_TERM_SIGNALS; i++)
+        sigaction(pnl_term_signals[i], &sa, &pnl_term_old[i]);
+    sa.sa_handler = pnl_term_on_winch;
+    sigaction(SIGWINCH, &sa, &pnl_term_old_winch);
+}
+
+static void pnl_term_release(void)
+{
+    size_t i;
+
+    for (i = 0; i < PNL_TERM_SIGNALS; i++)
+        sigaction(pnl_term_signals[i], &pnl_term_old[i], NULL);
+    sigaction(SIGWINCH, &pnl_term_old_winch, NULL);
+}
 
 int pnl_term_available(void)
 {
     return isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
 }
 
-int pnl_term_enter(struct pnl_term *term, pnl_alloc_fn alloc_fn, void *alloc_ctx)
+static int pnl_term_make_raw(void)
 {
-    struct termios *saved;
     struct termios raw;
 
-    if (term->active)
-        return PNL_OK;
-    saved = term->saved;
-    if (saved == NULL) {
-        saved = alloc_fn(alloc_ctx, sizeof(*saved));
-        if (saved == NULL)
-            return PNL_ERR_NOMEM;
-        term->saved = saved;
-    }
-    if (tcgetattr(STDIN_FILENO, saved) != 0)
+    if (tcgetattr(STDIN_FILENO, &pnl_term_saved) != 0)
         return PNL_ERR_TTY;
-    raw = *saved;
+    raw = pnl_term_saved;
     raw.c_iflag &= ~(tcflag_t)(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     raw.c_oflag &= ~(tcflag_t)OPOST;
     raw.c_cflag |= CS8;
@@ -75,20 +137,63 @@ int pnl_term_enter(struct pnl_term *term, pnl_alloc_fn alloc_fn, void *alloc_ctx
     raw.c_cc[VTIME] = 0;
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) != 0)
         return PNL_ERR_TTY;
-    term->active = 1;
+    pnl_term_raw = 1;
     return PNL_OK;
 }
 
-void pnl_term_leave(struct pnl_term *term, pnl_free_fn free_fn, void *alloc_ctx)
+int pnl_term_enter(struct pnl_term *term)
 {
+    int status;
+
     if (term->active)
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, (struct termios *)term->saved);
+        return PNL_OK;
+    status = pnl_term_make_raw();
+    if (status != PNL_OK)
+        return status;
+    pnl_term_catch();
+    term->active = 1;
+    status = pnl_term_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
+    if (status != PNL_OK)
+        pnl_term_leave(term);
+    return status;
+}
+
+void pnl_term_leave(struct pnl_term *term)
+{
+    if (!term->active)
+        return;
+    pnl_term_restore();
+    pnl_term_release();
     term->active = 0;
     term->input_len = 0;
-    if (free_fn != NULL && term->saved != NULL) {
-        free_fn(alloc_ctx, term->saved);
-        term->saved = NULL;
+}
+
+void pnl_term_suspend(struct pnl_term *term)
+{
+    pnl_term_leave(term);
+    raise(SIGTSTP);
+    pnl_term_enter(term);
+}
+
+int pnl_term_resized(void)
+{
+    if (!pnl_term_winch)
+        return 0;
+    pnl_term_winch = 0;
+    return 1;
+}
+
+void pnl_term_size(int *out_width, int *out_height)
+{
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0 || ws.ws_col == 0 || ws.ws_row == 0) {
+        *out_width = 80;
+        *out_height = 24;
+        return;
     }
+    *out_width = ws.ws_col;
+    *out_height = ws.ws_row;
 }
 
 int pnl_term_write(const char *data, size_t data_len)
@@ -128,7 +233,7 @@ static int pnl_term_fill(struct pnl_term *term, int timeout_ms)
     if (ready <= 0)
         return ready;
     got = read(STDIN_FILENO, term->input + term->input_len, PNL_INPUT_MAX - term->input_len);
-    if (got < 0 && errno == EINTR)
+    if (got < 0 && (errno == EINTR || errno == EAGAIN))
         return 0;
     if (got <= 0)
         return -1;

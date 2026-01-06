@@ -8,7 +8,8 @@ option(C_TUIKIT_BUILD_FUZZ "Build libFuzzer targets" OFF)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-add_library(c-tuikit src/tuikit.c src/pnl_keys.c src/pnl_term.c)
+file(GLOB C_TUIKIT_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.c)
+add_library(c-tuikit ${C_TUIKIT_SOURCES})
 add_library(c-tuikit::c-tuikit ALIAS c-tuikit)
 target_include_directories(c-tuikit PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

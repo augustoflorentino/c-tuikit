@@ -3,16 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PNL_CLEAR "\x1b[2J\x1b[H"
-#define PNL_BOLD "\x1b[1m"
-#define PNL_GRAY "\x1b[90m"
-#define PNL_RESET "\x1b[0m"
-#define PNL_HIDE_CURSOR "\x1b[?25l"
-#define PNL_SHOW_CURSOR "\x1b[?25h"
 #define PNL_CTRL_C 3
 #define PNL_QUIT_LABEL "Quit"
 #define PNL_MENU_FOOTER "up/down: move  enter: choose  q: quit"
 #define PNL_RESULT_FOOTER "any key: back"
+#define PNL_STYLE_TITLE PNL_PACK(PNL_INK_DEFAULT, 0, PNL_ATTR_BOLD)
+#define PNL_STYLE_FOOTER PNL_PACK(PNL_INK_GRAY, 0, 0)
+#define PNL_STYLE_PLAIN 0u
 
 struct pnl_action {
     char *label;
@@ -26,9 +23,7 @@ struct pnl_line {
 };
 
 struct pnl_app {
-    pnl_alloc_fn alloc_fn;
-    pnl_free_fn free_fn;
-    void *alloc_ctx;
+    struct pnl_mem mem;
     char *title;
     struct pnl_action *actions;
     size_t actions_len;
@@ -44,11 +39,9 @@ struct pnl_app {
     int result_set;
     int result_mark;
     char *result_text;
-    char *out;
-    size_t out_len;
-    size_t out_cap;
     size_t selected;
     struct pnl_term term;
+    struct pnl_screen screen;
 };
 
 static void *pnl_default_alloc(void *ctx, size_t size)
@@ -63,17 +56,28 @@ static void pnl_default_free(void *ctx, void *ptr)
     free(ptr);
 }
 
-static char *pnl_copy(pnl_app_t *app, const char *text)
+void *pnl_mem_alloc(const struct pnl_mem *mem, size_t size)
+{
+    return mem->alloc_fn(mem->ctx, size);
+}
+
+void pnl_mem_free(const struct pnl_mem *mem, void *ptr)
+{
+    if (ptr != NULL)
+        mem->free_fn(mem->ctx, ptr);
+}
+
+char *pnl_mem_copy(const struct pnl_mem *mem, const char *text)
 {
     size_t len = strlen(text) + 1;
-    char *copy = app->alloc_fn(app->alloc_ctx, len);
+    char *copy = pnl_mem_alloc(mem, len);
 
     if (copy != NULL)
         memcpy(copy, text, len);
     return copy;
 }
 
-static int pnl_grow(pnl_app_t *app, void **items, size_t *cap, size_t needed, size_t item_size)
+int pnl_mem_grow(const struct pnl_mem *mem, void **items, size_t *cap, size_t needed, size_t item_size)
 {
     size_t new_cap;
     void *grown;
@@ -85,12 +89,12 @@ static int pnl_grow(pnl_app_t *app, void **items, size_t *cap, size_t needed, si
         new_cap *= 2;
     if (new_cap < needed || new_cap > (size_t)-1 / item_size)
         return PNL_ERR_NOMEM;
-    grown = app->alloc_fn(app->alloc_ctx, new_cap * item_size);
+    grown = pnl_mem_alloc(mem, new_cap * item_size);
     if (grown == NULL)
         return PNL_ERR_NOMEM;
     if (*items != NULL) {
         memcpy(grown, *items, *cap * item_size);
-        app->free_fn(app->alloc_ctx, *items);
+        pnl_mem_free(mem, *items);
     }
     *items = grown;
     *cap = new_cap;
@@ -100,25 +104,23 @@ static int pnl_grow(pnl_app_t *app, void **items, size_t *cap, size_t needed, si
 int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
                    pnl_app_t **out_app)
 {
+    struct pnl_mem mem;
     pnl_app_t *app;
 
     if (out_app == NULL || title == NULL || (alloc_fn == NULL) != (free_fn == NULL))
         return PNL_ERR_ARG;
     *out_app = NULL;
-    if (alloc_fn == NULL) {
-        alloc_fn = pnl_default_alloc;
-        free_fn = pnl_default_free;
-    }
-    app = alloc_fn(alloc_ctx, sizeof(*app));
+    mem.alloc_fn = alloc_fn ? alloc_fn : pnl_default_alloc;
+    mem.free_fn = free_fn ? free_fn : pnl_default_free;
+    mem.ctx = alloc_ctx;
+    app = pnl_mem_alloc(&mem, sizeof(*app));
     if (app == NULL)
         return PNL_ERR_NOMEM;
     memset(app, 0, sizeof(*app));
-    app->alloc_fn = alloc_fn;
-    app->free_fn = free_fn;
-    app->alloc_ctx = alloc_ctx;
-    app->title = pnl_copy(app, title);
+    app->mem = mem;
+    app->title = pnl_mem_copy(&mem, title);
     if (app->title == NULL) {
-        free_fn(alloc_ctx, app);
+        pnl_mem_free(&mem, app);
         return PNL_ERR_NOMEM;
     }
     *out_app = app;
@@ -130,14 +132,13 @@ static void pnl_clear_lines(pnl_app_t *app)
     size_t i;
 
     for (i = 0; i < app->lines_len; i++)
-        app->free_fn(app->alloc_ctx, app->lines[i].text);
+        pnl_mem_free(&app->mem, app->lines[i].text);
     app->lines_len = 0;
 }
 
 static void pnl_clear_result(pnl_app_t *app)
 {
-    if (app->result_text != NULL)
-        app->free_fn(app->alloc_ctx, app->result_text);
+    pnl_mem_free(&app->mem, app->result_text);
     app->result_text = NULL;
     app->result_set = 0;
 }
@@ -148,19 +149,16 @@ void pnl_app_destroy(pnl_app_t *app)
 
     if (app == NULL)
         return;
-    pnl_term_leave(&app->term, app->free_fn, app->alloc_ctx);
+    pnl_term_leave(&app->term);
+    pnl_screen_free(&app->screen, &app->mem);
     for (i = 0; i < app->actions_len; i++)
-        app->free_fn(app->alloc_ctx, app->actions[i].label);
+        pnl_mem_free(&app->mem, app->actions[i].label);
     pnl_clear_lines(app);
     pnl_clear_result(app);
-    if (app->actions != NULL)
-        app->free_fn(app->alloc_ctx, app->actions);
-    if (app->lines != NULL)
-        app->free_fn(app->alloc_ctx, app->lines);
-    if (app->out != NULL)
-        app->free_fn(app->alloc_ctx, app->out);
-    app->free_fn(app->alloc_ctx, app->title);
-    app->free_fn(app->alloc_ctx, app);
+    pnl_mem_free(&app->mem, app->actions);
+    pnl_mem_free(&app->mem, app->lines);
+    pnl_mem_free(&app->mem, app->title);
+    pnl_mem_free(&app->mem, app);
 }
 
 int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms)
@@ -180,11 +178,12 @@ int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_f
 
     if (app == NULL || label == NULL || action_fn == NULL)
         return PNL_ERR_ARG;
-    status = pnl_grow(app, (void **)&app->actions, &app->actions_cap, app->actions_len + 1, sizeof(*action));
+    status = pnl_mem_grow(&app->mem, (void **)&app->actions, &app->actions_cap, app->actions_len + 1,
+                          sizeof(*action));
     if (status != PNL_OK)
         return status;
     action = &app->actions[app->actions_len];
-    action->label = pnl_copy(app, label);
+    action->label = pnl_mem_copy(&app->mem, label);
     if (action->label == NULL)
         return PNL_ERR_NOMEM;
     action->fn = action_fn;
@@ -205,11 +204,11 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
 
     if (app == NULL || text == NULL || !app->in_status || !pnl_valid_mark(mark))
         return PNL_ERR_ARG;
-    status = pnl_grow(app, (void **)&app->lines, &app->lines_cap, app->lines_len + 1, sizeof(*line));
+    status = pnl_mem_grow(&app->mem, (void **)&app->lines, &app->lines_cap, app->lines_len + 1, sizeof(*line));
     if (status != PNL_OK)
         return status;
     line = &app->lines[app->lines_len];
-    line->text = pnl_copy(app, text);
+    line->text = pnl_mem_copy(&app->mem, text);
     if (line->text == NULL)
         return PNL_ERR_NOMEM;
     line->mark = mark;
@@ -223,7 +222,7 @@ int pnl_result(pnl_app_t *app, int mark, const char *text)
 
     if (app == NULL || text == NULL || !app->in_action || !pnl_valid_mark(mark))
         return PNL_ERR_ARG;
-    copy = pnl_copy(app, text);
+    copy = pnl_mem_copy(&app->mem, text);
     if (copy == NULL)
         return PNL_ERR_NOMEM;
     pnl_clear_result(app);
@@ -233,110 +232,68 @@ int pnl_result(pnl_app_t *app, int mark, const char *text)
     return PNL_OK;
 }
 
-static int pnl_put(pnl_app_t *app, const char *text)
+static void pnl_draw_mark(pnl_app_t *app, int y, int mark, const char *text)
 {
-    size_t len = strlen(text);
-    int status = pnl_grow(app, (void **)&app->out, &app->out_cap, app->out_len + len, 1);
+    static const char *const marks[] = {"ok", "..", "!!"};
+    static const uint32_t inks[] = {PNL_INK_GREEN, PNL_INK_YELLOW, PNL_INK_RED};
 
+    pnl_screen_text(&app->screen, 2, y, -1, PNL_PACK(inks[mark], 0, 0), marks[mark]);
+    pnl_screen_text(&app->screen, 6, y, -1, PNL_STYLE_PLAIN, text);
+}
+
+static int pnl_draw_frame(pnl_app_t *app, const char *footer)
+{
+    int width;
+    int height;
+    int status;
+
+    pnl_term_size(&width, &height);
+    status = pnl_screen_resize(&app->screen, &app->mem, width, height);
     if (status != PNL_OK)
         return status;
-    memcpy(app->out + app->out_len, text, len);
-    app->out_len += len;
+    pnl_screen_clear(&app->screen);
+    pnl_screen_text(&app->screen, 0, 0, -1, PNL_STYLE_TITLE, app->title);
+    pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_STYLE_FOOTER, footer);
     return PNL_OK;
 }
 
-static int pnl_put_all(pnl_app_t *app, const char *const *parts, size_t parts_len)
-{
-    size_t i;
-    int status = PNL_OK;
-
-    for (i = 0; i < parts_len && status == PNL_OK; i++)
-        status = pnl_put(app, parts[i]);
-    return status;
-}
-
-static const char *pnl_mark_text(int mark)
-{
-    if (mark == PNL_MARK_OK)
-        return "\x1b[32mok" PNL_RESET;
-    if (mark == PNL_MARK_WAIT)
-        return "\x1b[33m.." PNL_RESET;
-    return "\x1b[31m!!" PNL_RESET;
-}
-
-static int pnl_put_line(pnl_app_t *app, int mark, const char *text)
-{
-    const char *parts[] = {"  ", pnl_mark_text(mark), "  ", text, "\r\n"};
-
-    return pnl_put_all(app, parts, sizeof(parts) / sizeof(parts[0]));
-}
-
-static int pnl_put_header(pnl_app_t *app)
-{
-    const char *parts[] = {PNL_CLEAR PNL_BOLD, app->title, PNL_RESET "\r\n\r\n"};
-
-    return pnl_put_all(app, parts, sizeof(parts) / sizeof(parts[0]));
-}
-
-static int pnl_put_footer(pnl_app_t *app, const char *footer)
-{
-    const char *parts[] = {"\r\n" PNL_GRAY, footer, PNL_RESET "\r\n"};
-
-    return pnl_put_all(app, parts, sizeof(parts) / sizeof(parts[0]));
-}
-
-static int pnl_put_item(pnl_app_t *app, size_t index)
+static void pnl_draw_item(pnl_app_t *app, int y, size_t index)
 {
     const char *label = index < app->actions_len ? app->actions[index].label : PNL_QUIT_LABEL;
-    const char *selected[] = {"  " PNL_BOLD "> ", label, PNL_RESET "\r\n"};
-    const char *plain[] = {"    ", label, "\r\n"};
 
-    if (index == app->selected)
-        return pnl_put_all(app, selected, 3);
-    return pnl_put_all(app, plain, 3);
-}
-
-static int pnl_flush(pnl_app_t *app)
-{
-    int status = pnl_term_write(app->out, app->out_len);
-
-    app->out_len = 0;
-    return status;
+    if (index != app->selected) {
+        pnl_screen_text(&app->screen, 4, y, -1, PNL_STYLE_PLAIN, label);
+        return;
+    }
+    pnl_screen_text(&app->screen, 2, y, -1, PNL_PACK(PNL_INK_DEFAULT, 0, PNL_ATTR_BOLD), "> ");
+    pnl_screen_text(&app->screen, 4, y, -1, PNL_PACK(PNL_INK_DEFAULT, 0, PNL_ATTR_BOLD), label);
 }
 
 static int pnl_draw_menu(pnl_app_t *app)
 {
     size_t i;
-    int status = pnl_put_header(app);
+    int y = 2;
+    int status = pnl_draw_frame(app, PNL_MENU_FOOTER);
 
-    for (i = 0; i < app->lines_len && status == PNL_OK; i++)
-        status = pnl_put_line(app, app->lines[i].mark, app->lines[i].text);
-    if (status == PNL_OK && app->lines_len > 0)
-        status = pnl_put(app, "\r\n");
-    for (i = 0; i <= app->actions_len && status == PNL_OK; i++)
-        status = pnl_put_item(app, i);
-    if (status == PNL_OK)
-        status = pnl_put_footer(app, PNL_MENU_FOOTER);
-    if (status != PNL_OK) {
-        app->out_len = 0;
+    if (status != PNL_OK)
         return status;
-    }
-    return pnl_flush(app);
+    for (i = 0; i < app->lines_len; i++)
+        pnl_draw_mark(app, y++, app->lines[i].mark, app->lines[i].text);
+    if (app->lines_len > 0)
+        y++;
+    for (i = 0; i <= app->actions_len; i++)
+        pnl_draw_item(app, y++, i);
+    return pnl_screen_render(&app->screen, &app->mem);
 }
 
 static int pnl_draw_result(pnl_app_t *app)
 {
-    int status = pnl_put_header(app);
+    int status = pnl_draw_frame(app, PNL_RESULT_FOOTER);
 
-    if (status == PNL_OK)
-        status = pnl_put_line(app, app->result_mark, app->result_text);
-    if (status == PNL_OK)
-        status = pnl_put_footer(app, PNL_RESULT_FOOTER);
-    if (status != PNL_OK) {
-        app->out_len = 0;
+    if (status != PNL_OK)
         return status;
-    }
-    return pnl_flush(app);
+    pnl_draw_mark(app, 2, app->result_mark, app->result_text);
+    return pnl_screen_render(&app->screen, &app->mem);
 }
 
 static void pnl_refresh(pnl_app_t *app)
@@ -349,13 +306,30 @@ static void pnl_refresh(pnl_app_t *app)
     app->in_status = 0;
 }
 
+static int pnl_read_key(pnl_app_t *app, int timeout_ms, int *out_key)
+{
+    int status = pnl_term_read_key(&app->term, timeout_ms, out_key);
+
+    if (status == PNL_OK && *out_key == PNL_KEY_SUSPEND) {
+        pnl_term_suspend(&app->term);
+        app->screen.front_valid = 0;
+        *out_key = PNL_KEY_NONE;
+    }
+    if (pnl_term_resized())
+        app->screen.front_valid = 0;
+    return status;
+}
+
 static int pnl_wait_any_key(pnl_app_t *app)
 {
     int key = PNL_KEY_NONE;
     int status = PNL_OK;
 
-    while (status == PNL_OK && key == PNL_KEY_NONE)
-        status = pnl_term_read_key(&app->term, -1, &key);
+    while (status == PNL_OK && key == PNL_KEY_NONE) {
+        status = pnl_read_key(app, -1, &key);
+        if (status == PNL_OK && !app->screen.front_valid)
+            status = pnl_draw_result(app);
+    }
     return status;
 }
 
@@ -363,14 +337,13 @@ static int pnl_run_action(pnl_app_t *app, struct pnl_action *action)
 {
     int status;
 
-    pnl_term_write(PNL_CLEAR PNL_SHOW_CURSOR, sizeof(PNL_CLEAR PNL_SHOW_CURSOR) - 1);
-    pnl_term_leave(&app->term, NULL, NULL);
+    pnl_term_leave(&app->term);
     pnl_clear_result(app);
     app->in_action = 1;
     action->fn(action->ctx, app);
     app->in_action = 0;
-    status = pnl_term_enter(&app->term, app->alloc_fn, app->alloc_ctx);
-    pnl_term_write(PNL_HIDE_CURSOR, sizeof(PNL_HIDE_CURSOR) - 1);
+    status = pnl_term_enter(&app->term);
+    app->screen.front_valid = 0;
     if (status != PNL_OK || !app->result_set)
         return status;
     status = pnl_draw_result(app);
@@ -412,7 +385,7 @@ static int pnl_loop(pnl_app_t *app)
         pnl_refresh(app);
         status = pnl_draw_menu(app);
         if (status == PNL_OK)
-            status = pnl_term_read_key(&app->term, timeout, &key);
+            status = pnl_read_key(app, timeout, &key);
         if (status == PNL_OK && key != PNL_KEY_NONE)
             status = pnl_handle_key(app, key, &done);
     }
@@ -427,14 +400,13 @@ int pnl_app_run(pnl_app_t *app)
         return PNL_ERR_ARG;
     if (!pnl_term_available())
         return PNL_ERR_TTY;
-    status = pnl_term_enter(&app->term, app->alloc_fn, app->alloc_ctx);
+    status = pnl_term_enter(&app->term);
     if (status != PNL_OK)
         return status;
     app->selected = 0;
-    pnl_term_write(PNL_HIDE_CURSOR, sizeof(PNL_HIDE_CURSOR) - 1);
+    app->screen.front_valid = 0;
     status = pnl_loop(app);
-    pnl_term_write(PNL_CLEAR PNL_SHOW_CURSOR, sizeof(PNL_CLEAR PNL_SHOW_CURSOR) - 1);
-    pnl_term_leave(&app->term, app->free_fn, app->alloc_ctx);
+    pnl_term_leave(&app->term);
     pnl_clear_lines(app);
     return status;
 }

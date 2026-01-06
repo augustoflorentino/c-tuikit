@@ -1,0 +1,256 @@
+#include "pnl_internal.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#define PNL_CONTINUATION 0u
+#define PNL_BLANK ' '
+
+int pnl_screen_resize(struct pnl_screen *screen, const struct pnl_mem *mem, int width, int height)
+{
+    size_t count = (size_t)width * (size_t)height;
+    struct pnl_cell *back;
+    struct pnl_cell *front;
+
+    if (width <= 0 || height <= 0)
+        return PNL_ERR_ARG;
+    if (width == screen->width && height == screen->height)
+        return PNL_OK;
+    back = pnl_mem_alloc(mem, count * sizeof(*back));
+    front = pnl_mem_alloc(mem, count * sizeof(*front));
+    if (back == NULL || front == NULL) {
+        pnl_mem_free(mem, back);
+        pnl_mem_free(mem, front);
+        return PNL_ERR_NOMEM;
+    }
+    pnl_mem_free(mem, screen->back);
+    pnl_mem_free(mem, screen->front);
+    screen->back = back;
+    screen->front = front;
+    screen->width = width;
+    screen->height = height;
+    screen->front_valid = 0;
+    pnl_screen_clear(screen);
+    return PNL_OK;
+}
+
+void pnl_screen_free(struct pnl_screen *screen, const struct pnl_mem *mem)
+{
+    pnl_mem_free(mem, screen->back);
+    pnl_mem_free(mem, screen->front);
+    pnl_mem_free(mem, screen->out);
+    memset(screen, 0, sizeof(*screen));
+}
+
+void pnl_screen_clear(struct pnl_screen *screen)
+{
+    size_t count = (size_t)screen->width * (size_t)screen->height;
+    size_t i;
+
+    for (i = 0; i < count; i++) {
+        screen->back[i].cp = PNL_BLANK;
+        screen->back[i].style = 0;
+    }
+}
+
+static struct pnl_cell *pnl_screen_at(struct pnl_screen *screen, int x, int y)
+{
+    return &screen->back[(size_t)y * (size_t)screen->width + (size_t)x];
+}
+
+static void pnl_screen_put(struct pnl_screen *screen, int x, int y, uint32_t cp, uint32_t style)
+{
+    struct pnl_cell *cell = pnl_screen_at(screen, x, y);
+
+    if (cell->cp == PNL_CONTINUATION && x > 0)
+        pnl_screen_at(screen, x - 1, y)->cp = PNL_BLANK;
+    if (x + 1 < screen->width && pnl_screen_at(screen, x + 1, y)->cp == PNL_CONTINUATION)
+        pnl_screen_at(screen, x + 1, y)->cp = PNL_BLANK;
+    cell->cp = cp;
+    cell->style = style;
+}
+
+int pnl_screen_text(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text)
+{
+    size_t len = strlen(text);
+    size_t pos = 0;
+    int end;
+
+    if (y < 0 || y >= screen->height || x < 0 || x >= screen->width)
+        return 0;
+    end = max >= 0 && x + max < screen->width ? x + max : screen->width;
+    while (pos < len && x < end) {
+        uint32_t cp;
+        int w;
+
+        pos += pnl_utf8_next(text + pos, len - pos, &cp);
+        w = pnl_cp_width(cp);
+        if (w == 0)
+            continue;
+        if (w < 0) {
+            cp = 0xfffd;
+            w = 1;
+        }
+        if (x + w > end)
+            break;
+        pnl_screen_put(screen, x, y, cp, style);
+        if (w == 2)
+            pnl_screen_put(screen, x + 1, y, PNL_CONTINUATION, style);
+        x += w;
+    }
+    return x;
+}
+
+void pnl_screen_fill(struct pnl_screen *screen, int x, int y, int width, uint32_t style)
+{
+    int end = x + width < screen->width ? x + width : screen->width;
+
+    if (y < 0 || y >= screen->height)
+        return;
+    for (x = x < 0 ? 0 : x; x < end; x++)
+        pnl_screen_put(screen, x, y, PNL_BLANK, style);
+}
+
+static int pnl_out(struct pnl_screen *screen, const struct pnl_mem *mem, const char *data, size_t data_len)
+{
+    int status = pnl_mem_grow(mem, (void **)&screen->out, &screen->out_cap, screen->out_len + data_len, 1);
+
+    if (status != PNL_OK)
+        return status;
+    memcpy(screen->out + screen->out_len, data, data_len);
+    screen->out_len += data_len;
+    return PNL_OK;
+}
+
+static int pnl_out_ink(char *buf, unsigned ink, int base, int bright)
+{
+    if (ink == PNL_INK_DEFAULT)
+        return sprintf(buf, ";%d", base + 9);
+    if (ink <= 8)
+        return sprintf(buf, ";%d", base + (int)ink - 1);
+    return sprintf(buf, ";%d", bright + (int)ink - 9);
+}
+
+static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, uint32_t style)
+{
+    char buf[64] = "\x1b[0";
+    int len = 3;
+
+    if (style & PNL_ATTR_BOLD)
+        len += sprintf(buf + len, ";1");
+    if (style & PNL_ATTR_DIM)
+        len += sprintf(buf + len, ";2");
+    if (style & PNL_ATTR_UNDERLINE)
+        len += sprintf(buf + len, ";4");
+    if (style & PNL_ATTR_REVERSE)
+        len += sprintf(buf + len, ";7");
+    len += pnl_out_ink(buf + len, (style >> 8) & 0xffu, 30, 90);
+    len += pnl_out_ink(buf + len, (style >> 16) & 0xffu, 40, 100);
+    buf[len++] = 'm';
+    return pnl_out(screen, mem, buf, (size_t)len);
+}
+
+static int pnl_out_cp(struct pnl_screen *screen, const struct pnl_mem *mem, uint32_t cp)
+{
+    char buf[4];
+    size_t len;
+
+    if (cp < 0x80) {
+        buf[0] = (char)cp;
+        len = 1;
+    } else if (cp < 0x800) {
+        buf[0] = (char)(0xc0 | (cp >> 6));
+        buf[1] = (char)(0x80 | (cp & 0x3f));
+        len = 2;
+    } else if (cp < 0x10000) {
+        buf[0] = (char)(0xe0 | (cp >> 12));
+        buf[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
+        buf[2] = (char)(0x80 | (cp & 0x3f));
+        len = 3;
+    } else {
+        buf[0] = (char)(0xf0 | (cp >> 18));
+        buf[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
+        buf[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
+        buf[3] = (char)(0x80 | (cp & 0x3f));
+        len = 4;
+    }
+    return pnl_out(screen, mem, buf, len);
+}
+
+static int pnl_cell_same(const struct pnl_cell *a, const struct pnl_cell *b)
+{
+    return a->cp == b->cp && a->style == b->style;
+}
+
+struct pnl_pen {
+    int x;
+    int y;
+    uint32_t style;
+    int style_known;
+};
+
+static int pnl_render_cell(struct pnl_screen *screen, const struct pnl_mem *mem, struct pnl_pen *pen, int x, int y)
+{
+    const struct pnl_cell *cell = pnl_screen_at(screen, x, y);
+    int status = PNL_OK;
+
+    if (pen->x != x || pen->y != y) {
+        char buf[32];
+        int len = sprintf(buf, "\x1b[%d;%dH", y + 1, x + 1);
+
+        status = pnl_out(screen, mem, buf, (size_t)len);
+    }
+    if (status == PNL_OK && (!pen->style_known || pen->style != cell->style))
+        status = pnl_out_style(screen, mem, cell->style);
+    if (status == PNL_OK)
+        status = pnl_out_cp(screen, mem, cell->cp);
+    pen->style = cell->style;
+    pen->style_known = 1;
+    pen->y = y;
+    pen->x = x + (pnl_cp_width(cell->cp) == 2 ? 2 : 1);
+    return status;
+}
+
+static int pnl_render_row(struct pnl_screen *screen, const struct pnl_mem *mem, struct pnl_pen *pen, int y)
+{
+    int x;
+    int status = PNL_OK;
+
+    for (x = 0; x < screen->width && status == PNL_OK; x++) {
+        size_t at = (size_t)y * (size_t)screen->width + (size_t)x;
+        int wide = x + 1 < screen->width && screen->back[at + 1].cp == PNL_CONTINUATION;
+
+        if (screen->back[at].cp == PNL_CONTINUATION)
+            continue;
+        if (screen->front_valid && pnl_cell_same(&screen->back[at], &screen->front[at]) &&
+            (!wide || pnl_cell_same(&screen->back[at + 1], &screen->front[at + 1])))
+            continue;
+        status = pnl_render_cell(screen, mem, pen, x, y);
+    }
+    return status;
+}
+
+int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
+{
+    struct pnl_pen pen = {-1, -1, 0, 0};
+    size_t count = (size_t)screen->width * (size_t)screen->height;
+    int status = PNL_OK;
+    int y;
+
+    screen->out_len = 0;
+    if (!screen->front_valid)
+        status = pnl_out(screen, mem, "\x1b[0m\x1b[2J", 8);
+    for (y = 0; y < screen->height && status == PNL_OK; y++)
+        status = pnl_render_row(screen, mem, &pen, y);
+    if (status == PNL_OK && pen.style_known)
+        status = pnl_out(screen, mem, "\x1b[0m", 4);
+    if (status == PNL_OK && screen->out_len > 0)
+        status = pnl_term_write(screen->out, screen->out_len);
+    if (status != PNL_OK) {
+        screen->front_valid = 0;
+        return status;
+    }
+    memcpy(screen->front, screen->back, count * sizeof(*screen->front));
+    screen->front_valid = 1;
+    return PNL_OK;
+}
