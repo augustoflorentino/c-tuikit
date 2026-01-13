@@ -4,6 +4,24 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.4.0 - 2026-01-13
+
+Every panel is also a command line tool. The actions declared once become subcommands, so the
+same program serves people at a terminal and scripts.
+
+- `pnl_app_run` takes `argc`, `argv` and `out_exit_code`, ready to be returned from `main`
+- each action is a command named after its label (`"Watch live"` becomes `watch-live`)
+- `status` prints the status lines; it is also what runs when the output is not a terminal
+- `--help` is generated from the actions; `--json` prints status and results as JSON
+- exit code 1 when a status line or result is `PNL_MARK_FAIL`, or when an action needs a
+  screen (`pnl_view_push` returns `PNL_ERR_TTY` there); 2 for usage errors
+- marks are colored only when the output is a terminal and `NO_COLOR` is not set
+
+### Upgrading
+
+- `pnl_app_run(app)` becomes `pnl_app_run(app, argc, argv, &exit_code)`; pass `0, NULL, NULL`
+  to keep the old behavior of always opening the panel when there is a terminal
+
 ## 0.3.0 - 2026-01-13
 
 The panel is alive: it keeps answering keys while timers fire, file descriptors become readable
