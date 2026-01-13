@@ -47,6 +47,31 @@ static void noop_status(void *ctx, pnl_app_t *app)
     (void)app;
 }
 
+static void noop_timer(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    (void)app;
+}
+
+static void noop_fd(void *ctx, pnl_app_t *app, int fd)
+{
+    (void)ctx;
+    (void)app;
+    (void)fd;
+}
+
+static void noop_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    (void)ctx;
+    (void)app;
+    (void)canvas;
+}
+
+static void count_call(void *ctx)
+{
+    (*(int *)ctx)++;
+}
+
 static int decode(const char *bytes, size_t *out_used)
 {
     int key = -1;
@@ -114,6 +139,48 @@ static void test_no_terminal(void)
     pnl_app_destroy(app);
 }
 
+static void test_loop_parts(void)
+{
+    pnl_app_t *app = NULL;
+    int first = 0;
+    int second = 0;
+    int calls = 0;
+
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_add_timer(app, 100, noop_timer, NULL, &first) == PNL_OK);
+    CHECK(pnl_app_add_timer(app, 200, NULL, NULL, &second) == PNL_OK);
+    CHECK(first != second);
+    CHECK(pnl_app_remove_timer(app, first) == PNL_OK);
+    CHECK(pnl_app_remove_timer(app, first) == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_app_add_timer(app, 0, noop_timer, NULL, NULL) == PNL_ERR_ARG);
+#if !defined(_WIN32)
+    CHECK(pnl_app_watch_fd(app, 0, noop_fd, NULL) == PNL_OK);
+    CHECK(pnl_app_watch_fd(app, 0, noop_fd, NULL) == PNL_OK);
+    CHECK(pnl_app_unwatch_fd(app, 0) == PNL_OK);
+    CHECK(pnl_app_unwatch_fd(app, 0) == PNL_ERR_NOT_FOUND);
+#endif
+    CHECK(pnl_view_push(app, "live", noop_draw, NULL, NULL) == PNL_OK);
+    CHECK(pnl_view_push(app, NULL, noop_draw, NULL, NULL) == PNL_OK);
+    CHECK(pnl_view_pop(app) == PNL_OK);
+    CHECK(pnl_app_with_terminal(app, count_call, &calls) == PNL_OK && calls == 1);
+    CHECK(pnl_app_redraw(app) == PNL_OK);
+    CHECK(pnl_app_quit(app) == PNL_OK);
+    pnl_app_destroy(app);
+}
+
+static void test_canvas_and_width(void)
+{
+    CHECK(pnl_text_width("abc") == 3);
+    CHECK(pnl_text_width("\xc3\xa7" "a") == 2);
+    CHECK(pnl_text_width("\xe4\xb8\xad\xe6\x96\x87") == 4);
+    CHECK(pnl_text_width("e\xcc\x81") == 1);
+    CHECK(pnl_text_width(NULL) == 0);
+    CHECK(pnl_canvas_width(NULL) == 0);
+    CHECK(pnl_canvas_height(NULL) == 0);
+    CHECK(pnl_canvas_text(NULL, 1, 0, 0, "x") == 1);
+    pnl_canvas_fill(NULL, 0, 0, 1, 1, 0);
+}
+
 static void test_bad_args(void)
 {
     pnl_app_t *app = NULL;
@@ -126,10 +193,22 @@ static void test_bad_args(void)
     CHECK(pnl_status_line(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_app_run(NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_quit(NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_redraw(NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_add_timer(NULL, 10, noop_timer, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_remove_timer(NULL, 1) == PNL_ERR_ARG);
+    CHECK(pnl_app_watch_fd(NULL, 0, noop_fd, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_unwatch_fd(NULL, 0) == PNL_ERR_ARG);
+    CHECK(pnl_app_with_terminal(NULL, count_call, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_push(NULL, "x", noop_draw, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_pop(NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_status(app, noop_status, NULL, -1) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, NULL, noop_action, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, "x", NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_push(app, "x", NULL, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_pop(app) == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_app_with_terminal(app, NULL, NULL) == PNL_ERR_ARG);
     pnl_app_destroy(app);
     CHECK(pnl_strerror(PNL_ERR_TTY) != NULL);
     CHECK(pnl_strerror(-1) != NULL);
@@ -145,6 +224,12 @@ static int run_with_failure(failing_alloc_t *fa)
     status = pnl_app_create("demo", failing_alloc, failing_free, fa, &app);
     for (i = 0; i < 20 && status == PNL_OK; i++)
         status = pnl_app_add_action(app, "an action label", noop_action, NULL);
+    for (i = 0; i < 20 && status == PNL_OK; i++)
+        status = pnl_app_add_timer(app, 100, noop_timer, NULL, NULL);
+    for (i = 0; i < 20 && status == PNL_OK; i++)
+        status = pnl_view_push(app, "a view title", noop_draw, NULL, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_set_status(app, noop_status, NULL, 500);
     pnl_app_destroy(app);
     return status;
 }
@@ -171,6 +256,8 @@ int main(void)
     test_build();
     test_outside_callbacks();
     test_no_terminal();
+    test_loop_parts();
+    test_canvas_and_width();
     test_bad_args();
     test_alloc_failure();
     return 0;
