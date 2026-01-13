@@ -4,6 +4,27 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.3.0 - 2026-01-13
+
+The panel is alive: it keeps answering keys while timers fire, file descriptors become readable
+and custom screens update.
+
+- `pnl_app_add_timer` / `pnl_app_remove_timer`: callbacks every `interval_ms`; the screen is
+  redrawn after each one
+- `pnl_app_watch_fd` / `pnl_app_unwatch_fd`: a callback when a descriptor has data (POSIX)
+- `pnl_view_push` / `pnl_view_pop`: screens of your own on top of the menu, drawn through
+  `pnl_canvas_text` and `pnl_canvas_fill`; esc or `q` goes back unless the key callback takes it
+- `pnl_app_with_terminal`: gives the terminal back for a while, to print or run another program
+- `pnl_app_redraw`, `pnl_app_quit`, `pnl_text_width`
+- styles: `PNL_BOLD`, `PNL_DIM`, `PNL_REVERSE`, `PNL_UNDERLINE`, `PNL_FG(color)`, `PNL_BG(color)`
+  with 16 colors
+
+### Upgrading
+
+- actions now run inside the panel, with the terminal still in raw mode. An action that prints
+  or starts an interactive program must do it inside `pnl_app_with_terminal`
+- `pnl_result` can be called at any time while the panel runs, not only inside an action
+
 ## 0.2.0 - 2026-01-13
 
 The screen no longer flickers. Nothing changes in the API.
