@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.2.0 - 2026-01-13
+
+The screen no longer flickers. Nothing changes in the API.
+
+- the panel draws into a cell buffer and sends only the cells that changed since the last frame;
+  moving the selection now writes about 50 bytes instead of clearing and repainting everything
+- runs on the alternate screen, so the shell scrollback is left as it was
+- follows terminal resizes
+- the terminal is restored when the program is killed (`SIGTERM`, `SIGHUP`, `SIGQUIT`, `SIGINT`)
+- Ctrl-Z suspends the panel and `fg` brings it back
+- text is measured in columns: wide characters (CJK, emoji) take two, combining marks none,
+  and lines are cut at the edge of the screen instead of wrapping
+
 ## 0.1.0 - 2026-01-06
 
 First release: the menu.
