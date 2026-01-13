@@ -135,7 +135,7 @@ static void test_no_terminal(void)
 
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
-    CHECK(pnl_app_run(app) == PNL_ERR_TTY);
+    CHECK(pnl_app_run(app, 0, NULL, NULL) == PNL_OK);
     pnl_app_destroy(app);
 }
 
@@ -181,6 +181,56 @@ static void test_canvas_and_width(void)
     pnl_canvas_fill(NULL, 0, 0, 1, 1, 0);
 }
 
+static void fail_action(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_result(app, PNL_MARK_FAIL, "it \"failed\"\n");
+}
+
+static void view_action(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    CHECK(pnl_view_push(app, "live", noop_draw, NULL, NULL) == PNL_ERR_TTY);
+}
+
+static void wait_status(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_status_line(app, PNL_MARK_WAIT, "warming up");
+}
+
+static int run_cli(pnl_app_t *app, char *a, char *b)
+{
+    char *argv[] = {"demo", a, b, NULL};
+    int argc = b ? 3 : a ? 2 : 1;
+    int exit_code = -1;
+
+    CHECK(pnl_app_run(app, argc, argv, &exit_code) == PNL_OK);
+    return exit_code;
+}
+
+static void test_cli(void)
+{
+    pnl_app_t *app = NULL;
+
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_set_status(app, wait_status, NULL, 0) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Do Nothing!", noop_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Fail", fail_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Live view", view_action, NULL) == PNL_OK);
+    CHECK(run_cli(app, "--help", NULL) == 0);
+    CHECK(run_cli(app, "status", NULL) == 0);
+    CHECK(run_cli(app, "status", "--json") == 0);
+    CHECK(run_cli(app, "do-nothing", NULL) == 0);
+    CHECK(run_cli(app, "fail", NULL) == 1);
+    CHECK(run_cli(app, "fail", "--json") == 1);
+    CHECK(run_cli(app, "live-view", NULL) == 1);
+    CHECK(run_cli(app, "nope", NULL) == 2);
+    CHECK(run_cli(app, "fail", "extra") == 2);
+    CHECK(run_cli(app, "--bogus", NULL) == 2);
+    pnl_app_destroy(app);
+}
+
 static void test_bad_args(void)
 {
     pnl_app_t *app = NULL;
@@ -192,7 +242,7 @@ static void test_bad_args(void)
     CHECK(pnl_app_add_action(NULL, "x", noop_action, NULL) == PNL_ERR_ARG);
     CHECK(pnl_status_line(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
-    CHECK(pnl_app_run(NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_run(NULL, 0, NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_quit(NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_redraw(NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_timer(NULL, 10, noop_timer, NULL, NULL) == PNL_ERR_ARG);
@@ -257,6 +307,7 @@ int main(void)
     test_outside_callbacks();
     test_no_terminal();
     test_loop_parts();
+    test_cli();
     test_canvas_and_width();
     test_bad_args();
     test_alloc_failure();

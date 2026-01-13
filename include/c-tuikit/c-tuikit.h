@@ -86,7 +86,7 @@ PNL_API int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *st
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);
-PNL_API int pnl_app_run(pnl_app_t *app);
+PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code);
 PNL_API int pnl_app_quit(pnl_app_t *app);
 PNL_API int pnl_app_redraw(pnl_app_t *app);
 PNL_API int pnl_app_add_timer(pnl_app_t *app, int interval_ms, pnl_timer_fn timer_fn, void *timer_ctx, int *out_timer);

@@ -125,6 +125,11 @@ struct pnl_app {
     size_t watches_len;
     size_t watches_cap;
     int running;
+    int cli;
+    int cli_json;
+    int cli_color;
+    int cli_worst;
+    int cli_needs_tty;
     int quit;
     int dirty;
     struct pnl_term term;
@@ -147,6 +152,7 @@ PNL_INTERNAL void pnl_screen_fill(struct pnl_screen *screen, int x, int y, int w
 PNL_INTERNAL int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem);
 
 PNL_INTERNAL int pnl_term_available(void);
+PNL_INTERNAL int pnl_term_stdout_is_tty(void);
 PNL_INTERNAL int pnl_term_enter(struct pnl_term *term);
 PNL_INTERNAL void pnl_term_leave(struct pnl_term *term);
 PNL_INTERNAL void pnl_term_suspend(struct pnl_term *term);
@@ -161,6 +167,10 @@ PNL_INTERNAL long long pnl_term_now_ms(void);
 PNL_INTERNAL void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas);
 PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
+PNL_INTERNAL void pnl_menu_refresh(pnl_app_t *app);
+PNL_INTERNAL int pnl_valid_mark(int mark);
+PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
+PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);
 PNL_INTERNAL int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view);
 PNL_INTERNAL void pnl_views_drop(pnl_app_t *app);
 PNL_INTERNAL void pnl_timers_run(pnl_app_t *app);

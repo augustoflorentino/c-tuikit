@@ -105,9 +105,10 @@ static void print_something(void *ctx, pnl_app_t *app)
     pnl_app_with_terminal(app, print_lines, NULL);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     struct service svc = {0, 0, 0, 0};
+    int exit_code = 1;
     pnl_app_t *app = NULL;
     int status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
 
@@ -122,11 +123,9 @@ int main(void)
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Print something", print_something, NULL);
     if (status == PNL_OK)
-        status = pnl_app_run(app);
+        status = pnl_app_run(app, argc, argv, &exit_code);
     pnl_app_destroy(app);
-    if (status != PNL_OK) {
+    if (status != PNL_OK)
         fprintf(stderr, "error: %s\n", pnl_strerror(status));
-        return 1;
-    }
-    return 0;
+    return exit_code;
 }

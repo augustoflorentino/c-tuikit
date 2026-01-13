@@ -20,7 +20,7 @@ void pnl_menu_clear_lines(pnl_app_t *app)
     app->lines_len = 0;
 }
 
-static int pnl_valid_mark(int mark)
+int pnl_valid_mark(int mark)
 {
     return mark == PNL_MARK_OK || mark == PNL_MARK_WAIT || mark == PNL_MARK_FAIL;
 }
@@ -53,7 +53,7 @@ static void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *tex
     pnl_canvas_text(canvas, 6, y, 0, text);
 }
 
-static void pnl_menu_refresh(pnl_app_t *app)
+void pnl_menu_refresh(pnl_app_t *app)
 {
     pnl_menu_clear_lines(app);
     if (app->status_fn == NULL)
@@ -136,8 +136,10 @@ int pnl_result(pnl_app_t *app, int mark, const char *text)
     struct pnl_view view;
     int status;
 
-    if (app == NULL || text == NULL || !app->running || !pnl_valid_mark(mark))
+    if (app == NULL || text == NULL || !pnl_valid_mark(mark) || (!app->running && !app->cli))
         return PNL_ERR_ARG;
+    if (app->cli)
+        return pnl_cli_result(app, mark, text);
     result = pnl_mem_alloc(&app->mem, sizeof(*result));
     if (result == NULL)
         return PNL_ERR_NOMEM;

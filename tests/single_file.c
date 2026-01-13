@@ -22,7 +22,7 @@ int main(void)
         status = PNL_ERR_ARG;
     if (status == PNL_OK && pnl_result(app, PNL_MARK_OK, "x") != PNL_ERR_ARG)
         status = PNL_ERR_ARG;
-    if (status == PNL_OK && pnl_app_run(app) != PNL_ERR_TTY)
+    if (status == PNL_OK && pnl_app_run(app, 0, NULL, NULL) != PNL_OK)
         status = PNL_ERR_ARG;
     if (pnl_key_decode((const unsigned char *)"\x1b[A", 3, &key) != 3 || key != PNL_KEY_UP)
         status = PNL_ERR_ARG;

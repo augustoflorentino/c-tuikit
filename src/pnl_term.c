@@ -7,6 +7,11 @@ int pnl_term_available(void)
     return 0;
 }
 
+int pnl_term_stdout_is_tty(void)
+{
+    return 0;
+}
+
 int pnl_term_enter(struct pnl_term *term)
 {
     (void)term;
@@ -137,6 +142,11 @@ static void pnl_term_release(void)
 int pnl_term_available(void)
 {
     return isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
+}
+
+int pnl_term_stdout_is_tty(void)
+{
+    return isatty(STDOUT_FILENO);
 }
 
 static int pnl_term_make_raw(void)

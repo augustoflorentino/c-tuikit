@@ -9,7 +9,13 @@
 
 int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
 {
-    int status = pnl_mem_grow(&app->mem, (void **)&app->views, &app->views_cap, app->views_len + 1,
+    int status;
+
+    if (app->cli) {
+        app->cli_needs_tty = 1;
+        return PNL_ERR_TTY;
+    }
+    status = pnl_mem_grow(&app->mem, (void **)&app->views, &app->views_cap, app->views_len + 1,
                               sizeof(*app->views));
 
     if (status != PNL_OK)
@@ -359,15 +365,10 @@ static void pnl_timers_restart(pnl_app_t *app)
         app->timers[i].due_ms = now + app->timers[i].interval_ms;
 }
 
-int pnl_app_run(pnl_app_t *app)
+int pnl_run_interactive(pnl_app_t *app)
 {
-    int status;
+    int status = pnl_term_enter(&app->term);
 
-    if (app == NULL)
-        return PNL_ERR_ARG;
-    if (!pnl_term_available())
-        return PNL_ERR_TTY;
-    status = pnl_term_enter(&app->term);
     if (status != PNL_OK)
         return status;
     app->running = 1;
