@@ -49,6 +49,22 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     return PNL_ERR_TTY;
 }
 
+int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
+                  unsigned char *out_ready)
+{
+    (void)term;
+    (void)watches;
+    (void)watches_len;
+    (void)timeout_ms;
+    (void)out_ready;
+    return 0;
+}
+
+long long pnl_term_now_ms(void)
+{
+    return 0;
+}
+
 #else
 
 #include <errno.h>
@@ -57,6 +73,7 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
 #include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l"
@@ -211,7 +228,7 @@ int pnl_term_write(const char *data, size_t data_len)
     return PNL_OK;
 }
 
-static int pnl_term_wait(int timeout_ms)
+static int pnl_term_poll_input(int timeout_ms)
 {
     struct pollfd pfd;
     int ready;
@@ -228,7 +245,7 @@ static int pnl_term_wait(int timeout_ms)
 static int pnl_term_fill(struct pnl_term *term, int timeout_ms)
 {
     ssize_t got;
-    int ready = pnl_term_wait(timeout_ms);
+    int ready = pnl_term_poll_input(timeout_ms);
 
     if (ready <= 0)
         return ready;
@@ -258,6 +275,40 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     memmove(term->input, term->input + used, term->input_len - used);
     term->input_len -= used;
     return PNL_OK;
+}
+
+int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
+                  unsigned char *out_ready)
+{
+    struct pollfd pfds[PNL_WATCH_MAX + 1];
+    size_t count = watches_len < PNL_WATCH_MAX ? watches_len : PNL_WATCH_MAX;
+    size_t i;
+    int ready;
+
+    if (term->input_len > 0)
+        timeout_ms = 0;
+    pfds[0].fd = STDIN_FILENO;
+    pfds[0].events = POLLIN;
+    for (i = 0; i < count; i++) {
+        pfds[i + 1].fd = watches[i].fd;
+        pfds[i + 1].events = POLLIN;
+    }
+    for (i = 0; i <= count; i++)
+        pfds[i].revents = 0;
+    ready = poll(pfds, (nfds_t)(count + 1), timeout_ms);
+    if (ready < 0)
+        return errno == EINTR ? 0 : -1;
+    for (i = 0; i < count; i++)
+        out_ready[i] = (unsigned char)(pfds[i + 1].revents != 0);
+    return term->input_len > 0 || pfds[0].revents != 0;
+}
+
+long long pnl_term_now_ms(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
 #endif

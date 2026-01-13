@@ -81,20 +81,3 @@ size_t pnl_utf8_next(const char *text, size_t text_len, uint32_t *out_cp)
     *out_cp = key == PNL_KEY_NONE ? 0xfffd : (uint32_t)key;
     return used ? used : 1;
 }
-
-int pnl_text_width(const char *text)
-{
-    size_t len = strlen(text);
-    size_t pos = 0;
-    int width = 0;
-
-    while (pos < len) {
-        uint32_t cp;
-        int w;
-
-        pos += pnl_utf8_next(text + pos, len - pos, &cp);
-        w = pnl_cp_width(cp);
-        width += w < 0 ? 1 : w;
-    }
-    return width;
-}

@@ -18,19 +18,15 @@
 #endif
 
 #define PNL_INPUT_MAX 64
+#define PNL_WATCH_MAX 64
 #define PNL_ESCAPE_WAIT_MS 50
 #define PNL_KEY_SUSPEND 0x1a
+#define PNL_KEY_CTRL_C 3
+#define PNL_STATUS_TIMER_NONE 0
 
-#define PNL_ATTR_BOLD 0x01u
-#define PNL_ATTR_DIM 0x02u
-#define PNL_ATTR_REVERSE 0x04u
-#define PNL_ATTR_UNDERLINE 0x08u
-#define PNL_INK_DEFAULT 0u
-#define PNL_INK_RED 2u
-#define PNL_INK_GREEN 3u
-#define PNL_INK_YELLOW 4u
-#define PNL_INK_GRAY 9u
-#define PNL_PACK(fg, bg, attrs) ((uint32_t)(attrs) | ((uint32_t)(fg) << 8) | ((uint32_t)(bg) << 16))
+#define PNL_STYLE_ATTRS(style) ((uint32_t)(style) & 0xffu)
+#define PNL_STYLE_FG(style) (((uint32_t)(style) >> 8) & 0xffu)
+#define PNL_STYLE_BG(style) (((uint32_t)(style) >> 16) & 0xffu)
 
 struct pnl_mem {
     pnl_alloc_fn alloc_fn;
@@ -60,6 +56,81 @@ struct pnl_term {
     size_t input_len;
 };
 
+struct pnl_canvas {
+    struct pnl_screen *screen;
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
+struct pnl_action {
+    char *label;
+    pnl_action_fn fn;
+    void *ctx;
+};
+
+struct pnl_line {
+    int mark;
+    char *text;
+};
+
+struct pnl_timer {
+    int id;
+    int interval_ms;
+    long long due_ms;
+    pnl_timer_fn fn;
+    void *ctx;
+};
+
+struct pnl_watch {
+    int fd;
+    pnl_fd_fn fn;
+    void *ctx;
+};
+
+typedef void (*pnl_drop_fn)(pnl_app_t *app, void *ctx);
+
+struct pnl_view {
+    char *title;
+    const char *footer;
+    pnl_draw_fn draw_fn;
+    pnl_key_fn key_fn;
+    pnl_drop_fn drop_fn;
+    void *ctx;
+};
+
+struct pnl_app {
+    struct pnl_mem mem;
+    char *title;
+    struct pnl_action *actions;
+    size_t actions_len;
+    size_t actions_cap;
+    pnl_status_fn status_fn;
+    void *status_ctx;
+    int status_timer;
+    struct pnl_line *lines;
+    size_t lines_len;
+    size_t lines_cap;
+    int in_status;
+    size_t selected;
+    struct pnl_view *views;
+    size_t views_len;
+    size_t views_cap;
+    struct pnl_timer *timers;
+    size_t timers_len;
+    size_t timers_cap;
+    int next_timer;
+    struct pnl_watch *watches;
+    size_t watches_len;
+    size_t watches_cap;
+    int running;
+    int quit;
+    int dirty;
+    struct pnl_term term;
+    struct pnl_screen screen;
+};
+
 PNL_INTERNAL void *pnl_mem_alloc(const struct pnl_mem *mem, size_t size);
 PNL_INTERNAL void pnl_mem_free(const struct pnl_mem *mem, void *ptr);
 PNL_INTERNAL char *pnl_mem_copy(const struct pnl_mem *mem, const char *text);
@@ -67,7 +138,6 @@ PNL_INTERNAL int pnl_mem_grow(const struct pnl_mem *mem, void **items, size_t *c
 
 PNL_INTERNAL size_t pnl_utf8_next(const char *text, size_t text_len, uint32_t *out_cp);
 PNL_INTERNAL int pnl_cp_width(uint32_t cp);
-PNL_INTERNAL int pnl_text_width(const char *text);
 
 PNL_INTERNAL int pnl_screen_resize(struct pnl_screen *screen, const struct pnl_mem *mem, int width, int height);
 PNL_INTERNAL void pnl_screen_free(struct pnl_screen *screen, const struct pnl_mem *mem);
@@ -84,5 +154,16 @@ PNL_INTERNAL int pnl_term_resized(void);
 PNL_INTERNAL void pnl_term_size(int *out_width, int *out_height);
 PNL_INTERNAL int pnl_term_write(const char *data, size_t data_len);
 PNL_INTERNAL int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key);
+PNL_INTERNAL int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len,
+                               int timeout_ms, unsigned char *out_ready);
+PNL_INTERNAL long long pnl_term_now_ms(void);
+
+PNL_INTERNAL void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas);
+PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
+PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
+PNL_INTERNAL int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view);
+PNL_INTERNAL void pnl_views_drop(pnl_app_t *app);
+PNL_INTERNAL void pnl_timers_run(pnl_app_t *app);
+PNL_INTERNAL int pnl_timers_timeout(const pnl_app_t *app);
 
 #endif

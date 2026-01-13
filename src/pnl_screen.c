@@ -124,7 +124,7 @@ static int pnl_out(struct pnl_screen *screen, const struct pnl_mem *mem, const c
 
 static int pnl_out_ink(char *buf, unsigned ink, int base, int bright)
 {
-    if (ink == PNL_INK_DEFAULT)
+    if (ink == PNL_COLOR_DEFAULT)
         return sprintf(buf, ";%d", base + 9);
     if (ink <= 8)
         return sprintf(buf, ";%d", base + (int)ink - 1);
@@ -136,16 +136,16 @@ static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, u
     char buf[64] = "\x1b[0";
     int len = 3;
 
-    if (style & PNL_ATTR_BOLD)
+    if (style & PNL_BOLD)
         len += sprintf(buf + len, ";1");
-    if (style & PNL_ATTR_DIM)
+    if (style & PNL_DIM)
         len += sprintf(buf + len, ";2");
-    if (style & PNL_ATTR_UNDERLINE)
+    if (style & PNL_UNDERLINE)
         len += sprintf(buf + len, ";4");
-    if (style & PNL_ATTR_REVERSE)
+    if (style & PNL_REVERSE)
         len += sprintf(buf + len, ";7");
-    len += pnl_out_ink(buf + len, (style >> 8) & 0xffu, 30, 90);
-    len += pnl_out_ink(buf + len, (style >> 16) & 0xffu, 40, 100);
+    len += pnl_out_ink(buf + len, PNL_STYLE_FG(style), 30, 90);
+    len += pnl_out_ink(buf + len, PNL_STYLE_BG(style), 40, 100);
     buf[len++] = 'm';
     return pnl_out(screen, mem, buf, (size_t)len);
 }
