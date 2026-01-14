@@ -1,0 +1,7 @@
+* text=auto eol=lf
+tests/snapshots/*.txt -text diff
+abi/*.abi linguist-generated
+*.cast linguist-generated
+.github/ export-ignore
+fuzz/ export-ignore
+bench/ export-ignore
