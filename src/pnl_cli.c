@@ -88,6 +88,27 @@ int pnl_cli_result(pnl_app_t *app, int mark, const char *text)
     return PNL_OK;
 }
 
+void pnl_cli_progress(const char *step, unsigned long long done, unsigned long long total)
+{
+    if (!pnl_term_stderr_is_tty())
+        return;
+    if (total > 0)
+        fprintf(stderr, "\r\x1b[K%3d%%  %s", (int)(done >= total ? 100 : done * 100 / total), step);
+    else
+        fprintf(stderr, "\r\x1b[K%s", step);
+    fflush(stderr);
+}
+
+void pnl_cli_log(const pnl_app_t *app, const char *line)
+{
+    if (app->cli_json)
+        return;
+    if (pnl_term_stderr_is_tty())
+        fputs("\r\x1b[K", stderr);
+    puts(line);
+    fflush(stdout);
+}
+
 static void pnl_cli_status(pnl_app_t *app)
 {
     size_t i;

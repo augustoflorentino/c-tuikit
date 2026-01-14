@@ -199,6 +199,27 @@ static void wait_status(void *ctx, pnl_app_t *app)
     pnl_status_line(app, PNL_MARK_WAIT, "warming up");
 }
 
+static void counting_work(void *ctx, pnl_task_t *task)
+{
+    int *steps = ctx;
+
+    CHECK(pnl_task_step(task, "counting") == PNL_OK);
+    for (*steps = 0; *steps < 3 && !pnl_task_cancelled(task); (*steps)++) {
+        CHECK(pnl_task_log(task, "one more") == PNL_OK);
+        pnl_task_progress(task, (unsigned long long)*steps + 1, 3);
+    }
+    CHECK(pnl_task_result(task, PNL_MARK_OK, "counted") == PNL_OK);
+    CHECK(pnl_task_result(task, 7, "x") == PNL_ERR_ARG);
+}
+
+static int steps_counted;
+
+static void task_action(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    CHECK(pnl_task_run(app, "count", counting_work, &steps_counted) == PNL_OK);
+}
+
 static int run_cli(pnl_app_t *app, char *a, char *b)
 {
     char *argv[] = {"demo", a, b, NULL};
@@ -218,6 +239,8 @@ static void test_cli(void)
     CHECK(pnl_app_add_action(app, "Do Nothing!", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Fail", fail_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Live view", view_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Count", task_action, NULL) == PNL_OK);
+    CHECK(pnl_task_run(app, "count", counting_work, &steps_counted) == PNL_ERR_ARG);
     CHECK(run_cli(app, "--help", NULL) == 0);
     CHECK(run_cli(app, "status", NULL) == 0);
     CHECK(run_cli(app, "status", "--json") == 0);
@@ -228,6 +251,7 @@ static void test_cli(void)
     CHECK(run_cli(app, "nope", NULL) == 2);
     CHECK(run_cli(app, "fail", "extra") == 2);
     CHECK(run_cli(app, "--bogus", NULL) == 2);
+    CHECK(run_cli(app, "count", NULL) == 0 && steps_counted == 3);
     pnl_app_destroy(app);
 }
 
@@ -252,6 +276,12 @@ static void test_bad_args(void)
     CHECK(pnl_app_with_terminal(NULL, count_call, NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_push(NULL, "x", noop_draw, NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_pop(NULL) == PNL_ERR_ARG);
+    CHECK(pnl_task_run(NULL, "x", counting_work, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_task_step(NULL, "x") == PNL_ERR_ARG);
+    CHECK(pnl_task_log(NULL, "x") == PNL_ERR_ARG);
+    CHECK(pnl_task_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
+    CHECK(pnl_task_cancelled(NULL) == 0);
+    pnl_task_progress(NULL, 1, 2);
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_status(app, noop_status, NULL, -1) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, NULL, noop_action, NULL) == PNL_ERR_ARG);

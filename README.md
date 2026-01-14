@@ -19,9 +19,11 @@ up/down: move  enter: choose  q: quit
 
 - status lines with a mark (`ok`, `..`, `!!`) refreshed on a timer while the panel waits for a key
 - actions chosen with the arrow keys (or `j`/`k`) and enter
-- each action runs with the terminal back to normal, so it can print or start other programs
-- an action may leave a result, shown on its own screen until a key is pressed
-- no dependencies; POSIX terminals today, Windows console planned
+- an action may leave a result, open a live screen of its own, or hand the terminal back
+  (`pnl_app_with_terminal`) to print or start other programs
+- slow work runs on a thread with progress, a log and esc to cancel (`pnl_task_run`)
+- the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
+- no dependencies besides threads; POSIX terminals today, Windows console planned
 
 ## Build and install
 
@@ -73,12 +75,16 @@ pnl_app_t *app = NULL;
 pnl_app_create("service", NULL, NULL, NULL, &app);
 pnl_app_set_status(app, show_status, NULL, 1000);
 pnl_app_add_action(app, "Start", start, NULL);
-pnl_app_run(app);
+pnl_app_run(app, argc, argv, &exit_code);
 pnl_app_destroy(app);
+return exit_code;
 ```
 
-`pnl_status_line` works only inside the status callback and `pnl_result` only inside an action.
-`pnl_app_run` returns `PNL_ERR_TTY` when stdin or stdout is not a terminal.
+`pnl_status_line` works only inside the status callback; `pnl_result` and `pnl_task_run` while
+the panel or a command runs. Without a command and with a terminal, `pnl_app_run` opens the
+panel; otherwise it prints the status lines, which makes the tool usable in scripts and pipes.
+Work given to `pnl_task_run` runs on a thread in the panel and in the foreground on the command
+line, so the same function serves both.
 
 See [`examples/basic.c`](examples/basic.c). The header `include/c-tuikit/c-tuikit.h` is the
 API reference.

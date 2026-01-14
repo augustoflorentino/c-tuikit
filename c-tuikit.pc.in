@@ -8,4 +8,5 @@ Version: @PROJECT_VERSION@
 Requires:
 Requires.private:
 Libs: -L${libdir} -ltuikit
+Libs.private: @CMAKE_THREAD_LIBS_INIT@
 Cflags: -I${includedir} @PC_CFLAGS@

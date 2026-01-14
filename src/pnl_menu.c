@@ -44,7 +44,7 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
     return PNL_OK;
 }
 
-static void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
+void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 {
     static const char *const marks[] = {"ok", "..", "!!"};
     static const int colors[] = {PNL_COLOR_GREEN, PNL_COLOR_YELLOW, PNL_COLOR_RED};

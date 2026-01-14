@@ -110,7 +110,7 @@ int pnl_app_remove_timer(pnl_app_t *app, int timer)
 int pnl_timers_timeout(const pnl_app_t *app)
 {
     long long now = pnl_term_now_ms();
-    long long next = -1;
+    long long next = app->tasks_running > 0 ? PNL_TASK_TICK_MS : -1;
     size_t i;
 
     for (i = 0; i < app->timers_len; i++) {
@@ -249,7 +249,7 @@ static void pnl_draw_title(pnl_app_t *app, const struct pnl_view *top)
 static int pnl_draw(pnl_app_t *app)
 {
     const struct pnl_view *top = app->views_len ? &app->views[app->views_len - 1] : NULL;
-    const char *footer = top ? (top->footer ? top->footer : PNL_VIEW_FOOTER) : PNL_MENU_FOOTER;
+    const char *footer = PNL_MENU_FOOTER;
     struct pnl_canvas canvas;
     int width;
     int height;
@@ -261,7 +261,6 @@ static int pnl_draw(pnl_app_t *app)
         return status;
     pnl_screen_clear(&app->screen);
     pnl_draw_title(app, top);
-    pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
     canvas.screen = &app->screen;
     canvas.x = 0;
     canvas.y = 2;
@@ -271,6 +270,9 @@ static int pnl_draw(pnl_app_t *app)
         top->draw_fn(top->ctx, app, &canvas);
     else
         pnl_menu_draw(app, &canvas);
+    if (top != NULL)
+        footer = top->footer_ref ? *top->footer_ref : top->footer ? top->footer : PNL_VIEW_FOOTER;
+    pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
     app->dirty = 0;
     return pnl_screen_render(&app->screen, &app->mem);
 }
@@ -352,6 +354,8 @@ static int pnl_loop(pnl_app_t *app)
             status = pnl_read_keys(app);
         pnl_dispatch_watches(app, ready);
         pnl_timers_run(app);
+        if (app->tasks_running > 0)
+            app->dirty = 1;
     }
     return status;
 }

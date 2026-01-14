@@ -1,7 +1,25 @@
+#if !defined(_WIN32)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <c-tuikit/c-tuikit.h>
 
 #include <stdio.h>
 #include <time.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#define nap_ms(ms) Sleep(ms)
+#else
+static void nap_ms(long ms)
+{
+    struct timespec ts;
+
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000L;
+    nanosleep(&ts, NULL);
+}
+#endif
 
 struct service {
     int running;
@@ -90,6 +108,33 @@ static void watch_live(void *ctx, pnl_app_t *app)
         pnl_view_push(app, "live", draw_live, live_key, svc);
 }
 
+static void copy_files(void *ctx, pnl_task_t *task)
+{
+    static const int total = 40;
+    char line[64];
+    int i;
+
+    (void)ctx;
+    pnl_task_step(task, "copying files");
+    for (i = 1; i <= total; i++) {
+        if (pnl_task_cancelled(task)) {
+            pnl_task_result(task, PNL_MARK_WAIT, "backup cancelled, partial copy kept");
+            return;
+        }
+        nap_ms(50);
+        snprintf(line, sizeof(line), "copied file-%02d.dat", i);
+        pnl_task_log(task, line);
+        pnl_task_progress(task, (unsigned long long)i, (unsigned long long)total);
+    }
+    pnl_task_result(task, PNL_MARK_OK, "backup finished: 40 files");
+}
+
+static void backup(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_task_run(app, "backup", copy_files, NULL);
+}
+
 static void print_lines(void *ctx)
 {
     (void)ctx;
@@ -120,6 +165,8 @@ int main(int argc, char **argv)
         status = pnl_app_add_action(app, "Stop", stop, &svc);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Watch live", watch_live, &svc);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Back up", backup, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Print something", print_something, NULL);
     if (status == PNL_OK)

@@ -68,6 +68,7 @@ extern "C" {
 
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
+typedef struct pnl_task pnl_task_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
@@ -78,6 +79,7 @@ typedef void (*pnl_fd_fn)(void *ctx, pnl_app_t *app, int fd);
 typedef void (*pnl_draw_fn)(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas);
 typedef int (*pnl_key_fn)(void *ctx, pnl_app_t *app, int key);
 typedef void (*pnl_terminal_fn)(void *ctx);
+typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
 
 PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
                            pnl_app_t **out_app);
@@ -96,6 +98,12 @@ PNL_API int pnl_app_unwatch_fd(pnl_app_t *app, int fd);
 PNL_API int pnl_app_with_terminal(pnl_app_t *app, pnl_terminal_fn terminal_fn, void *terminal_ctx);
 PNL_API int pnl_view_push(pnl_app_t *app, const char *title, pnl_draw_fn draw_fn, pnl_key_fn key_fn, void *view_ctx);
 PNL_API int pnl_view_pop(pnl_app_t *app);
+PNL_API int pnl_task_run(pnl_app_t *app, const char *title, pnl_work_fn work_fn, void *work_ctx);
+PNL_API void pnl_task_progress(pnl_task_t *task, unsigned long long done, unsigned long long total);
+PNL_API int pnl_task_step(pnl_task_t *task, const char *text);
+PNL_API int pnl_task_log(pnl_task_t *task, const char *line);
+PNL_API int pnl_task_cancelled(pnl_task_t *task);
+PNL_API int pnl_task_result(pnl_task_t *task, int mark, const char *text);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);
