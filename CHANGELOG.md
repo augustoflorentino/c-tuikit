@@ -4,6 +4,24 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.5.0 - 2026-01-13
+
+Slow work no longer freezes the panel. An action hands a function to `pnl_task_run`, which runs it
+on a thread while the panel shows its progress and log.
+
+- `pnl_task_run`, `pnl_task_step`, `pnl_task_progress`, `pnl_task_log`, `pnl_task_cancelled`,
+  `pnl_task_result`
+- the task screen shows the current step, a progress bar (or the elapsed time when the total is
+  unknown), the last lines of the log and, at the end, the result
+- esc or `q` asks the work to stop; it decides when, through `pnl_task_cancelled`
+- on the command line the same work runs in the foreground: log lines go to stdout, progress to
+  stderr when it is a terminal, the result as usual
+- the library now links against the platform threads (`Threads::Threads`, `Libs.private`)
+
+### Fixed
+
+- the footer of a view is drawn after the view, so changes made while drawing show at once
+
 ## 0.4.0 - 2026-01-13
 
 Every panel is also a command line tool. The actions declared once become subcommands, so the
