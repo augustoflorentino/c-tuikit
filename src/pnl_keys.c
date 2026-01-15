@@ -1,5 +1,28 @@
 #include "pnl_internal.h"
 
+static int pnl_keys_letter(unsigned char c)
+{
+    static const int arrows[] = {PNL_KEY_UP, PNL_KEY_DOWN, PNL_KEY_RIGHT, PNL_KEY_LEFT};
+
+    if (c >= 'A' && c <= 'D')
+        return arrows[c - 'A'];
+    if (c == 'H')
+        return PNL_KEY_HOME;
+    if (c == 'F')
+        return PNL_KEY_END;
+    return PNL_KEY_NONE;
+}
+
+static int pnl_keys_tilde(const unsigned char *data, size_t end)
+{
+    static const int codes[] = {PNL_KEY_NONE, PNL_KEY_HOME, PNL_KEY_NONE, PNL_KEY_DELETE, PNL_KEY_END,
+                                PNL_KEY_PAGE_UP, PNL_KEY_PAGE_DOWN, PNL_KEY_HOME, PNL_KEY_END};
+
+    if (end != 3 || data[2] < '1' || data[2] > '8')
+        return PNL_KEY_NONE;
+    return codes[data[2] - '0'];
+}
+
 static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_key)
 {
     size_t i;
@@ -7,10 +30,10 @@ static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_
     for (i = 2; i < data_len; i++) {
         if (data[i] < 0x40 || data[i] > 0x7e)
             continue;
-        if (i == 2 && data[i] >= 'A' && data[i] <= 'D') {
-            static const int arrows[] = {PNL_KEY_UP, PNL_KEY_DOWN, PNL_KEY_RIGHT, PNL_KEY_LEFT};
-            *out_key = arrows[data[i] - 'A'];
-        }
+        if (i == 2)
+            *out_key = pnl_keys_letter(data[i]);
+        else if (data[i] == '~')
+            *out_key = pnl_keys_tilde(data, i);
         return i + 1;
     }
     return data_len;
@@ -26,8 +49,7 @@ static size_t pnl_keys_escape(const unsigned char *data, size_t data_len, int *o
         return pnl_keys_csi(data, data_len, out_key);
     if (data_len < 3)
         return data_len;
-    if (data[2] >= 'A' && data[2] <= 'D')
-        return pnl_keys_csi(data, 3, out_key);
+    *out_key = pnl_keys_letter(data[2]);
     return 3;
 }
 
@@ -62,6 +84,10 @@ size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key)
         return pnl_keys_escape(data, data_len, out_key);
     if (data[0] == '\r' || data[0] == '\n') {
         *out_key = PNL_KEY_ENTER;
+        return 1;
+    }
+    if (data[0] == 0x7f || data[0] == 0x08) {
+        *out_key = PNL_KEY_BACKSPACE;
         return 1;
     }
     if (data[0] < 0x80) {

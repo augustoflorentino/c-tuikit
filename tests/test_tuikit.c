@@ -92,7 +92,17 @@ static void test_keys(void)
     CHECK(decode("\x1b", &used) == PNL_KEY_ESCAPE && used == 1);
     CHECK(decode("\x1bx", &used) == PNL_KEY_ESCAPE && used == 1);
     CHECK(decode("\x1b[1;5A", &used) == PNL_KEY_NONE && used == 6);
-    CHECK(decode("\x1b[5~", &used) == PNL_KEY_NONE && used == 4);
+    CHECK(decode("\x1b[5~", &used) == PNL_KEY_PAGE_UP && used == 4);
+    CHECK(decode("\x1b[6~", &used) == PNL_KEY_PAGE_DOWN && used == 4);
+    CHECK(decode("\x1b[3~", &used) == PNL_KEY_DELETE && used == 4);
+    CHECK(decode("\x1b[1~", &used) == PNL_KEY_HOME && used == 4);
+    CHECK(decode("\x1b[4~", &used) == PNL_KEY_END && used == 4);
+    CHECK(decode("\x1b[H", &used) == PNL_KEY_HOME && used == 3);
+    CHECK(decode("\x1bOF", &used) == PNL_KEY_END && used == 3);
+    CHECK(decode("\x1b[9~", &used) == PNL_KEY_NONE && used == 4);
+    CHECK(decode("\x1b[15~", &used) == PNL_KEY_NONE && used == 5);
+    CHECK(decode("\x7f", &used) == PNL_KEY_BACKSPACE && used == 1);
+    CHECK(decode("\x08", &used) == PNL_KEY_BACKSPACE && used == 1);
     CHECK(decode("\r", &used) == PNL_KEY_ENTER && used == 1);
     CHECK(decode("\n", &used) == PNL_KEY_ENTER && used == 1);
     CHECK(decode("q", &used) == 'q' && used == 1);
