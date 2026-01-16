@@ -165,6 +165,18 @@ int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *t
     return end - canvas->x;
 }
 
+int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text)
+{
+    int end;
+
+    if (canvas == NULL || text == NULL || x < 0 || y < 0 || x >= canvas->width || y >= canvas->height || max <= 0)
+        return x;
+    if (max > canvas->width - x)
+        max = canvas->width - x;
+    end = pnl_screen_text(canvas->screen, canvas->x + x, canvas->y + y, max, (uint32_t)style, text);
+    return end - canvas->x;
+}
+
 void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int style)
 {
     int row;
