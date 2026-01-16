@@ -75,6 +75,13 @@ struct pnl_lock {
     union pnl_storage storage;
 };
 
+struct pnl_edit {
+    char *text;
+    size_t cap;
+    size_t len;
+    size_t cursor;
+};
+
 struct pnl_canvas {
     struct pnl_screen *screen;
     int x;
@@ -134,6 +141,7 @@ struct pnl_app {
     size_t lines_cap;
     int in_status;
     size_t selected;
+    size_t menu_top;
     struct pnl_view *views;
     size_t views_len;
     size_t views_cap;
@@ -148,6 +156,7 @@ struct pnl_app {
     int running;
     int cli;
     int cli_json;
+    int cli_yes;
     int cli_color;
     int cli_worst;
     int cli_needs_tty;
@@ -175,6 +184,7 @@ PNL_INTERNAL int pnl_screen_render(struct pnl_screen *screen, const struct pnl_m
 PNL_INTERNAL int pnl_term_available(void);
 PNL_INTERNAL int pnl_term_stdout_is_tty(void);
 PNL_INTERNAL int pnl_term_stderr_is_tty(void);
+PNL_INTERNAL int pnl_term_stdin_is_tty(void);
 PNL_INTERNAL int pnl_term_enter(struct pnl_term *term);
 PNL_INTERNAL void pnl_term_leave(struct pnl_term *term);
 PNL_INTERNAL void pnl_term_suspend(struct pnl_term *term);
@@ -193,6 +203,14 @@ PNL_INTERNAL void pnl_lock_destroy(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_lock(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_unlock(struct pnl_lock *lock);
 
+PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
+PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
+PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);
+PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
+PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
+PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);
+PNL_INTERNAL int pnl_text_contains(const char *text, const char *needle);
+
 PNL_INTERNAL void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas);
 PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
@@ -201,9 +219,12 @@ PNL_INTERNAL int pnl_valid_mark(int mark);
 PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
 PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);
 PNL_INTERNAL void pnl_cli_progress(const char *step, unsigned long long done, unsigned long long total);
+PNL_INTERNAL int pnl_cli_read_line(const char *prompt, char *text, size_t text_len);
 PNL_INTERNAL void pnl_cli_log(const pnl_app_t *app, const char *line);
 PNL_INTERNAL void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text);
 PNL_INTERNAL int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view);
+PNL_INTERNAL int pnl_loop(pnl_app_t *app, size_t min_views);
+PNL_INTERNAL int pnl_view_modal(pnl_app_t *app, struct pnl_view *view);
 PNL_INTERNAL void pnl_views_drop(pnl_app_t *app);
 PNL_INTERNAL void pnl_timers_run(pnl_app_t *app);
 PNL_INTERNAL int pnl_timers_timeout(const pnl_app_t *app);

@@ -110,6 +110,13 @@ PNL_API int pnl_task_step(pnl_task_t *task, const char *text);
 PNL_API int pnl_task_log(pnl_task_t *task, const char *line);
 PNL_API int pnl_task_cancelled(pnl_task_t *task);
 PNL_API int pnl_task_result(pnl_task_t *task, int mark, const char *text);
+PNL_API int pnl_confirm(pnl_app_t *app, const char *question, int *out_yes);
+PNL_API int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t text_len, int *out_ok);
+PNL_API int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len,
+                     size_t *out_index, int *out_ok);
+PNL_API int pnl_pager(pnl_app_t *app, const char *title, const char *text, size_t text_len);
+PNL_API int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, size_t columns,
+                      const char *const *cells, size_t rows);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);

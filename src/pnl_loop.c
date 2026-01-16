@@ -63,6 +63,19 @@ int pnl_view_pop(pnl_app_t *app)
     return PNL_OK;
 }
 
+int pnl_view_modal(pnl_app_t *app, struct pnl_view *view)
+{
+    size_t depth = app->views_len;
+    int status = pnl_view_push_internal(app, view);
+
+    if (status != PNL_OK)
+        return status;
+    status = pnl_loop(app, depth + 1);
+    while (app->views_len > depth)
+        pnl_view_pop(app);
+    return status;
+}
+
 void pnl_views_drop(pnl_app_t *app)
 {
     while (app->views_len > 0)
@@ -332,12 +345,12 @@ static void pnl_dispatch_watches(pnl_app_t *app, const unsigned char *ready)
     }
 }
 
-static int pnl_loop(pnl_app_t *app)
+int pnl_loop(pnl_app_t *app, size_t min_views)
 {
     unsigned char ready[PNL_WATCH_MAX];
     int status = PNL_OK;
 
-    while (status == PNL_OK && !app->quit) {
+    while (status == PNL_OK && !app->quit && app->views_len >= min_views) {
         int input;
 
         if (pnl_term_resized())
@@ -378,10 +391,11 @@ int pnl_run_interactive(pnl_app_t *app)
     app->running = 1;
     app->quit = 0;
     app->selected = 0;
+    app->menu_top = 0;
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);
-    status = pnl_loop(app);
+    status = pnl_loop(app, 0);
     app->running = 0;
     pnl_term_leave(&app->term);
     pnl_views_drop(app);

@@ -109,6 +109,101 @@ void pnl_cli_log(const pnl_app_t *app, const char *line)
     fflush(stdout);
 }
 
+int pnl_cli_read_line(const char *prompt, char *text, size_t text_len)
+{
+    size_t len;
+    int c;
+
+    if (pnl_term_stdin_is_tty()) {
+        fprintf(stderr, "%s", prompt);
+        fflush(stderr);
+    }
+    fflush(stdout);
+    if (fgets(text, (int)(text_len > 4096 ? 4096 : text_len), stdin) == NULL)
+        return 0;
+    len = strlen(text);
+    if (len > 0 && text[len - 1] == '\n') {
+        text[--len] = '\0';
+        if (len > 0 && text[len - 1] == '\r')
+            text[--len] = '\0';
+        return 1;
+    }
+    while ((c = getchar()) != EOF && c != '\n')
+        ;
+    return 1;
+}
+
+static const char *pnl_cli_cell(const char *const *headers, size_t columns, const char *const *cells, size_t row,
+                                size_t column)
+{
+    const char *text = row == 0 ? headers[column] : cells[(row - 1) * columns + column];
+
+    return text ? text : "";
+}
+
+static void pnl_cli_table_json(const char *const *headers, size_t columns, const char *const *cells, size_t rows)
+{
+    size_t r;
+    size_t c;
+
+    putchar('[');
+    for (r = 1; r <= rows; r++) {
+        printf(r > 1 ? ",{" : "{");
+        for (c = 0; c < columns; c++) {
+            if (c > 0)
+                putchar(',');
+            pnl_json_string(pnl_cli_cell(headers, columns, cells, 0, c));
+            putchar(':');
+            pnl_json_string(pnl_cli_cell(headers, columns, cells, r, c));
+        }
+        putchar('}');
+    }
+    printf("]\n");
+}
+
+static int pnl_cli_column_width(const char *const *headers, size_t columns, const char *const *cells, size_t rows,
+                                size_t column)
+{
+    int width = 0;
+    size_t r;
+
+    for (r = 0; r <= rows; r++) {
+        int w = pnl_text_width(pnl_cli_cell(headers, columns, cells, r, column));
+
+        width = w > width ? w : width;
+    }
+    return width;
+}
+
+int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows)
+{
+    int *widths;
+    size_t r;
+    size_t c;
+
+    if (app->cli_json) {
+        pnl_cli_table_json(headers, columns, cells, rows);
+        return PNL_OK;
+    }
+    widths = pnl_mem_alloc(&app->mem, columns * sizeof(*widths));
+    if (widths == NULL)
+        return PNL_ERR_NOMEM;
+    for (c = 0; c < columns; c++)
+        widths[c] = pnl_cli_column_width(headers, columns, cells, rows, c);
+    for (r = 0; r <= rows; r++) {
+        for (c = 0; c < columns; c++) {
+            const char *text = pnl_cli_cell(headers, columns, cells, r, c);
+            int pad = c + 1 < columns ? widths[c] - pnl_text_width(text) + 2 : 0;
+
+            printf("%s%*s", text, pad, "");
+        }
+        putchar('\n');
+    }
+    fflush(stdout);
+    pnl_mem_free(&app->mem, widths);
+    return PNL_OK;
+}
+
 static void pnl_cli_status(pnl_app_t *app)
 {
     size_t i;
@@ -151,7 +246,7 @@ static void pnl_cli_help(const pnl_app_t *app, const char *program, FILE *out)
     char command[PNL_COMMAND_MAX];
     size_t i;
 
-    fprintf(out, "usage: %s [command] [--json]\n\n%s\n\ncommands:\n", program, app->title);
+    fprintf(out, "usage: %s [command] [--json] [--yes]\n\n%s\n\ncommands:\n", program, app->title);
     fprintf(out, "  %-20s %s\n", "status", "show the status lines");
     for (i = 0; i < app->actions_len; i++) {
         pnl_command_of(app->actions[i].label, command);
@@ -178,6 +273,7 @@ struct pnl_args {
     const char *command;
     int help;
     int json;
+    int yes;
     const char *bad;
 };
 
@@ -193,6 +289,8 @@ static void pnl_parse_args(int argc, char **argv, struct pnl_args *args)
             args->help = 1;
         else if (strcmp(arg, "--json") == 0)
             args->json = 1;
+        else if (strcmp(arg, "--yes") == 0 || strcmp(arg, "-y") == 0)
+            args->yes = 1;
         else if (arg[0] == '-' || args->command != NULL)
             args->bad = args->bad ? args->bad : arg;
         else
@@ -267,6 +365,7 @@ int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code)
     }
     app->cli = 1;
     app->cli_json = args.json;
+    app->cli_yes = args.yes;
     app->cli_color = !args.json && pnl_wants_color();
     app->cli_worst = PNL_MARK_OK;
     app->cli_needs_tty = 0;
