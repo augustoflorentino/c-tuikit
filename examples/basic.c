@@ -135,6 +135,73 @@ static void backup(void *ctx, pnl_app_t *app)
     pnl_task_run(app, "backup", copy_files, NULL);
 }
 
+static void restart(void *ctx, pnl_app_t *app)
+{
+    struct service *svc = ctx;
+    int yes = 0;
+
+    if (pnl_confirm(app, "restart the service now?", &yes) != PNL_OK || !yes)
+        return;
+    svc->running = 1;
+    svc->started = (long)time(NULL);
+    pnl_result(app, PNL_MARK_OK, "service restarted");
+}
+
+static void rename_service(void *ctx, pnl_app_t *app)
+{
+    char name[64] = "demo";
+    char line[96];
+    int ok = 0;
+
+    (void)ctx;
+    if (pnl_input(app, "new name for the service", name, sizeof(name), &ok) != PNL_OK || !ok)
+        return;
+    snprintf(line, sizeof(line), "renamed to '%s'", name);
+    pnl_result(app, PNL_MARK_OK, line);
+}
+
+static void choose_profile(void *ctx, pnl_app_t *app)
+{
+    static const char *const profiles[] = {"development", "staging", "production", "production-eu",
+                                           "production-us", "benchmark", "local"};
+    char line[96];
+    size_t index = 0;
+    int ok = 0;
+
+    (void)ctx;
+    if (pnl_pick(app, "profile", profiles, sizeof(profiles) / sizeof(profiles[0]), &index, &ok) != PNL_OK || !ok)
+        return;
+    snprintf(line, sizeof(line), "profile set to %s", profiles[index]);
+    pnl_result(app, PNL_MARK_OK, line);
+}
+
+static void show_log(void *ctx, pnl_app_t *app)
+{
+    char text[200 * 64];
+    size_t len = 0;
+    int i;
+
+    (void)ctx;
+    for (i = 1; i <= 200; i++) {
+        len += (size_t)snprintf(text + len, sizeof(text) - len, "12:%02d:%02d\t%s request %d\n", i / 60, i % 60,
+                                i % 17 == 0 ? "error" : "info ", i);
+    }
+    pnl_pager(app, "log", text, len);
+}
+
+static void processes(void *ctx, pnl_app_t *app)
+{
+    static const char *const headers[] = {"pid", "name", "cpu %", "memory"};
+    static const char *const cells[] = {
+        "812",  "worker",    "12.5", "220 MB", "77",   "scheduler", "0.4", "48 MB",
+        "1290", "http",      "33.0", "512 MB", "4",    "init",      "0.0", "8 MB",
+        "2001", "cache",     "7.1",  "1.2 GB", "1555", "indexer",   "98.2", "640 MB",
+    };
+
+    (void)ctx;
+    pnl_table(app, "processes", headers, 4, cells, 6);
+}
+
 static void print_lines(void *ctx)
 {
     (void)ctx;
@@ -167,6 +234,16 @@ int main(int argc, char **argv)
         status = pnl_app_add_action(app, "Watch live", watch_live, &svc);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Back up", backup, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Restart", restart, &svc);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Rename", rename_service, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Choose profile", choose_profile, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Show log", show_log, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Processes", processes, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Print something", print_something, NULL);
     if (status == PNL_OK)

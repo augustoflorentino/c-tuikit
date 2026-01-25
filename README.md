@@ -22,6 +22,8 @@ up/down: move  enter: choose  q: quit
 - an action may leave a result, open a live screen of its own, or hand the terminal back
   (`pnl_app_with_terminal`) to print or start other programs
 - slow work runs on a thread with progress, a log and esc to cancel (`pnl_task_run`)
+- ready-made screens: confirmation, text input, filterable pick list, pager with search and a
+  sortable table; each one degrades to plain stdin and stdout on the command line
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - no dependencies besides threads; POSIX terminals today, Windows console planned
 

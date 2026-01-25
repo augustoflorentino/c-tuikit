@@ -230,6 +230,29 @@ static void task_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_task_run(app, "count", counting_work, &steps_counted) == PNL_OK);
 }
 
+static void components_action(void *ctx, pnl_app_t *app)
+{
+    static const char *const items[] = {"alpha", "beta"};
+    static const char *const headers[] = {"name", "size"};
+    static const char *const cells[] = {"a", "10", "b", NULL};
+    int *answers = ctx;
+    char text[8] = "x";
+    size_t index = 9;
+    int ok = 1;
+
+    CHECK(pnl_confirm(app, "sure?", &answers[0]) == PNL_OK);
+    CHECK(pnl_input(app, "name", text, sizeof(text), &ok) == PNL_OK && !ok);
+    CHECK(pnl_pick(app, "pick", items, 2, &index, &ok) == PNL_OK && !ok && index == 0);
+    CHECK(pnl_pager(app, "text", "one\ttwo\nthree", 13) == PNL_OK);
+    CHECK(pnl_pager(app, "empty", NULL, 0) == PNL_OK);
+    CHECK(pnl_table(app, "table", headers, 2, cells, 2) == PNL_OK);
+    CHECK(pnl_table(app, "table", headers, 2, cells, 0) == PNL_OK);
+    CHECK(pnl_pick(app, "pick", items, 0, &index, &ok) == PNL_ERR_ARG);
+    CHECK(pnl_table(app, "table", headers, 0, cells, 1) == PNL_ERR_ARG);
+    CHECK(pnl_input(app, "name", text, 0, &ok) == PNL_ERR_ARG);
+    answers[1] = 1;
+}
+
 static int run_cli(pnl_app_t *app, char *a, char *b)
 {
     char *argv[] = {"demo", a, b, NULL};
@@ -242,7 +265,14 @@ static int run_cli(pnl_app_t *app, char *a, char *b)
 
 static void test_cli(void)
 {
+    int answers[2] = {0, 0};
     pnl_app_t *app = NULL;
+
+#if defined(_WIN32)
+    CHECK(freopen("NUL", "r", stdin) != NULL);
+#else
+    CHECK(freopen("/dev/null", "r", stdin) != NULL);
+#endif
 
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_status(app, wait_status, NULL, 0) == PNL_OK);
@@ -250,6 +280,7 @@ static void test_cli(void)
     CHECK(pnl_app_add_action(app, "Fail", fail_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Live view", view_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Count", task_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Components", components_action, answers) == PNL_OK);
     CHECK(pnl_task_run(app, "count", counting_work, &steps_counted) == PNL_ERR_ARG);
     CHECK(run_cli(app, "--help", NULL) == 0);
     CHECK(run_cli(app, "status", NULL) == 0);
@@ -262,6 +293,8 @@ static void test_cli(void)
     CHECK(run_cli(app, "fail", "extra") == 2);
     CHECK(run_cli(app, "--bogus", NULL) == 2);
     CHECK(run_cli(app, "count", NULL) == 0 && steps_counted == 3);
+    CHECK(run_cli(app, "components", NULL) == 0 && answers[1] == 1 && answers[0] == 0);
+    CHECK(run_cli(app, "components", "--yes") == 0 && answers[0] == 1);
     pnl_app_destroy(app);
 }
 
@@ -292,6 +325,12 @@ static void test_bad_args(void)
     CHECK(pnl_task_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_task_cancelled(NULL) == 0);
     pnl_task_progress(NULL, 1, 2);
+    {
+        int yes = 0;
+
+        CHECK(pnl_confirm(NULL, "x", &yes) == PNL_ERR_ARG);
+    }
+    CHECK(pnl_pager(NULL, "x", "y", 1) == PNL_ERR_ARG);
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_status(app, noop_status, NULL, -1) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, NULL, noop_action, NULL) == PNL_ERR_ARG);
