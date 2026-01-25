@@ -75,18 +75,37 @@ static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t in
     pnl_canvas_text(canvas, 4, y, PNL_SELECTED_STYLE, label);
 }
 
+static void pnl_menu_scroll(pnl_app_t *app, size_t rows)
+{
+    if (rows == 0)
+        rows = 1;
+    if (app->selected < app->menu_top)
+        app->menu_top = app->selected;
+    if (app->selected >= app->menu_top + rows)
+        app->menu_top = app->selected - rows + 1;
+    if (app->menu_top + rows > app->actions_len + 1)
+        app->menu_top = app->actions_len + 1 > rows ? app->actions_len + 1 - rows : 0;
+}
+
 void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
 {
     size_t i;
     int y = 0;
+    int rows;
 
     pnl_menu_refresh(app);
     for (i = 0; i < app->lines_len; i++)
         pnl_draw_mark(canvas, y++, app->lines[i].mark, app->lines[i].text);
     if (app->lines_len > 0)
         y++;
-    for (i = 0; i <= app->actions_len; i++)
+    rows = pnl_canvas_height(canvas) - y;
+    pnl_menu_scroll(app, rows > 0 ? (size_t)rows : 0);
+    for (i = app->menu_top; i <= app->actions_len && y < pnl_canvas_height(canvas); i++)
         pnl_draw_item(app, canvas, y++, i);
+    if (app->menu_top > 0)
+        pnl_canvas_text(canvas, 0, y - rows, PNL_FG(PNL_COLOR_GRAY), "^");
+    if (i <= app->actions_len)
+        pnl_canvas_text(canvas, 0, y - 1, PNL_FG(PNL_COLOR_GRAY), "v");
 }
 
 int pnl_menu_key(pnl_app_t *app, int key)
