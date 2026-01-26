@@ -4,6 +4,28 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.6.0 - 2026-01-25
+
+Ready-made screens for what most tools end up writing by hand. Each one also works on the command
+line, so an action keeps a single code path.
+
+- `pnl_confirm`: yes or no; on the command line it asks on the terminal, or needs `--yes` (`-y`)
+- `pnl_input`: one line of text with cursor, home/end, ctrl-u and ctrl-w; reads a line from stdin
+  on the command line
+- `pnl_pick`: a list filtered as you type; on the command line it takes a number or the exact item
+- `pnl_pager`: long text with scrolling and `/` search (`n` and `N` for the next and previous
+  match); printed as is on the command line
+- `pnl_table`: rows with a sortable column (numbers sort as numbers); aligned text or `--json` on
+  the command line
+- `pnl_confirm`, `pnl_input` and `pnl_pick` wait for the answer and return it, while timers and
+  tasks keep running behind them
+- new keys: `PNL_KEY_PAGE_UP`, `PNL_KEY_PAGE_DOWN`, `PNL_KEY_HOME`, `PNL_KEY_END`,
+  `PNL_KEY_BACKSPACE`, `PNL_KEY_DELETE`
+
+### Fixed
+
+- a menu taller than the terminal scrolls instead of losing its last items
+
 ## 0.5.0 - 2026-01-13
 
 Slow work no longer freezes the panel. An action hands a function to `pnl_task_run`, which runs it
