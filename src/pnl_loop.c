@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#define PNL_MENU_FOOTER "up/down: move  enter: choose  q: quit"
+#define PNL_MENU_FOOTER "up/down: move  enter: choose  ?: help  q: quit"
 #define PNL_VIEW_FOOTER "esc: back"
 #define PNL_TITLE_STYLE PNL_BOLD
 #define PNL_FOOTER_STYLE PNL_FG(PNL_COLOR_GRAY)
@@ -57,6 +57,7 @@ int pnl_view_pop(pnl_app_t *app)
         return PNL_ERR_NOT_FOUND;
     view = app->views[--app->views_len];
     pnl_mem_free(&app->mem, view.title);
+    pnl_mem_free(&app->mem, view.hints);
     if (view.drop_fn != NULL)
         view.drop_fn(app, view.ctx);
     app->dirty = 1;
@@ -74,6 +75,39 @@ int pnl_view_modal(pnl_app_t *app, struct pnl_view *view)
     while (app->views_len > depth)
         pnl_view_pop(app);
     return status;
+}
+
+int pnl_view_set_hints(pnl_app_t *app, const char *hints)
+{
+    struct pnl_view *top;
+    char *copy;
+
+    if (app == NULL || hints == NULL)
+        return PNL_ERR_ARG;
+    if (app->views_len == 0)
+        return PNL_ERR_NOT_FOUND;
+    copy = pnl_mem_copy(&app->mem, hints);
+    if (copy == NULL)
+        return PNL_ERR_NOMEM;
+    top = &app->views[app->views_len - 1];
+    pnl_mem_free(&app->mem, top->hints);
+    top->hints = copy;
+    app->dirty = 1;
+    return PNL_OK;
+}
+
+const char *pnl_view_hints(const pnl_app_t *app)
+{
+    const struct pnl_view *top;
+
+    if (app->views_len == 0)
+        return NULL;
+    top = &app->views[app->views_len - 1];
+    if (top->footer_ref != NULL)
+        return *top->footer_ref;
+    if (top->hints != NULL)
+        return top->hints;
+    return top->footer != NULL ? top->footer : PNL_VIEW_FOOTER;
 }
 
 void pnl_views_drop(pnl_app_t *app)
@@ -284,7 +318,7 @@ static int pnl_draw(pnl_app_t *app)
     else
         pnl_menu_draw(app, &canvas);
     if (top != NULL)
-        footer = top->footer_ref ? *top->footer_ref : top->footer ? top->footer : PNL_VIEW_FOOTER;
+        footer = pnl_view_hints(app);
     pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
     app->dirty = 0;
     return pnl_screen_render(&app->screen, &app->mem);
@@ -299,14 +333,18 @@ static void pnl_dispatch_key(pnl_app_t *app, int key)
         app->quit = 1;
         return;
     }
-    if (app->views_len == 0) {
-        pnl_menu_key(app, key);
+    if (app->views_len == 0 && pnl_menu_key(app, key))
         return;
+    if (app->views_len > 0) {
+        top = app->views[app->views_len - 1];
+        if (top.key_fn != NULL && top.key_fn(top.ctx, app, key))
+            return;
     }
-    top = app->views[app->views_len - 1];
-    if (top.key_fn != NULL && top.key_fn(top.ctx, app, key))
-        return;
-    if (key == 'q' || key == PNL_KEY_ESCAPE)
+    if (key == '?')
+        pnl_help(app);
+    else if (key == ':')
+        pnl_palette(app);
+    else if (app->views_len > 0 && (key == 'q' || key == PNL_KEY_ESCAPE))
         pnl_view_pop(app);
 }
 

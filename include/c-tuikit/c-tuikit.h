@@ -104,6 +104,7 @@ PNL_API int pnl_app_unwatch_fd(pnl_app_t *app, int fd);
 PNL_API int pnl_app_with_terminal(pnl_app_t *app, pnl_terminal_fn terminal_fn, void *terminal_ctx);
 PNL_API int pnl_view_push(pnl_app_t *app, const char *title, pnl_draw_fn draw_fn, pnl_key_fn key_fn, void *view_ctx);
 PNL_API int pnl_view_pop(pnl_app_t *app);
+PNL_API int pnl_view_set_hints(pnl_app_t *app, const char *hints);
 PNL_API int pnl_task_run(pnl_app_t *app, const char *title, pnl_work_fn work_fn, void *work_ctx);
 PNL_API void pnl_task_progress(pnl_task_t *task, unsigned long long done, unsigned long long total);
 PNL_API int pnl_task_step(pnl_task_t *task, const char *text);

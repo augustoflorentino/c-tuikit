@@ -119,6 +119,7 @@ typedef void (*pnl_drop_fn)(pnl_app_t *app, void *ctx);
 
 struct pnl_view {
     char *title;
+    char *hints;
     const char *footer;
     const char *const *footer_ref;
     pnl_draw_fn draw_fn;
@@ -212,6 +213,9 @@ PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);
 PNL_INTERNAL int pnl_text_contains(const char *text, const char *needle);
 
 PNL_INTERNAL void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas);
+PNL_INTERNAL void pnl_help(pnl_app_t *app);
+PNL_INTERNAL const char *pnl_view_hints(const pnl_app_t *app);
+PNL_INTERNAL void pnl_palette(pnl_app_t *app);
 PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
 PNL_INTERNAL void pnl_menu_refresh(pnl_app_t *app);

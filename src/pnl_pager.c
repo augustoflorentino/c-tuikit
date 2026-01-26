@@ -199,9 +199,10 @@ static int pnl_pager_key(void *ctx, pnl_app_t *app, int key)
     }
     if (key == 'q' || key == PNL_KEY_ESCAPE)
         return 0;
-    if (key == PNL_KEY_UP || key == PNL_KEY_DOWN || key == 'j' || key == 'k' || key == ' ' || key == 'g' ||
-        key == 'G' || (key >= PNL_KEY_PAGE_UP && key <= PNL_KEY_END))
-        pnl_pager_scroll(pager, key);
+    if (key != PNL_KEY_UP && key != PNL_KEY_DOWN && key != 'j' && key != 'k' && key != ' ' && key != 'g' &&
+        key != 'G' && (key < PNL_KEY_PAGE_UP || key > PNL_KEY_END))
+        return 0;
+    pnl_pager_scroll(pager, key);
     return 1;
 }
 
