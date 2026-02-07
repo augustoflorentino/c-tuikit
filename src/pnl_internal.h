@@ -53,6 +53,7 @@ struct pnl_screen {
 
 struct pnl_term {
     int active;
+    unsigned int surrogate;
     unsigned char input[PNL_INPUT_MAX];
     size_t input_len;
 };
