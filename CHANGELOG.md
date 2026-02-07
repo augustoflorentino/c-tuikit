@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.7.0 - 2026-02-07
+
+Nothing to memorize: every screen can say what its keys do, and the actions can be reached in more
+than one way.
+
+- `?` opens a help screen built from the key hints of the current screen plus the keys that work
+  everywhere
+- `pnl_view_set_hints` gives a view of your own its footer and help, as `"r: reload  esc: back"`
+- `:` opens a palette with every action, filtered as you type
+- in the menu, `1` to `9` run the action with that number, a letter jumps to the next action
+  starting with it, home/end and page up/down go to the first and last item
+- keys a view does not handle reach the global ones, so the pager and the table also answer `?`
+
 ## 0.6.0 - 2026-01-25
 
 Ready-made screens for what most tools end up writing by hand. Each one also works on the command
