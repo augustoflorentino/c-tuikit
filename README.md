@@ -10,15 +10,16 @@ service - demo
   ok  config file found
   ok  service running for 42s
 
-  > Start
-    Stop
-    Quit
+  > 1 Start
+    2 Stop
+    q Quit
 
-up/down: move  enter: choose  q: quit
+up/down: move  enter: choose  ?: help  q: quit
 ```
 
 - status lines with a mark (`ok`, `..`, `!!`) refreshed on a timer while the panel waits for a key
-- actions chosen with the arrow keys (or `j`/`k`) and enter
+- actions chosen with the arrow keys (or `j`/`k`) and enter, by number, by first letter, or by
+  name with `:`; `?` lists the keys of the current screen
 - an action may leave a result, open a live screen of its own, or hand the terminal back
   (`pnl_app_with_terminal`) to print or start other programs
 - slow work runs on a thread with progress, a log and esc to cancel (`pnl_task_run`)

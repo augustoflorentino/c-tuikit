@@ -92,6 +92,10 @@ static int live_key(void *ctx, pnl_app_t *app, int key)
 {
     struct service *svc = ctx;
 
+    if (key == 'r') {
+        svc->ticks = 0;
+        return 1;
+    }
     if (key != 'q' && key != PNL_KEY_ESCAPE)
         return 0;
     pnl_app_remove_timer(app, svc->ticker);
@@ -104,8 +108,10 @@ static void watch_live(void *ctx, pnl_app_t *app)
     struct service *svc = ctx;
 
     svc->ticks = 0;
-    if (pnl_app_add_timer(app, 100, tick, svc, &svc->ticker) == PNL_OK)
-        pnl_view_push(app, "live", draw_live, live_key, svc);
+    if (pnl_app_add_timer(app, 100, tick, svc, &svc->ticker) != PNL_OK)
+        return;
+    if (pnl_view_push(app, "live", draw_live, live_key, svc) == PNL_OK)
+        pnl_view_set_hints(app, "r: reset the counter  esc: back");
 }
 
 static void copy_files(void *ctx, pnl_task_t *task)

@@ -169,7 +169,11 @@ static void test_loop_parts(void)
     CHECK(pnl_app_unwatch_fd(app, 0) == PNL_OK);
     CHECK(pnl_app_unwatch_fd(app, 0) == PNL_ERR_NOT_FOUND);
 #endif
+    CHECK(pnl_view_set_hints(app, "x: y") == PNL_ERR_NOT_FOUND);
     CHECK(pnl_view_push(app, "live", noop_draw, NULL, NULL) == PNL_OK);
+    CHECK(pnl_view_set_hints(app, "r: reload  esc: back") == PNL_OK);
+    CHECK(pnl_view_set_hints(app, "r: reload") == PNL_OK);
+    CHECK(pnl_view_set_hints(app, NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_push(app, NULL, noop_draw, NULL, NULL) == PNL_OK);
     CHECK(pnl_view_pop(app) == PNL_OK);
     CHECK(pnl_app_with_terminal(app, count_call, &calls) == PNL_OK && calls == 1);
