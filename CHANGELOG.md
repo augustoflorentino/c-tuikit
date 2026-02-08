@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.8.0 - 2026-02-07
+
+The panel opens on the Windows console and on macOS, not only on Linux.
+
+- Windows 10 or later: the console is switched to virtual terminal mode, so the same screen code
+  and key decoder serve both; input and output use UTF-8 and the previous modes come back on exit
+  or when the console closes
+- tasks use Windows threads there
+- `pnl_app_watch_fd` returns `PNL_ERR_UNSUPPORTED` on Windows, as before; ctrl-z does nothing
+  there
+- marks and progress on the command line are colored in the Windows console too
+- macOS builds in CI next to Linux and Windows
+
 ## 0.7.0 - 2026-02-07
 
 Nothing to memorize: every screen can say what its keys do, and the actions can be reached in more
