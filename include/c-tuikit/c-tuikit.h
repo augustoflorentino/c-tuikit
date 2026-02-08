@@ -111,6 +111,7 @@ PNL_API int pnl_task_step(pnl_task_t *task, const char *text);
 PNL_API int pnl_task_log(pnl_task_t *task, const char *line);
 PNL_API int pnl_task_cancelled(pnl_task_t *task);
 PNL_API int pnl_task_result(pnl_task_t *task, int mark, const char *text);
+PNL_API int pnl_task_then(pnl_task_t *task, pnl_action_fn then_fn, void *then_ctx);
 PNL_API int pnl_confirm(pnl_app_t *app, const char *question, int *out_yes);
 PNL_API int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t text_len, int *out_ok);
 PNL_API int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len,

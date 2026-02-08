@@ -96,6 +96,7 @@ static int pnl_confirm_cli(pnl_app_t *app, const char *question, int *out_yes)
         return PNL_OK;
     if (!pnl_term_stdin_is_tty()) {
         fprintf(stderr, "%s not confirmed: pass --yes\n", question);
+        app->cli_worst = PNL_MARK_FAIL;
         return PNL_OK;
     }
     snprintf(prompt, sizeof(prompt), "%s [y/N] ", question);

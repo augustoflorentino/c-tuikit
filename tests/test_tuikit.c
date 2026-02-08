@@ -213,9 +213,21 @@ static void wait_status(void *ctx, pnl_app_t *app)
     pnl_status_line(app, PNL_MARK_WAIT, "warming up");
 }
 
+static int then_calls;
+
+static void count_then(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    (void)app;
+    then_calls++;
+}
+
 static void counting_work(void *ctx, pnl_task_t *task)
 {
     int *steps = ctx;
+
+    CHECK(pnl_task_then(task, count_then, NULL) == PNL_OK);
+    CHECK(pnl_task_then(task, NULL, NULL) == PNL_ERR_ARG);
 
     CHECK(pnl_task_step(task, "counting") == PNL_OK);
     for (*steps = 0; *steps < 3 && !pnl_task_cancelled(task); (*steps)++) {
@@ -296,8 +308,8 @@ static void test_cli(void)
     CHECK(run_cli(app, "nope", NULL) == 2);
     CHECK(run_cli(app, "fail", "extra") == 2);
     CHECK(run_cli(app, "--bogus", NULL) == 2);
-    CHECK(run_cli(app, "count", NULL) == 0 && steps_counted == 3);
-    CHECK(run_cli(app, "components", NULL) == 0 && answers[1] == 1 && answers[0] == 0);
+    CHECK(run_cli(app, "count", NULL) == 0 && steps_counted == 3 && then_calls == 1);
+    CHECK(run_cli(app, "components", NULL) == 1 && answers[1] == 1 && answers[0] == 0);
     CHECK(run_cli(app, "components", "--yes") == 0 && answers[0] == 1);
     pnl_app_destroy(app);
 }

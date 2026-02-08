@@ -18,6 +18,8 @@ struct pnl_task {
     struct pnl_lock lock;
     int threaded;
     int joined;
+    pnl_action_fn then_fn;
+    void *then_ctx;
     long long started_ms;
     const char *footer;
     unsigned long long done;
@@ -133,6 +135,15 @@ int pnl_task_result(pnl_task_t *task, int mark, const char *text)
     return PNL_OK;
 }
 
+int pnl_task_then(pnl_task_t *task, pnl_action_fn then_fn, void *then_ctx)
+{
+    if (task == NULL || then_fn == NULL)
+        return PNL_ERR_ARG;
+    task->then_fn = then_fn;
+    task->then_ctx = then_ctx;
+    return PNL_OK;
+}
+
 static void pnl_task_main(void *arg)
 {
     pnl_task_t *task = arg;
@@ -151,6 +162,8 @@ static void pnl_task_join(pnl_task_t *task)
     task->joined = 1;
     task->app->tasks_running--;
     task->footer = PNL_FOOTER_DONE;
+    if (task->then_fn != NULL)
+        task->then_fn(task->then_ctx, task->app);
 }
 
 static void pnl_task_draw_progress(pnl_task_t *task, pnl_canvas_t *canvas, int y)
@@ -247,6 +260,8 @@ static void pnl_task_drop(pnl_app_t *app, void *ctx)
 static int pnl_task_cli_run(pnl_app_t *app, pnl_task_t *task)
 {
     task->fn(task->ctx, task);
+    if (task->then_fn != NULL)
+        task->then_fn(task->then_ctx, app);
     if (pnl_term_stderr_is_tty())
         fputs("\r\x1b[K", stderr);
     fflush(stdout);
