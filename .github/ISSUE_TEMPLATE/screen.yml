@@ -1,0 +1,40 @@
+name: Something draws wrong
+description: Misaligned columns, wrong colors, keys that do nothing, a screen that flickers
+labels: [drawing]
+body:
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal and multiplexer
+      description: For example "kitty 0.39, inside tmux 3.5" or "Windows Terminal 1.22"
+    validations:
+      required: true
+  - type: input
+    id: term
+    attributes:
+      label: TERM, COLORTERM and the window size
+      placeholder: TERM=xterm-256color COLORTERM=truecolor 120x40
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: c-tuikit version and OS
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What you see and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: recording
+    attributes:
+      label: Recording
+      description: Run the tool with TUIKIT_RECORD=bug.cast and attach the file. It holds exactly what was drawn, so the bug can be replayed here.
+  - type: textarea
+    id: switches
+    attributes:
+      label: Does a switch change it?
+      description: TUIKIT_MOTION=off, TUIKIT_MOUSE=off, TUIKIT_LINEAR=on, TUIKIT_BACKGROUND=dark or light

@@ -1,0 +1,19 @@
+name: A screen or a component you are missing
+description: Something you had to draw by hand that the library could do for you
+labels: [idea]
+body:
+  - type: textarea
+    id: tool
+    attributes:
+      label: The tool you are building
+      description: What it does and who runs it, in a sentence or two
+    validations:
+      required: true
+  - type: textarea
+    id: missing
+    attributes:
+      label: What you had to work around
+      description: A sketch of the screen in plain text helps more than a long description
+      render: text
+    validations:
+      required: true
