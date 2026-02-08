@@ -26,7 +26,7 @@ up/down: move  enter: choose  ?: help  q: quit
 - ready-made screens: confirmation, text input, filterable pick list, pager with search and a
   sortable table; each one degrades to plain stdin and stdout on the command line
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
-- no dependencies besides threads; POSIX terminals today, Windows console planned
+- no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install
 

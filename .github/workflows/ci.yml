@@ -62,8 +62,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: scripts/amalgamate.sh
-      - run: cc -std=c99 -Wall -Wextra -Wpedantic -Werror -Idist tests/single_file.c -o single && ./single
-      - run: cc -std=c99 -Wall -Wextra -Wpedantic -Werror -DPNL_STATIC -Idist tests/single_file.c -o single-static && ./single-static
+      - run: cc -std=c99 -Wall -Wextra -Wpedantic -Werror -Idist tests/single_file.c -o single -pthread && ./single
+      - run: cc -std=c99 -Wall -Wextra -Wpedantic -Werror -DPNL_STATIC -Idist tests/single_file.c -o single-static -pthread && ./single-static
 
   fuzz:
     runs-on: ubuntu-latest
