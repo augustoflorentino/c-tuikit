@@ -61,6 +61,8 @@ endif()
 if(C_TUIKIT_BUILD_EXAMPLES)
     add_executable(tuikit_basic examples/basic.c)
     target_link_libraries(tuikit_basic PRIVATE c-tuikit)
+    add_executable(tuikit_deploy examples/deploy.c)
+    target_link_libraries(tuikit_deploy PRIVATE c-tuikit)
 endif()
 
 if(C_TUIKIT_BUILD_FUZZ)

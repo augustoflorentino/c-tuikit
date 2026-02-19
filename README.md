@@ -89,8 +89,9 @@ panel; otherwise it prints the status lines, which makes the tool usable in scri
 Work given to `pnl_task_run` runs on a thread in the panel and in the foreground on the command
 line, so the same function serves both.
 
-See [`examples/basic.c`](examples/basic.c). The header `include/c-tuikit/c-tuikit.h` is the
-API reference.
+See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
+[`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be. The
+header `include/c-tuikit/c-tuikit.h` is the API reference.
 
 Conventions:
 
