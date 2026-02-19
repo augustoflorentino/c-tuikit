@@ -4,6 +4,24 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.1.0 - 2026-02-19
+
+Colors by meaning instead of by name, adapted to what the terminal can show.
+
+- role colors usable wherever a color goes (`PNL_FG`, `PNL_BG`): `PNL_ROLE_ACCENT`, `PNL_ROLE_OK`,
+  `PNL_ROLE_WARN`, `PNL_ROLE_FAIL`, `PNL_ROLE_MUTED`, `PNL_ROLE_INFO`, `PNL_ROLE_SURFACE`
+- each role is drawn in true color when `COLORTERM` says so, from the 256-color palette when
+  `TERM` has `256color`, and with the 16 basic colors otherwise; the 16 named colors stay as they
+  were, following the terminal's own palette
+- `NO_COLOR` or `TERM=dumb` turn colors off; backgrounds become reverse video, so bars stay visible
+- `pnl_color_depth` tells which of these applies: 0, 16, 256 or 16777216 colors
+- the built-in screens use roles: marks, footer, selection marker, progress bars
+
+### Fixed
+
+- the ABI check compares only types reachable from the public header; the 1.0.0 baseline was
+  regenerated that way
+
 ## 1.0.0 - 2026-02-19
 
 The API is stable. Nothing changes for code written against 0.9; from here on, everything in
