@@ -4,6 +4,18 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 0.9.0 - 2026-02-19
+
+Polish before 1.0, and a second example.
+
+- `pnl_task_then` registers a function that runs on the panel's thread once the work returns, the
+  safe place to update state the status callback reads
+- `examples/deploy.c`: a deploy tool with a confirmation, a task with steps, a target picker, a
+  table of releases and a pager, usable as `deploy`, `deploy deploy --yes` or `deploy releases
+  --json`
+- on the command line, a confirmation that could not be asked (no terminal, no `--yes`) makes the
+  exit code 1
+
 ## 0.8.0 - 2026-02-07
 
 The panel opens on the Windows console and on macOS, not only on Linux.
