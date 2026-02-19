@@ -224,7 +224,7 @@ static void pnl_pick_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     size_t i;
 
     (void)app;
-    pnl_canvas_text(canvas, 2, 0, PNL_FG(PNL_COLOR_GRAY), "filter:");
+    pnl_canvas_text(canvas, 2, 0, PNL_FG(PNL_ROLE_MUTED), "filter:");
     pnl_edit_draw(&view->edit, canvas, 10, 0, pnl_canvas_width(canvas) - 12, 1);
     if (rows <= 0)
         return;
@@ -240,7 +240,7 @@ static void pnl_pick_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
         pnl_canvas_text(canvas, 4, y, selected ? PNL_BOLD : 0, view->items[view->shown[i]]);
     }
     if (view->shown_len == 0)
-        pnl_canvas_text(canvas, 4, 2, PNL_FG(PNL_COLOR_GRAY), "no match");
+        pnl_canvas_text(canvas, 4, 2, PNL_FG(PNL_ROLE_MUTED), "no match");
 }
 
 static void pnl_pick_move(struct pnl_pick_view *view, int key)

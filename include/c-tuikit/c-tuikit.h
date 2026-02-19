@@ -72,6 +72,14 @@ extern "C" {
 #define PNL_COLOR_BRIGHT_CYAN 15
 #define PNL_COLOR_BRIGHT_WHITE 16
 
+#define PNL_ROLE_ACCENT 32
+#define PNL_ROLE_OK 33
+#define PNL_ROLE_WARN 34
+#define PNL_ROLE_FAIL 35
+#define PNL_ROLE_MUTED 36
+#define PNL_ROLE_INFO 37
+#define PNL_ROLE_SURFACE 38
+
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
@@ -123,6 +131,7 @@ PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);
 PNL_API void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int style);
+PNL_API int pnl_color_depth(void);
 PNL_API int pnl_text_width(const char *text);
 PNL_API size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key);
 PNL_API const char *pnl_strerror(int status);

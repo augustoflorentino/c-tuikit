@@ -47,7 +47,7 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
 void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 {
     static const char *const marks[] = {"ok", "..", "!!"};
-    static const int colors[] = {PNL_COLOR_GREEN, PNL_COLOR_YELLOW, PNL_COLOR_RED};
+    static const int colors[] = {PNL_ROLE_OK, PNL_ROLE_WARN, PNL_ROLE_FAIL};
 
     pnl_canvas_text(canvas, 2, y, PNL_FG(colors[mark]), marks[mark]);
     pnl_canvas_text(canvas, 6, y, 0, text);
@@ -74,8 +74,8 @@ static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t in
     else if (index == app->actions_len)
         number[0] = 'q';
     if (index == app->selected)
-        pnl_canvas_text(canvas, 2, y, style, ">");
-    pnl_canvas_text(canvas, 4, y, PNL_FG(PNL_COLOR_GRAY), number);
+        pnl_canvas_text(canvas, 2, y, style | PNL_FG(PNL_ROLE_ACCENT), ">");
+    pnl_canvas_text(canvas, 4, y, PNL_FG(PNL_ROLE_MUTED), number);
     pnl_canvas_text(canvas, 6, y, style, label);
 }
 
@@ -107,9 +107,9 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     for (i = app->menu_top; i <= app->actions_len && y < pnl_canvas_height(canvas); i++)
         pnl_draw_item(app, canvas, y++, i);
     if (app->menu_top > 0)
-        pnl_canvas_text(canvas, 0, y - rows, PNL_FG(PNL_COLOR_GRAY), "^");
+        pnl_canvas_text(canvas, 0, y - rows, PNL_FG(PNL_ROLE_MUTED), "^");
     if (i <= app->actions_len)
-        pnl_canvas_text(canvas, 0, y - 1, PNL_FG(PNL_COLOR_GRAY), "v");
+        pnl_canvas_text(canvas, 0, y - 1, PNL_FG(PNL_ROLE_MUTED), "v");
 }
 
 static int pnl_menu_lower(int c)

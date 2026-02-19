@@ -341,11 +341,7 @@ static int pnl_cli_dispatch(pnl_app_t *app, const struct pnl_args *args, const c
 
 static int pnl_wants_color(void)
 {
-    const char *no_color = getenv("NO_COLOR");
-
-    if (no_color != NULL && no_color[0] != '\0')
-        return 0;
-    return pnl_term_stdout_is_tty();
+    return pnl_color_detect() != PNL_DEPTH_NONE && pnl_term_stdout_is_tty();
 }
 
 int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code)

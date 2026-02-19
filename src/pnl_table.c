@@ -95,7 +95,7 @@ static void pnl_table_draw_header(struct pnl_table *table, pnl_canvas_t *canvas)
         int end = pnl_canvas_clip(canvas, x, 0, table->widths[c], style, table->cells[c]);
 
         if (table->sorted && c == table->sorted_by)
-            pnl_canvas_text(canvas, end, 0, PNL_FG(PNL_COLOR_GRAY), table->descending ? " v" : " ^");
+            pnl_canvas_text(canvas, end, 0, PNL_FG(PNL_ROLE_MUTED), table->descending ? " v" : " ^");
         x += table->widths[c] + PNL_TABLE_GAP;
     }
 }

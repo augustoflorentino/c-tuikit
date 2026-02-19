@@ -85,7 +85,7 @@ static void draw_live(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     (void)app;
     snprintf(line, sizeof(line), "%d ticks of 100 ms", svc->ticks);
     pnl_canvas_text(canvas, 2, 0, 0, line);
-    pnl_canvas_fill(canvas, 2, 2, filled, 1, PNL_BG(PNL_COLOR_CYAN));
+    pnl_canvas_fill(canvas, 2, 2, filled, 1, PNL_BG(PNL_ROLE_ACCENT));
 }
 
 static int live_key(void *ctx, pnl_app_t *app, int key)

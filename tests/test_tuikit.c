@@ -182,6 +182,13 @@ static void test_loop_parts(void)
     pnl_app_destroy(app);
 }
 
+static void test_colors(void)
+{
+    int depth = pnl_color_depth();
+
+    CHECK(depth == 0 || depth == 16 || depth == 256 || depth == 16777216);
+}
+
 static void test_canvas_and_width(void)
 {
     CHECK(pnl_text_width("abc") == 3);
@@ -403,6 +410,7 @@ int main(void)
     test_no_terminal();
     test_loop_parts();
     test_cli();
+    test_colors();
     test_canvas_and_width();
     test_bad_args();
     test_alloc_failure();

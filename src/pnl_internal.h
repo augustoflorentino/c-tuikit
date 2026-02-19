@@ -24,6 +24,10 @@
 #define PNL_KEY_CTRL_C 3
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
+#define PNL_DEPTH_NONE 0
+#define PNL_DEPTH_16 1
+#define PNL_DEPTH_256 2
+#define PNL_DEPTH_TRUE 3
 
 #define PNL_STYLE_ATTRS(style) ((uint32_t)(style) & 0xffu)
 #define PNL_STYLE_FG(style) (((uint32_t)(style) >> 8) & 0xffu)
@@ -44,6 +48,7 @@ struct pnl_screen {
     int width;
     int height;
     int front_valid;
+    int depth;
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;
@@ -204,6 +209,9 @@ PNL_INTERNAL int pnl_lock_init(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_lock_destroy(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_lock(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_unlock(struct pnl_lock *lock);
+
+PNL_INTERNAL int pnl_color_detect(void);
+PNL_INTERNAL int pnl_color_ink(char *buf, unsigned ink, int background, int depth);
 
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);

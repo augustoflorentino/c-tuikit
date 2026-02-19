@@ -5,7 +5,7 @@
 #define PNL_MENU_FOOTER "up/down: move  enter: choose  ?: help  q: quit"
 #define PNL_VIEW_FOOTER "esc: back"
 #define PNL_TITLE_STYLE PNL_BOLD
-#define PNL_FOOTER_STYLE PNL_FG(PNL_COLOR_GRAY)
+#define PNL_FOOTER_STYLE PNL_FG(PNL_ROLE_MUTED)
 
 int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
 {
@@ -430,6 +430,7 @@ int pnl_run_interactive(pnl_app_t *app)
     app->quit = 0;
     app->selected = 0;
     app->menu_top = 0;
+    app->screen.depth = pnl_color_detect();
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);

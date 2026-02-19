@@ -122,15 +122,6 @@ static int pnl_out(struct pnl_screen *screen, const struct pnl_mem *mem, const c
     return PNL_OK;
 }
 
-static int pnl_out_ink(char *buf, unsigned ink, int base, int bright)
-{
-    if (ink == PNL_COLOR_DEFAULT)
-        return sprintf(buf, ";%d", base + 9);
-    if (ink <= 8)
-        return sprintf(buf, ";%d", base + (int)ink - 1);
-    return sprintf(buf, ";%d", bright + (int)ink - 9);
-}
-
 static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, uint32_t style)
 {
     char buf[64] = "\x1b[0";
@@ -142,10 +133,12 @@ static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, u
         len += sprintf(buf + len, ";2");
     if (style & PNL_UNDERLINE)
         len += sprintf(buf + len, ";4");
-    if (style & PNL_REVERSE)
+    if ((style & PNL_REVERSE) || (screen->depth == PNL_DEPTH_NONE && PNL_STYLE_BG(style) != PNL_COLOR_DEFAULT))
         len += sprintf(buf + len, ";7");
-    len += pnl_out_ink(buf + len, PNL_STYLE_FG(style), 30, 90);
-    len += pnl_out_ink(buf + len, PNL_STYLE_BG(style), 40, 100);
+    if (screen->depth != PNL_DEPTH_NONE) {
+        len += pnl_color_ink(buf + len, PNL_STYLE_FG(style), 0, screen->depth);
+        len += pnl_color_ink(buf + len, PNL_STYLE_BG(style), 1, screen->depth);
+    }
     buf[len++] = 'm';
     return pnl_out(screen, mem, buf, (size_t)len);
 }
