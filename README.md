@@ -103,7 +103,10 @@ Conventions:
 ## Versioning
 
 Semantic Versioning. Compatible releases bump the minor version; incompatible ones bump the
-major version and the soname. See [CHANGELOG.md](CHANGELOG.md).
+major version and the soname. Since 1.0.0 the API and the ABI of the shared library hold within a
+major version: CI compares every build against the baseline in `abi/`. A function on its way out
+is marked deprecated for at least one minor release before the next major removes it. See
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -4,6 +4,14 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.0.0 - 2026-02-19
+
+The API is stable. Nothing changes for code written against 0.9; from here on, everything in
+`c-tuikit.h` keeps working, source and binary, until a 2.0.0.
+
+- soname `libtuikit.so.1`
+- the ABI baseline of the shared library is in `abi/c-tuikit.abi` and CI checks each build against it
+
 ## 0.9.0 - 2026-02-19
 
 Polish before 1.0, and a second example.
