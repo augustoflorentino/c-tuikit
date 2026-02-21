@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.3.0 - 2026-02-21
+
+Themes: the role colors can come from a built-in set or from a file.
+
+- built-in themes `default`, `mono`, `contrast` and `warm`
+- `pnl_app_set_theme(app, name_or_path)` picks the tool's theme; `TUIKIT_THEME` lets the person at
+  the terminal override it with a name or a path
+- a theme file has one `role = #rrggbb` per line (`accent`, `ok`, `warn`, `fail`, `muted`, `info`,
+  `surface`), `light.role = #rrggbb` for light backgrounds, and `#` comments; roles left out keep
+  the default
+- the minimum contrast of 1.2 applies to every theme, and the 256-color index of each role now
+  comes from its RGB value, so themes look right in 256-color terminals too
+
 ## 1.2.0 - 2026-02-21
 
 Role colors fit the terminal's background, light or dark.
