@@ -185,11 +185,37 @@ static void test_loop_parts(void)
     pnl_app_destroy(app);
 }
 
+static void write_file(const char *path, const char *text)
+{
+    FILE *file = fopen(path, "w");
+
+    CHECK(file != NULL);
+    fputs(text, file);
+    fclose(file);
+}
+
 static void test_colors(void)
 {
+    const char *path = "tuikit_test_theme.txt";
     int depth = pnl_color_depth();
+    pnl_app_t *app = NULL;
 
     CHECK(depth == 0 || depth == 16 || depth == 256 || depth == 16777216);
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_set_theme(app, "mono") == PNL_OK);
+    CHECK(pnl_app_set_theme(app, "contrast") == PNL_OK);
+    CHECK(pnl_app_set_theme(app, "nope") == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_app_set_theme(app, "./missing-theme.txt") == PNL_ERR_NOT_FOUND);
+    write_file(path, "# mine\naccent = #ff00ff\nlight.accent = #880088\n\nmuted=#777777\n");
+    CHECK(pnl_app_set_theme(app, path) == PNL_OK);
+    write_file(path, "accent = magenta\n");
+    CHECK(pnl_app_set_theme(app, path) == PNL_ERR_ARG);
+    write_file(path, "border = #ffffff\n");
+    CHECK(pnl_app_set_theme(app, path) == PNL_ERR_ARG);
+    remove(path);
+    CHECK(pnl_app_set_theme(app, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_set_theme(NULL, "mono") == PNL_ERR_ARG);
+    pnl_app_destroy(app);
 }
 
 static void test_canvas_and_width(void)

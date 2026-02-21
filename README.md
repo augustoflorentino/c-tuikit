@@ -26,6 +26,9 @@ up/down: move  enter: choose  ?: help  q: quit
 - ready-made screens: confirmation, text input, filterable pick list, pager with search and a
   sortable table; each one degrades to plain stdin and stdout on the command line
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
+- colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
+  16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
+  (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`)
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install

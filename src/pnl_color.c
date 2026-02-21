@@ -10,32 +10,6 @@
 #define PNL_DARK_BACKGROUND 0x1c1c1cL
 #define PNL_LIGHT_BACKGROUND 0xf5f5f5L
 
-struct pnl_role_ink {
-    unsigned long rgb;
-    int x256;
-    int basic;
-};
-
-static const struct pnl_role_ink pnl_roles_dark[PNL_ROLES] = {
-    {0x5fafffUL, 75, PNL_COLOR_CYAN},
-    {0x5fd75fUL, 77, PNL_COLOR_GREEN},
-    {0xd7af00UL, 178, PNL_COLOR_YELLOW},
-    {0xff5f5fUL, 203, PNL_COLOR_RED},
-    {0x8a8a8aUL, 245, PNL_COLOR_GRAY},
-    {0x87afd7UL, 110, PNL_COLOR_BLUE},
-    {0x3a3a3aUL, 237, PNL_COLOR_GRAY},
-};
-
-static const struct pnl_role_ink pnl_roles_light[PNL_ROLES] = {
-    {0x005fd7UL, 26, PNL_COLOR_BLUE},
-    {0x008700UL, 28, PNL_COLOR_GREEN},
-    {0x875f00UL, 94, PNL_COLOR_YELLOW},
-    {0xd70000UL, 160, PNL_COLOR_RED},
-    {0x6c6c6cUL, 242, PNL_COLOR_GRAY},
-    {0x005f87UL, 24, PNL_COLOR_BLUE},
-    {0xdadadaUL, 253, PNL_COLOR_WHITE},
-};
-
 static double pnl_channel(unsigned long rgb, int shift)
 {
     double c = (double)((rgb >> shift) & 0xff) / 255.0;
@@ -85,9 +59,48 @@ int pnl_is_light(long background_rgb)
     return pnl_luminance((unsigned long)background_rgb) > 0.25;
 }
 
-void pnl_palette_init(struct pnl_palette *palette, int depth, int light, long background_rgb)
+static int pnl_cube_step(unsigned long value)
 {
-    const struct pnl_role_ink *roles = light ? pnl_roles_light : pnl_roles_dark;
+    return value < 48 ? 0 : value < 115 ? 1 : (int)((value - 35) / 40);
+}
+
+static unsigned long pnl_cube_value(int step)
+{
+    return step == 0 ? 0 : (unsigned long)(55 + step * 40);
+}
+
+static unsigned long pnl_distance(unsigned long a, unsigned long b)
+{
+    unsigned long sum = 0;
+    int shift;
+
+    for (shift = 0; shift <= 16; shift += 8) {
+        long d = (long)((a >> shift) & 0xff) - (long)((b >> shift) & 0xff);
+
+        sum += (unsigned long)(d * d);
+    }
+    return sum;
+}
+
+int pnl_rgb_to_256(unsigned long rgb)
+{
+    int r = pnl_cube_step((rgb >> 16) & 0xff);
+    int g = pnl_cube_step((rgb >> 8) & 0xff);
+    int b = pnl_cube_step(rgb & 0xff);
+    unsigned long cube = pnl_cube_value(r) << 16 | pnl_cube_value(g) << 8 | pnl_cube_value(b);
+    unsigned long average = (((rgb >> 16) & 0xff) + ((rgb >> 8) & 0xff) + (rgb & 0xff)) / 3;
+    int gray = average > 238 ? 23 : average < 8 ? 0 : (int)((average - 8) / 10);
+    unsigned long level = (unsigned long)(8 + gray * 10);
+
+    if (pnl_distance(rgb, level << 16 | level << 8 | level) < pnl_distance(rgb, cube))
+        return 232 + gray;
+    return 16 + 36 * r + 6 * g + b;
+}
+
+void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme, int depth, int light,
+                      long background_rgb)
+{
+    const unsigned long *roles = light ? theme->light : theme->dark;
     unsigned long background = background_rgb >= 0 ? (unsigned long)background_rgb
                                                    : (unsigned long)(light ? PNL_LIGHT_BACKGROUND : PNL_DARK_BACKGROUND);
     int i;
@@ -97,11 +110,11 @@ void pnl_palette_init(struct pnl_palette *palette, int depth, int light, long ba
     for (i = 0; i < PNL_ROLES; i++) {
         double minimum = i + PNL_ROLE_FIRST == PNL_ROLE_MUTED ? PNL_CONTRAST_MUTED : PNL_CONTRAST_TEXT;
 
-        palette->rgb[i] = roles[i].rgb;
-        palette->x256[i] = roles[i].x256;
-        palette->basic[i] = roles[i].basic;
+        palette->rgb[i] = roles[i];
         if (i + PNL_ROLE_FIRST != PNL_ROLE_SURFACE)
-            palette->rgb[i] = pnl_readable(roles[i].rgb, background, minimum);
+            palette->rgb[i] = pnl_readable(roles[i], background, minimum);
+        palette->x256[i] = pnl_rgb_to_256(palette->rgb[i]);
+        palette->basic[i] = theme->basic[i];
     }
 }
 

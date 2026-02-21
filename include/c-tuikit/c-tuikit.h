@@ -99,6 +99,7 @@ PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn
                            pnl_app_t **out_app);
 PNL_API void pnl_app_destroy(pnl_app_t *app);
 PNL_API int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms);
+PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);

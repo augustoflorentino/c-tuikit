@@ -54,6 +54,12 @@ struct pnl_palette {
     int basic[PNL_ROLES];
 };
 
+struct pnl_theme {
+    unsigned long dark[PNL_ROLES];
+    unsigned long light[PNL_ROLES];
+    int basic[PNL_ROLES];
+};
+
 struct pnl_screen {
     int width;
     int height;
@@ -181,6 +187,7 @@ struct pnl_app {
     int dirty;
     struct pnl_term term;
     struct pnl_screen screen;
+    struct pnl_theme theme;
 };
 
 PNL_INTERNAL void *pnl_mem_alloc(const struct pnl_mem *mem, size_t size);
@@ -224,7 +231,10 @@ PNL_INTERNAL void pnl_unlock(struct pnl_lock *lock);
 PNL_INTERNAL int pnl_color_detect(void);
 PNL_INTERNAL int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette);
 PNL_INTERNAL int pnl_is_light(long background_rgb);
-PNL_INTERNAL void pnl_palette_init(struct pnl_palette *palette, int depth, int light, long background_rgb);
+PNL_INTERNAL void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme, int depth, int light,
+                                   long background_rgb);
+PNL_INTERNAL int pnl_rgb_to_256(unsigned long rgb);
+PNL_INTERNAL int pnl_theme_choose(struct pnl_theme *theme, const char *name);
 PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb);
 
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);

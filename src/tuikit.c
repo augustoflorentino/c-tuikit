@@ -78,6 +78,7 @@ int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn
     memset(app, 0, sizeof(*app));
     app->mem = mem;
     app->next_timer = 1;
+    pnl_theme_choose(&app->theme, "default");
     app->title = pnl_mem_copy(&mem, title);
     if (app->title == NULL) {
         pnl_mem_free(&mem, app);

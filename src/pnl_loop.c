@@ -1,5 +1,6 @@
 #include "pnl_internal.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #define PNL_MENU_FOOTER "up/down: move  enter: choose  ?: help  q: quit"
@@ -422,11 +423,15 @@ static void pnl_timers_restart(pnl_app_t *app)
 
 static void pnl_run_palette(pnl_app_t *app)
 {
+    struct pnl_theme theme = app->theme;
+    const char *chosen = getenv("TUIKIT_THEME");
     int depth = pnl_color_detect();
     long background = -1;
     int known = pnl_background_detect(&app->term, depth, &background);
 
-    pnl_palette_init(&app->screen.palette, depth, known && pnl_is_light(background), known ? background : -1);
+    if (chosen != NULL && chosen[0] != '\0')
+        pnl_theme_choose(&theme, chosen);
+    pnl_palette_init(&app->screen.palette, &theme, depth, known && pnl_is_light(background), known ? background : -1);
 }
 
 int pnl_run_interactive(pnl_app_t *app)
