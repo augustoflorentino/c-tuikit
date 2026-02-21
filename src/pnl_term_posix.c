@@ -192,7 +192,7 @@ static int pnl_term_poll_input(int timeout_ms)
     return ready;
 }
 
-static int pnl_term_fill(struct pnl_term *term, int timeout_ms)
+int pnl_term_fill(struct pnl_term *term, int timeout_ms)
 {
     ssize_t got;
     int ready = pnl_term_poll_input(timeout_ms);

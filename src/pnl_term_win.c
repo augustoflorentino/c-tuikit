@@ -268,7 +268,7 @@ static int pnl_term_drain(struct pnl_term *term)
     return term->input_len > 0;
 }
 
-static int pnl_term_fill(struct pnl_term *term, int timeout_ms)
+int pnl_term_fill(struct pnl_term *term, int timeout_ms)
 {
     DWORD wait = timeout_ms < 0 ? INFINITE : (DWORD)timeout_ms;
     long long deadline = pnl_term_now_ms() + (timeout_ms < 0 ? 0 : timeout_ms);

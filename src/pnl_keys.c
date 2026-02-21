@@ -39,8 +39,23 @@ static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_
     return data_len;
 }
 
+static size_t pnl_keys_osc(const unsigned char *data, size_t data_len)
+{
+    size_t i;
+
+    for (i = 2; i < data_len; i++) {
+        if (data[i] == 0x07)
+            return i + 1;
+        if (data[i] == 0x1b && i + 1 < data_len && data[i + 1] == '\\')
+            return i + 2;
+    }
+    return data_len;
+}
+
 static size_t pnl_keys_escape(const unsigned char *data, size_t data_len, int *out_key)
 {
+    if (data_len > 1 && data[1] == ']')
+        return pnl_keys_osc(data, data_len);
     if (data_len == 1 || (data[1] != '[' && data[1] != 'O')) {
         *out_key = PNL_KEY_ESCAPE;
         return 1;

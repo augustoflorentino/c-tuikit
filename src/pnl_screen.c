@@ -133,11 +133,11 @@ static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, u
         len += sprintf(buf + len, ";2");
     if (style & PNL_UNDERLINE)
         len += sprintf(buf + len, ";4");
-    if ((style & PNL_REVERSE) || (screen->depth == PNL_DEPTH_NONE && PNL_STYLE_BG(style) != PNL_COLOR_DEFAULT))
+    if ((style & PNL_REVERSE) || (screen->palette.depth == PNL_DEPTH_NONE && PNL_STYLE_BG(style) != PNL_COLOR_DEFAULT))
         len += sprintf(buf + len, ";7");
-    if (screen->depth != PNL_DEPTH_NONE) {
-        len += pnl_color_ink(buf + len, PNL_STYLE_FG(style), 0, screen->depth);
-        len += pnl_color_ink(buf + len, PNL_STYLE_BG(style), 1, screen->depth);
+    if (screen->palette.depth != PNL_DEPTH_NONE) {
+        len += pnl_color_ink(buf + len, PNL_STYLE_FG(style), 0, &screen->palette);
+        len += pnl_color_ink(buf + len, PNL_STYLE_BG(style), 1, &screen->palette);
     }
     buf[len++] = 'm';
     return pnl_out(screen, mem, buf, (size_t)len);

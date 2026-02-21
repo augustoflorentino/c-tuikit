@@ -420,6 +420,15 @@ static void pnl_timers_restart(pnl_app_t *app)
         app->timers[i].due_ms = now + app->timers[i].interval_ms;
 }
 
+static void pnl_run_palette(pnl_app_t *app)
+{
+    int depth = pnl_color_detect();
+    long background = -1;
+    int known = pnl_background_detect(&app->term, depth, &background);
+
+    pnl_palette_init(&app->screen.palette, depth, known && pnl_is_light(background), known ? background : -1);
+}
+
 int pnl_run_interactive(pnl_app_t *app)
 {
     int status = pnl_term_enter(&app->term);
@@ -430,7 +439,7 @@ int pnl_run_interactive(pnl_app_t *app)
     app->quit = 0;
     app->selected = 0;
     app->menu_top = 0;
-    app->screen.depth = pnl_color_detect();
+    pnl_run_palette(app);
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);

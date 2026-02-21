@@ -44,11 +44,21 @@ struct pnl_cell {
     uint32_t style;
 };
 
+#define PNL_ROLES (PNL_ROLE_SURFACE - PNL_ROLE_ACCENT + 1)
+
+struct pnl_palette {
+    int depth;
+    int light;
+    unsigned long rgb[PNL_ROLES];
+    int x256[PNL_ROLES];
+    int basic[PNL_ROLES];
+};
+
 struct pnl_screen {
     int width;
     int height;
     int front_valid;
-    int depth;
+    struct pnl_palette palette;
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;
@@ -198,6 +208,7 @@ PNL_INTERNAL void pnl_term_suspend(struct pnl_term *term);
 PNL_INTERNAL int pnl_term_resized(void);
 PNL_INTERNAL void pnl_term_size(int *out_width, int *out_height);
 PNL_INTERNAL int pnl_term_write(const char *data, size_t data_len);
+PNL_INTERNAL int pnl_term_fill(struct pnl_term *term, int timeout_ms);
 PNL_INTERNAL int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key);
 PNL_INTERNAL int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len,
                                int timeout_ms, unsigned char *out_ready);
@@ -211,7 +222,10 @@ PNL_INTERNAL void pnl_lock(struct pnl_lock *lock);
 PNL_INTERNAL void pnl_unlock(struct pnl_lock *lock);
 
 PNL_INTERNAL int pnl_color_detect(void);
-PNL_INTERNAL int pnl_color_ink(char *buf, unsigned ink, int background, int depth);
+PNL_INTERNAL int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette);
+PNL_INTERNAL int pnl_is_light(long background_rgb);
+PNL_INTERNAL void pnl_palette_init(struct pnl_palette *palette, int depth, int light, long background_rgb);
+PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb);
 
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);

@@ -102,6 +102,9 @@ static void test_keys(void)
     CHECK(decode("\x1b[9~", &used) == PNL_KEY_NONE && used == 4);
     CHECK(decode("\x1b[15~", &used) == PNL_KEY_NONE && used == 5);
     CHECK(decode("\x7f", &used) == PNL_KEY_BACKSPACE && used == 1);
+    CHECK(decode("\x1b]11;rgb:ffff/ffff/ffff\x1b\\q", &used) == PNL_KEY_NONE && used == 25);
+    CHECK(decode("\x1b]11;rgb:0/0/0\x07q", &used) == PNL_KEY_NONE && used == 15);
+    CHECK(decode("\x1b[?62;22c", &used) == PNL_KEY_NONE && used == 9);
     CHECK(decode("\x08", &used) == PNL_KEY_BACKSPACE && used == 1);
     CHECK(decode("\r", &used) == PNL_KEY_ENTER && used == 1);
     CHECK(decode("\n", &used) == PNL_KEY_ENTER && used == 1);
