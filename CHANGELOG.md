@@ -4,6 +4,22 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.2.0 - 2026-02-21
+
+Role colors fit the terminal's background, light or dark.
+
+- when the panel opens it asks the terminal for its background color (OSC 11), with a device
+  attributes query behind it so terminals that do not answer cost no wait; at most 150 ms
+  otherwise
+- `TUIKIT_BACKGROUND=light` or `dark` decides without asking; `COLORFGBG` is used when set
+- a light background gets its own set of role colors, and in true color every role is darkened or
+  lightened until it reaches a contrast of 4.5:1 against the actual background (3:1 for
+  `PNL_ROLE_MUTED`)
+
+### Fixed
+
+- a reply to a terminal query arriving late is no longer read as an escape key
+
 ## 1.1.0 - 2026-02-19
 
 Colors by meaning instead of by name, adapted to what the terminal can show.
