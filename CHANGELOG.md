@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.4.0 - 2026-02-26
+
+Color that measures: values can be drawn, not only printed.
+
+- `pnl_canvas_bar(canvas, x, y, width, fraction, flags)` draws a horizontal bar
+- `pnl_canvas_sparkline(canvas, x, y, width, values, values_len, max, flags)` draws the most recent
+  values as a one-line chart
+- `pnl_status_meter(app, mark, text, fraction)` adds a status line with a bar and a percentage; the
+  command line prints `disk  83%` and `--json` adds a `"meter"` field
+- with `PNL_METER_LEVEL` the color follows the value, from the theme's ok color through warn to
+  fail; `PNL_METER_ACCENT` keeps the accent color
+- the basic example shows a load sparkline and a memory meter
+
 ## 1.3.0 - 2026-02-21
 
 Themes: the role colors can come from a built-in set or from a file.
