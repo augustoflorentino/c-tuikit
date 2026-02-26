@@ -29,6 +29,7 @@ up/down: move  enter: choose  ?: help  q: quit
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
   (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`)
+- bars, sparklines and status meters that shift from green to red as the value rises
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install

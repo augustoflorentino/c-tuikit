@@ -80,6 +80,9 @@ extern "C" {
 #define PNL_ROLE_INFO 37
 #define PNL_ROLE_SURFACE 38
 
+#define PNL_METER_ACCENT 0
+#define PNL_METER_LEVEL 1
+
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
@@ -102,6 +105,7 @@ PNL_API int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *st
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);
+PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *text, double fraction);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code);
 PNL_API int pnl_app_quit(pnl_app_t *app);
@@ -133,6 +137,9 @@ PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);
 PNL_API void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int style);
 PNL_API int pnl_color_depth(void);
+PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
+PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,
+                                  size_t values_len, double max, int flags);
 PNL_API int pnl_text_width(const char *text);
 PNL_API size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key);
 PNL_API const char *pnl_strerror(int status);

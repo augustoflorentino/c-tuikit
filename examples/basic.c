@@ -5,6 +5,7 @@
 #include <c-tuikit/c-tuikit.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #if defined(_WIN32)
@@ -21,11 +22,15 @@ static void nap_ms(long ms)
 }
 #endif
 
+#define HISTORY 60
+
 struct service {
     int running;
     long started;
     int ticks;
     int ticker;
+    double load[HISTORY];
+    size_t load_len;
 };
 
 static void show_status(void *ctx, pnl_app_t *app)
@@ -40,6 +45,7 @@ static void show_status(void *ctx, pnl_app_t *app)
     }
     snprintf(line, sizeof(line), "service running for %lds", (long)time(NULL) - svc->started);
     pnl_status_line(app, PNL_MARK_OK, line);
+    pnl_status_meter(app, PNL_MARK_OK, "memory", (double)((time(NULL) - svc->started) % 60) / 60.0);
 }
 
 static void start(void *ctx, pnl_app_t *app)
@@ -70,9 +76,12 @@ static void stop(void *ctx, pnl_app_t *app)
 static void tick(void *ctx, pnl_app_t *app)
 {
     struct service *svc = ctx;
+    int i = svc->ticks % HISTORY;
 
     (void)app;
     svc->ticks++;
+    svc->load[i] = (double)((svc->ticks * 37) % 100) * (0.5 + 0.5 * (double)(svc->ticks % 20) / 20.0);
+    svc->load_len = svc->load_len < HISTORY ? svc->load_len + 1 : HISTORY;
 }
 
 static void draw_live(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
@@ -83,9 +92,18 @@ static void draw_live(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     int filled = width > 0 ? svc->ticks % (width + 1) : 0;
 
     (void)app;
+    double ordered[HISTORY];
+    size_t i;
+
     snprintf(line, sizeof(line), "%d ticks of 100 ms", svc->ticks);
     pnl_canvas_text(canvas, 2, 0, 0, line);
     pnl_canvas_fill(canvas, 2, 2, filled, 1, PNL_BG(PNL_ROLE_ACCENT));
+    for (i = 0; i < svc->load_len; i++)
+        ordered[i] = svc->load[(svc->ticks - (int)svc->load_len + (int)i) % HISTORY];
+    pnl_canvas_text(canvas, 2, 4, PNL_FG(PNL_ROLE_MUTED), "load");
+    pnl_canvas_sparkline(canvas, 8, 4, width - 6, ordered, svc->load_len, 100.0, PNL_METER_LEVEL);
+    pnl_canvas_text(canvas, 2, 6, PNL_FG(PNL_ROLE_MUTED), "now");
+    pnl_canvas_bar(canvas, 8, 6, 30, svc->load_len ? ordered[svc->load_len - 1] / 100.0 : 0.0, PNL_METER_LEVEL);
 }
 
 static int live_key(void *ctx, pnl_app_t *app, int key)
@@ -225,10 +243,13 @@ static void print_something(void *ctx, pnl_app_t *app)
 
 int main(int argc, char **argv)
 {
-    struct service svc = {0, 0, 0, 0};
+    struct service svc;
     int exit_code = 1;
     pnl_app_t *app = NULL;
-    int status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
+    int status;
+
+    memset(&svc, 0, sizeof(svc));
+    status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
 
     if (status == PNL_OK)
         status = pnl_app_set_status(app, show_status, &svc, 1000);

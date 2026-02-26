@@ -161,12 +161,39 @@ static int pnl_ink_basic(char *buf, unsigned ink, int base, int bright)
     return sprintf(buf, ";%d", bright + (int)ink - 9);
 }
 
+static unsigned long pnl_level_rgb(const struct pnl_palette *palette, int step)
+{
+    unsigned long ok = palette->rgb[PNL_ROLE_OK - PNL_ROLE_FIRST];
+    unsigned long warn = palette->rgb[PNL_ROLE_WARN - PNL_ROLE_FIRST];
+    unsigned long fail = palette->rgb[PNL_ROLE_FAIL - PNL_ROLE_FIRST];
+    int half = PNL_LEVEL_STEPS / 2;
+
+    if (step <= half)
+        return pnl_mix(ok, warn, step * 100 / half);
+    return pnl_mix(warn, fail, (step - half) * 100 / (PNL_LEVEL_STEPS - 1 - half));
+}
+
+static int pnl_level_ink(char *buf, int step, int base, const struct pnl_palette *palette)
+{
+    unsigned long rgb = pnl_level_rgb(palette, step);
+    int basic = step * 3 < PNL_LEVEL_STEPS ? PNL_COLOR_GREEN : step * 3 < PNL_LEVEL_STEPS * 2 ? PNL_COLOR_YELLOW
+                                                                                             : PNL_COLOR_RED;
+
+    if (palette->depth == PNL_DEPTH_TRUE)
+        return sprintf(buf, ";%d;2;%lu;%lu;%lu", base + 8, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+    if (palette->depth == PNL_DEPTH_256)
+        return sprintf(buf, ";%d;5;%d", base + 8, pnl_rgb_to_256(rgb));
+    return pnl_ink_basic(buf, (unsigned)basic, base, base + 60);
+}
+
 int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette)
 {
     int base = background ? 40 : 30;
     unsigned long rgb;
     int role;
 
+    if (ink >= PNL_LEVEL_FIRST && ink < PNL_LEVEL_FIRST + PNL_LEVEL_STEPS)
+        return pnl_level_ink(buf, (int)ink - PNL_LEVEL_FIRST, base, palette);
     if (ink < PNL_ROLE_FIRST || ink >= PNL_ROLE_FIRST + PNL_ROLES)
         return pnl_ink_basic(buf, ink, base, base + 60);
     role = (int)ink - PNL_ROLE_FIRST;

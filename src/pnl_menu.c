@@ -1,5 +1,6 @@
 #include "pnl_internal.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define PNL_QUIT_LABEL "Quit"
@@ -40,6 +41,7 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
     if (line->text == NULL)
         return PNL_ERR_NOMEM;
     line->mark = mark;
+    line->meter = -1.0;
     app->lines_len++;
     return PNL_OK;
 }
@@ -51,6 +53,22 @@ void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 
     pnl_canvas_text(canvas, 2, y, PNL_FG(colors[mark]), marks[mark]);
     pnl_canvas_text(canvas, 6, y, 0, text);
+}
+
+#define PNL_METER_WIDTH 12
+
+static void pnl_draw_line(pnl_canvas_t *canvas, int y, const struct pnl_line *line)
+{
+    char percent[8];
+    int x;
+
+    pnl_draw_mark(canvas, y, line->mark, line->text);
+    if (line->meter < 0.0)
+        return;
+    x = 6 + pnl_text_width(line->text) + 2;
+    pnl_canvas_bar(canvas, x, y, PNL_METER_WIDTH, line->meter, PNL_METER_LEVEL);
+    snprintf(percent, sizeof(percent), "%3d%%", (int)(line->meter * 100 + 0.5));
+    pnl_canvas_text(canvas, x + PNL_METER_WIDTH + 1, y, PNL_FG(PNL_ROLE_MUTED), percent);
 }
 
 void pnl_menu_refresh(pnl_app_t *app)
@@ -99,7 +117,7 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
 
     pnl_menu_refresh(app);
     for (i = 0; i < app->lines_len; i++)
-        pnl_draw_mark(canvas, y++, app->lines[i].mark, app->lines[i].text);
+        pnl_draw_line(canvas, y++, &app->lines[i]);
     if (app->lines_len > 0)
         y++;
     rows = pnl_canvas_height(canvas) - y;

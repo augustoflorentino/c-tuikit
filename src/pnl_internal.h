@@ -24,6 +24,8 @@
 #define PNL_KEY_CTRL_C 3
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
+#define PNL_LEVEL_FIRST 64
+#define PNL_LEVEL_STEPS 64
 #define PNL_DEPTH_NONE 0
 #define PNL_DEPTH_16 1
 #define PNL_DEPTH_256 2
@@ -120,6 +122,7 @@ struct pnl_action {
 
 struct pnl_line {
     int mark;
+    double meter;
     char *text;
 };
 
@@ -240,6 +243,7 @@ PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *o
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
 PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);
+PNL_INTERNAL int pnl_level_color(double fraction);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
 PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);

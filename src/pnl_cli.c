@@ -68,10 +68,15 @@ static void pnl_cli_line(pnl_app_t *app, int mark, const char *text)
         printf("[%s] %s\n", pnl_mark_names[mark], text);
 }
 
-static void pnl_json_entry(int mark, const char *text)
+static void pnl_json_fields(int mark, const char *text)
 {
     printf("{\"mark\":\"%s\",\"text\":", pnl_mark_json[mark]);
     pnl_json_string(text);
+}
+
+static void pnl_json_entry(int mark, const char *text)
+{
+    pnl_json_fields(mark, text);
     putchar('}');
 }
 
@@ -204,6 +209,18 @@ int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, co
     return PNL_OK;
 }
 
+static void pnl_cli_status_line(pnl_app_t *app, const struct pnl_line *line)
+{
+    char text[512];
+
+    if (line->meter < 0.0) {
+        pnl_cli_line(app, line->mark, line->text);
+        return;
+    }
+    snprintf(text, sizeof(text), "%s  %d%%", line->text, (int)(line->meter * 100 + 0.5));
+    pnl_cli_line(app, line->mark, text);
+}
+
 static void pnl_cli_status(pnl_app_t *app)
 {
     size_t i;
@@ -212,15 +229,20 @@ static void pnl_cli_status(pnl_app_t *app)
     if (app->cli_json)
         printf("{\"status\":[");
     for (i = 0; i < app->lines_len; i++) {
+        const struct pnl_line *line = &app->lines[i];
+
         if (!app->cli_json) {
-            pnl_cli_line(app, app->lines[i].mark, app->lines[i].text);
+            pnl_cli_status_line(app, line);
             continue;
         }
-        if (app->lines[i].mark > app->cli_worst)
-            app->cli_worst = app->lines[i].mark;
+        if (line->mark > app->cli_worst)
+            app->cli_worst = line->mark;
         if (i > 0)
             putchar(',');
-        pnl_json_entry(app->lines[i].mark, app->lines[i].text);
+        pnl_json_fields(line->mark, line->text);
+        if (line->meter >= 0.0)
+            printf(",\"meter\":%.3f", line->meter);
+        putchar('}');
     }
     if (app->cli_json)
         printf("]}\n");
