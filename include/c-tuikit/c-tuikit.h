@@ -17,6 +17,16 @@
 #define PNL_API
 #endif
 
+#if defined(PNL_NO_DEPRECATED_WARNINGS)
+#define PNL_DEPRECATED(msg)
+#elif defined(__GNUC__)
+#define PNL_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#elif defined(_MSC_VER)
+#define PNL_DEPRECATED(msg) __declspec(deprecated(msg))
+#else
+#define PNL_DEPRECATED(msg)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -101,7 +111,10 @@ typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
 PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
                            pnl_app_t **out_app);
 PNL_API void pnl_app_destroy(pnl_app_t *app);
+PNL_DEPRECATED("use pnl_app_on_status and pnl_app_set_refresh")
 PNL_API int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms);
+PNL_API int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx);
+PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);

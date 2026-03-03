@@ -126,7 +126,11 @@ static void test_build(void)
     pnl_app_t *app = NULL;
 
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
-    CHECK(pnl_app_set_status(app, noop_status, NULL, 500) == PNL_OK);
+    CHECK(pnl_app_on_status(app, noop_status, NULL) == PNL_OK);
+    CHECK(pnl_app_set_refresh(app, 500) == PNL_OK);
+    CHECK(pnl_app_set_refresh(app, 250) == PNL_OK);
+    CHECK(pnl_app_set_refresh(app, 0) == PNL_OK);
+    CHECK(pnl_app_set_refresh(app, 500) == PNL_OK);
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Second", noop_action, NULL) == PNL_OK);
     pnl_app_destroy(app);
@@ -327,7 +331,7 @@ static void test_cli(void)
 #endif
 
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
-    CHECK(pnl_app_set_status(app, wait_status, NULL, 0) == PNL_OK);
+    CHECK(pnl_app_on_status(app, wait_status, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Do Nothing!", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Fail", fail_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Live view", view_action, NULL) == PNL_OK);
@@ -357,7 +361,7 @@ static void test_bad_args(void)
     CHECK(pnl_app_create("demo", failing_alloc, NULL, NULL, &app) == PNL_ERR_ARG);
     CHECK(pnl_app_create(NULL, NULL, NULL, NULL, &app) == PNL_ERR_ARG);
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, NULL) == PNL_ERR_ARG);
-    CHECK(pnl_app_set_status(NULL, noop_status, NULL, 0) == PNL_ERR_ARG);
+    CHECK(pnl_app_on_status(NULL, noop_status, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(NULL, "x", noop_action, NULL) == PNL_ERR_ARG);
     CHECK(pnl_status_line(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
@@ -384,7 +388,8 @@ static void test_bad_args(void)
     }
     CHECK(pnl_pager(NULL, "x", "y", 1) == PNL_ERR_ARG);
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
-    CHECK(pnl_app_set_status(app, noop_status, NULL, -1) == PNL_ERR_ARG);
+    CHECK(pnl_app_set_refresh(app, -1) == PNL_ERR_ARG);
+    CHECK(pnl_app_set_refresh(NULL, 100) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, NULL, noop_action, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, "x", NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_push(app, "x", NULL, NULL, NULL) == PNL_ERR_ARG);
@@ -410,7 +415,9 @@ static int run_with_failure(failing_alloc_t *fa)
     for (i = 0; i < 20 && status == PNL_OK; i++)
         status = pnl_view_push(app, "a view title", noop_draw, NULL, NULL);
     if (status == PNL_OK)
-        status = pnl_app_set_status(app, noop_status, NULL, 500);
+        status = pnl_app_on_status(app, noop_status, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_set_refresh(app, 500);
     pnl_app_destroy(app);
     return status;
 }

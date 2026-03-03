@@ -183,7 +183,9 @@ int main(int argc, char **argv)
     dep.next_version = 4;
     status = pnl_app_create("deploy", NULL, NULL, NULL, &app);
     if (status == PNL_OK)
-        status = pnl_app_set_status(app, show_status, &dep, 1000);
+        status = pnl_app_on_status(app, show_status, &dep);
+    if (status == PNL_OK)
+        status = pnl_app_set_refresh(app, 1000);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Deploy", deploy, &dep);
     if (status == PNL_OK)

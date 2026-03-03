@@ -7,6 +7,7 @@
 #define PNL_ROLE_FIRST PNL_ROLE_ACCENT
 #define PNL_CONTRAST_TEXT 4.5
 #define PNL_CONTRAST_MUTED 3.0
+#define PNL_CONTRAST_HIGH 7.0
 #define PNL_DARK_BACKGROUND 0x1c1c1cL
 #define PNL_LIGHT_BACKGROUND 0xf5f5f5L
 
@@ -98,7 +99,7 @@ int pnl_rgb_to_256(unsigned long rgb)
 }
 
 void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme, int depth, int light,
-                      long background_rgb)
+                      long background_rgb, int high_contrast)
 {
     const unsigned long *roles = light ? theme->light : theme->dark;
     unsigned long background = background_rgb >= 0 ? (unsigned long)background_rgb
@@ -109,6 +110,9 @@ void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme
     palette->light = light;
     for (i = 0; i < PNL_ROLES; i++) {
         double minimum = i + PNL_ROLE_FIRST == PNL_ROLE_MUTED ? PNL_CONTRAST_MUTED : PNL_CONTRAST_TEXT;
+
+        if (high_contrast)
+            minimum = minimum < PNL_CONTRAST_TEXT ? PNL_CONTRAST_TEXT : PNL_CONTRAST_HIGH;
 
         palette->rgb[i] = roles[i];
         if (i + PNL_ROLE_FIRST != PNL_ROLE_SURFACE)

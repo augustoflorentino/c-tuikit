@@ -425,13 +425,15 @@ static void pnl_run_palette(pnl_app_t *app)
 {
     struct pnl_theme theme = app->theme;
     const char *chosen = getenv("TUIKIT_THEME");
+    const char *contrast = getenv("TUIKIT_CONTRAST");
     int depth = pnl_color_detect();
     long background = -1;
     int known = pnl_background_detect(&app->term, depth, &background);
 
     if (chosen != NULL && chosen[0] != '\0')
         pnl_theme_choose(&theme, chosen);
-    pnl_palette_init(&app->screen.palette, &theme, depth, known && pnl_is_light(background), known ? background : -1);
+    pnl_palette_init(&app->screen.palette, &theme, depth, known && pnl_is_light(background), known ? background : -1,
+                     contrast != NULL && strcmp(contrast, "high") == 0);
 }
 
 int pnl_run_interactive(pnl_app_t *app)

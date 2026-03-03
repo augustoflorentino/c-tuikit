@@ -80,7 +80,8 @@ static void start(void *ctx, pnl_app_t *app)
 
 pnl_app_t *app = NULL;
 pnl_app_create("service", NULL, NULL, NULL, &app);
-pnl_app_set_status(app, show_status, NULL, 1000);
+pnl_app_on_status(app, show_status, NULL);
+pnl_app_set_refresh(app, 1000);
 pnl_app_add_action(app, "Start", start, NULL);
 pnl_app_run(app, argc, argv, &exit_code);
 pnl_app_destroy(app);

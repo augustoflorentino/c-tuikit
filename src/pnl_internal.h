@@ -235,7 +235,7 @@ PNL_INTERNAL int pnl_color_detect(void);
 PNL_INTERNAL int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette);
 PNL_INTERNAL int pnl_is_light(long background_rgb);
 PNL_INTERNAL void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme, int depth, int light,
-                                   long background_rgb);
+                                   long background_rgb, int high_contrast);
 PNL_INTERNAL int pnl_rgb_to_256(unsigned long rgb);
 PNL_INTERNAL int pnl_theme_choose(struct pnl_theme *theme, const char *name);
 PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb);

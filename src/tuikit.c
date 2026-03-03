@@ -1,3 +1,4 @@
+#define PNL_NO_DEPRECATED_WARNINGS
 #include "pnl_internal.h"
 
 #include <stdlib.h>
@@ -109,19 +110,36 @@ void pnl_app_destroy(pnl_app_t *app)
     pnl_mem_free(&app->mem, app);
 }
 
-int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms)
+int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx)
 {
-    int status = PNL_OK;
+    if (app == NULL)
+        return PNL_ERR_ARG;
+    app->status_fn = status_fn;
+    app->status_ctx = status_ctx;
+    return PNL_OK;
+}
 
+int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms)
+{
     if (app == NULL || refresh_ms < 0)
         return PNL_ERR_ARG;
     if (app->status_timer != PNL_STATUS_TIMER_NONE)
         pnl_app_remove_timer(app, app->status_timer);
     app->status_timer = PNL_STATUS_TIMER_NONE;
-    app->status_fn = status_fn;
-    app->status_ctx = status_ctx;
-    if (status_fn != NULL && refresh_ms > 0)
-        status = pnl_app_add_timer(app, refresh_ms, NULL, NULL, &app->status_timer);
+    if (refresh_ms == 0)
+        return PNL_OK;
+    return pnl_app_add_timer(app, refresh_ms, NULL, NULL, &app->status_timer);
+}
+
+int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms)
+{
+    int status;
+
+    if (app == NULL || refresh_ms < 0)
+        return PNL_ERR_ARG;
+    status = pnl_app_on_status(app, status_fn, status_ctx);
+    if (status == PNL_OK)
+        status = pnl_app_set_refresh(app, status_fn != NULL ? refresh_ms : 0);
     return status;
 }
 

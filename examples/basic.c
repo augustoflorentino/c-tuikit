@@ -250,9 +250,10 @@ int main(int argc, char **argv)
 
     memset(&svc, 0, sizeof(svc));
     status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
-
     if (status == PNL_OK)
-        status = pnl_app_set_status(app, show_status, &svc, 1000);
+        status = pnl_app_on_status(app, show_status, &svc);
+    if (status == PNL_OK)
+        status = pnl_app_set_refresh(app, 1000);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Start", start, &svc);
     if (status == PNL_OK)
