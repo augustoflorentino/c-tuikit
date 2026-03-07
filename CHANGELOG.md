@@ -4,6 +4,26 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.0.0 - 2026-03-07
+
+A frame clock: the panel can now animate, and the deprecated status call is gone.
+
+- while something is animating the panel redraws about 30 times a second, and goes back to waiting
+  for keys, timers and tasks when it stops; keys are always read before a frame is drawn, so an
+  animation never holds one back
+- `pnl_app_animate(app, ms)` asks for frames for that long, `pnl_app_frame_ms(app)` gives the time
+  of the frame being drawn, and `pnl_app_tween(app, start_ms, duration_ms)` returns how far along,
+  from 0 to 1, an animation that started at `start_ms` is, asking for frames until it reaches 1
+- `pnl_app_motion(app)` tells whether motion is on; it is off outside the terminal and with
+  `TUIKIT_MOTION=off`, and then `pnl_app_tween` returns 1 right away so every animation shows its
+  final state
+
+### Breaking
+
+- `pnl_app_set_status` is removed; call `pnl_app_on_status(app, fn, ctx)` and
+  `pnl_app_set_refresh(app, ms)` instead
+- the shared library is now `libtuikit.so.2`; programs built against 1.x need to be rebuilt
+
 ## 1.5.0 - 2026-03-07
 
 The status callback and its refresh interval are set apart; contrast can be raised.
