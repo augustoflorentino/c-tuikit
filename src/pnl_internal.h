@@ -25,6 +25,7 @@
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
 #define PNL_FRAME_MS 33
+#define PNL_SPIN_MS 80
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
 #define PNL_DEPTH_NONE 0
@@ -68,6 +69,8 @@ struct pnl_screen {
     int height;
     int front_valid;
     struct pnl_palette palette;
+    int spin;
+    int spinning;
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;
@@ -181,6 +184,7 @@ struct pnl_app {
     size_t watches_cap;
     int tasks_running;
     int motion;
+    int anim_frame;
     long long frame_ms;
     long long animate_until_ms;
     int running;
@@ -248,6 +252,7 @@ PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
 PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);
 PNL_INTERNAL int pnl_level_color(double fraction);
+PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
 PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);

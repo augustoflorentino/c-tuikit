@@ -5,6 +5,21 @@
 static const char *const pnl_spark_blocks[] = {"\xe2\x96\x81", "\xe2\x96\x82", "\xe2\x96\x83", "\xe2\x96\x84",
                                                "\xe2\x96\x85", "\xe2\x96\x86", "\xe2\x96\x87", "\xe2\x96\x88"};
 
+static const char *const pnl_eighths[] = {"", "\xe2\x96\x8f", "\xe2\x96\x8e", "\xe2\x96\x8d",
+                                          "\xe2\x96\x8c", "\xe2\x96\x8b", "\xe2\x96\x8a", "\xe2\x96\x89"};
+
+static const char *const pnl_spin_frames[] = {"\xe2\xa0\x8b", "\xe2\xa0\x99", "\xe2\xa0\xb9", "\xe2\xa0\xb8",
+                                              "\xe2\xa0\xbc", "\xe2\xa0\xb4", "\xe2\xa0\xa6", "\xe2\xa0\xa7",
+                                              "\xe2\xa0\x87", "\xe2\xa0\x8f"};
+
+#define PNL_SPIN_FRAMES (int)(sizeof(pnl_spin_frames) / sizeof(pnl_spin_frames[0]))
+
+void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style)
+{
+    canvas->screen->spinning = 1;
+    pnl_canvas_text(canvas, x, y, style, pnl_spin_frames[canvas->screen->spin % PNL_SPIN_FRAMES]);
+}
+
 static double pnl_clamp(double fraction)
 {
     if (!(fraction > 0.0))
@@ -24,14 +39,20 @@ static int pnl_meter_color(double fraction, int flags)
 
 void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags)
 {
+    int color;
+    int eighths;
     int filled;
 
     if (canvas == NULL || width <= 0)
         return;
     fraction = pnl_clamp(fraction);
-    filled = (int)(fraction * width + 0.5);
-    pnl_canvas_fill(canvas, x, y, filled, 1, PNL_BG(pnl_meter_color(fraction, flags)));
+    color = pnl_meter_color(fraction, flags);
+    eighths = (int)(fraction * width * 8 + 0.5);
+    filled = eighths / 8;
+    pnl_canvas_fill(canvas, x, y, filled, 1, PNL_BG(color));
     pnl_canvas_fill(canvas, x + filled, y, width - filled, 1, PNL_BG(PNL_ROLE_SURFACE));
+    if (eighths % 8 != 0)
+        pnl_canvas_text(canvas, x + filled, y, PNL_FG(color) | PNL_BG(PNL_ROLE_SURFACE), pnl_eighths[eighths % 8]);
 }
 
 void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values, size_t values_len,

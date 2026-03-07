@@ -51,7 +51,10 @@ void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
     static const char *const marks[] = {"ok", "..", "!!"};
     static const int colors[] = {PNL_ROLE_OK, PNL_ROLE_WARN, PNL_ROLE_FAIL};
 
-    pnl_canvas_text(canvas, 2, y, PNL_FG(colors[mark]), marks[mark]);
+    if (mark == PNL_MARK_WAIT && canvas->screen->spin >= 0)
+        pnl_draw_spinner(canvas, 2, y, PNL_FG(colors[mark]));
+    else
+        pnl_canvas_text(canvas, 2, y, PNL_FG(colors[mark]), marks[mark]);
     pnl_canvas_text(canvas, 6, y, 0, text);
 }
 
@@ -115,7 +118,8 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     int y = 0;
     int rows;
 
-    pnl_menu_refresh(app);
+    if (!app->anim_frame)
+        pnl_menu_refresh(app);
     for (i = 0; i < app->lines_len; i++)
         pnl_draw_line(canvas, y++, &app->lines[i]);
     if (app->lines_len > 0)

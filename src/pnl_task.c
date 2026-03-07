@@ -169,16 +169,13 @@ static void pnl_task_join(pnl_task_t *task)
 static void pnl_task_draw_progress(pnl_task_t *task, pnl_canvas_t *canvas, int y)
 {
     char line[96];
-    int filled;
 
     if (task->total == 0) {
         snprintf(line, sizeof(line), "%llds", (pnl_term_now_ms() - task->started_ms) / 1000);
         pnl_canvas_text(canvas, 2, y, PNL_FG(PNL_ROLE_MUTED), line);
         return;
     }
-    filled = (int)((task->done >= task->total ? task->total : task->done) * PNL_TASK_BAR / task->total);
-    pnl_canvas_fill(canvas, 2, y, filled, 1, PNL_BG(PNL_ROLE_ACCENT));
-    pnl_canvas_fill(canvas, 2 + filled, y, PNL_TASK_BAR - filled, 1, PNL_BG(PNL_ROLE_SURFACE));
+    pnl_canvas_bar(canvas, 2, y, PNL_TASK_BAR, (double)task->done / (double)task->total, PNL_METER_ACCENT);
     snprintf(line, sizeof(line), "%3d%%  %llu / %llu", (int)(task->done >= task->total ? 100 : task->done * 100 / task->total),
              task->done, task->total);
     pnl_canvas_text(canvas, 3 + PNL_TASK_BAR, y, 0, line);
@@ -209,7 +206,12 @@ static void pnl_task_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     (void)app;
     pnl_lock(&task->lock);
     finished = task->finished;
-    pnl_canvas_text(canvas, 2, 0, PNL_BOLD, task->step[0] ? task->step : "working");
+    if (!finished && canvas->screen->spin >= 0) {
+        pnl_draw_spinner(canvas, 2, 0, PNL_FG(PNL_ROLE_ACCENT));
+        pnl_canvas_text(canvas, 4, 0, PNL_BOLD, task->step[0] ? task->step : "working");
+    } else {
+        pnl_canvas_text(canvas, 2, 0, PNL_BOLD, task->step[0] ? task->step : "working");
+    }
     if (finished && task->result_set)
         pnl_draw_mark(canvas, 2, task->result_mark, task->result);
     else if (finished)

@@ -359,6 +359,8 @@ static int pnl_draw(pnl_app_t *app)
     pnl_screen_clear(&app->screen);
     pnl_draw_title(app, top);
     app->frame_ms = pnl_term_now_ms();
+    app->screen.spin = app->motion ? (int)(app->frame_ms / PNL_SPIN_MS % 1000) : -1;
+    app->screen.spinning = 0;
     canvas.screen = &app->screen;
     canvas.x = 0;
     canvas.y = 2;
@@ -372,6 +374,9 @@ static int pnl_draw(pnl_app_t *app)
         footer = pnl_view_hints(app);
     pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
     app->dirty = 0;
+    app->anim_frame = 0;
+    if (app->screen.spinning)
+        pnl_app_animate(app, PNL_SPIN_MS);
     return pnl_screen_render(&app->screen, &app->mem);
 }
 
@@ -456,9 +461,12 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
             status = pnl_read_keys(app);
         pnl_dispatch_watches(app, ready);
         pnl_timers_run(app);
-        if (app->tasks_running > 0 || app->animate_until_ms > pnl_term_now_ms() ||
-            app->animate_until_ms > app->frame_ms)
+        if (app->tasks_running > 0)
             app->dirty = 1;
+        if (!app->dirty && (app->animate_until_ms > pnl_term_now_ms() || app->animate_until_ms > app->frame_ms)) {
+            app->dirty = 1;
+            app->anim_frame = 1;
+        }
     }
     return status;
 }
