@@ -155,10 +155,59 @@ int pnl_app_remove_timer(pnl_app_t *app, int timer)
     return PNL_ERR_NOT_FOUND;
 }
 
+int pnl_app_motion(const pnl_app_t *app)
+{
+    return app != NULL && app->motion;
+}
+
+long long pnl_app_frame_ms(const pnl_app_t *app)
+{
+    if (app == NULL)
+        return 0;
+    return app->frame_ms != 0 ? app->frame_ms : pnl_term_now_ms();
+}
+
+int pnl_app_animate(pnl_app_t *app, int duration_ms)
+{
+    long long until;
+
+    if (app == NULL || duration_ms < 0)
+        return PNL_ERR_ARG;
+    if (!app->motion)
+        return PNL_OK;
+    until = pnl_term_now_ms() + duration_ms;
+    if (until > app->animate_until_ms)
+        app->animate_until_ms = until;
+    return PNL_OK;
+}
+
+double pnl_app_tween(pnl_app_t *app, long long start_ms, int duration_ms)
+{
+    long long elapsed;
+
+    if (app == NULL || !app->motion || duration_ms <= 0)
+        return 1.0;
+    elapsed = pnl_app_frame_ms(app) - start_ms;
+    if (elapsed >= duration_ms)
+        return 1.0;
+    pnl_app_animate(app, (int)(duration_ms - elapsed));
+    return elapsed <= 0 ? 0.0 : (double)elapsed / duration_ms;
+}
+
+static long long pnl_frame_wait(const pnl_app_t *app, long long now)
+{
+    long long next_frame;
+
+    if (app->animate_until_ms <= now)
+        return app->tasks_running > 0 ? PNL_TASK_TICK_MS : -1;
+    next_frame = app->frame_ms + PNL_FRAME_MS - now;
+    return next_frame < 0 ? 0 : next_frame;
+}
+
 int pnl_timers_timeout(const pnl_app_t *app)
 {
     long long now = pnl_term_now_ms();
-    long long next = app->tasks_running > 0 ? PNL_TASK_TICK_MS : -1;
+    long long next = pnl_frame_wait(app, now);
     size_t i;
 
     for (i = 0; i < app->timers_len; i++) {
@@ -309,6 +358,7 @@ static int pnl_draw(pnl_app_t *app)
         return status;
     pnl_screen_clear(&app->screen);
     pnl_draw_title(app, top);
+    app->frame_ms = pnl_term_now_ms();
     canvas.screen = &app->screen;
     canvas.x = 0;
     canvas.y = 2;
@@ -406,7 +456,8 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
             status = pnl_read_keys(app);
         pnl_dispatch_watches(app, ready);
         pnl_timers_run(app);
-        if (app->tasks_running > 0)
+        if (app->tasks_running > 0 || app->animate_until_ms > pnl_term_now_ms() ||
+            app->animate_until_ms > app->frame_ms)
             app->dirty = 1;
     }
     return status;
@@ -419,6 +470,13 @@ static void pnl_timers_restart(pnl_app_t *app)
 
     for (i = 0; i < app->timers_len; i++)
         app->timers[i].due_ms = now + app->timers[i].interval_ms;
+}
+
+static int pnl_motion_detect(void)
+{
+    const char *motion = getenv("TUIKIT_MOTION");
+
+    return motion == NULL || (strcmp(motion, "off") != 0 && strcmp(motion, "0") != 0);
 }
 
 static void pnl_run_palette(pnl_app_t *app)
@@ -447,11 +505,15 @@ int pnl_run_interactive(pnl_app_t *app)
     app->selected = 0;
     app->menu_top = 0;
     pnl_run_palette(app);
+    app->motion = pnl_motion_detect();
+    app->animate_until_ms = 0;
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);
     status = pnl_loop(app, 0);
     app->running = 0;
+    app->motion = 0;
+    app->frame_ms = 0;
     pnl_term_leave(&app->term);
     pnl_views_drop(app);
     pnl_menu_clear_lines(app);

@@ -111,8 +111,6 @@ typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
 PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
                            pnl_app_t **out_app);
 PNL_API void pnl_app_destroy(pnl_app_t *app);
-PNL_DEPRECATED("use pnl_app_on_status and pnl_app_set_refresh")
-PNL_API int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms);
 PNL_API int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx);
 PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
@@ -123,6 +121,10 @@ PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code);
 PNL_API int pnl_app_quit(pnl_app_t *app);
 PNL_API int pnl_app_redraw(pnl_app_t *app);
+PNL_API int pnl_app_motion(const pnl_app_t *app);
+PNL_API long long pnl_app_frame_ms(const pnl_app_t *app);
+PNL_API int pnl_app_animate(pnl_app_t *app, int duration_ms);
+PNL_API double pnl_app_tween(pnl_app_t *app, long long start_ms, int duration_ms);
 PNL_API int pnl_app_add_timer(pnl_app_t *app, int interval_ms, pnl_timer_fn timer_fn, void *timer_ctx, int *out_timer);
 PNL_API int pnl_app_remove_timer(pnl_app_t *app, int timer);
 PNL_API int pnl_app_watch_fd(pnl_app_t *app, int fd, pnl_fd_fn fd_fn, void *fd_ctx);

@@ -1,4 +1,3 @@
-#define PNL_NO_DEPRECATED_WARNINGS
 #include "pnl_internal.h"
 
 #include <stdlib.h>
@@ -129,18 +128,6 @@ int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms)
     if (refresh_ms == 0)
         return PNL_OK;
     return pnl_app_add_timer(app, refresh_ms, NULL, NULL, &app->status_timer);
-}
-
-int pnl_app_set_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx, int refresh_ms)
-{
-    int status;
-
-    if (app == NULL || refresh_ms < 0)
-        return PNL_ERR_ARG;
-    status = pnl_app_on_status(app, status_fn, status_ctx);
-    if (status == PNL_OK)
-        status = pnl_app_set_refresh(app, status_fn != NULL ? refresh_ms : 0);
-    return status;
 }
 
 int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx)

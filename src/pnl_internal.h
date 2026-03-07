@@ -24,6 +24,7 @@
 #define PNL_KEY_CTRL_C 3
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
+#define PNL_FRAME_MS 33
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
 #define PNL_DEPTH_NONE 0
@@ -179,6 +180,9 @@ struct pnl_app {
     size_t watches_len;
     size_t watches_cap;
     int tasks_running;
+    int motion;
+    long long frame_ms;
+    long long animate_until_ms;
     int running;
     int cli;
     int cli_json;

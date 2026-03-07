@@ -198,6 +198,26 @@ static void write_file(const char *path, const char *text)
     fclose(file);
 }
 
+static void test_motion(void)
+{
+    pnl_app_t *app = NULL;
+    long long now;
+
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_motion(app) == 0);
+    now = pnl_app_frame_ms(app);
+    CHECK(now > 0);
+    CHECK(pnl_app_animate(app, 500) == PNL_OK);
+    CHECK(pnl_app_tween(app, now, 500) == 1.0);
+    CHECK(pnl_app_tween(app, now, 0) == 1.0);
+    CHECK(pnl_app_animate(app, -1) == PNL_ERR_ARG);
+    CHECK(pnl_app_animate(NULL, 10) == PNL_ERR_ARG);
+    CHECK(pnl_app_tween(NULL, now, 10) == 1.0);
+    CHECK(pnl_app_motion(NULL) == 0);
+    CHECK(pnl_app_frame_ms(NULL) == 0);
+    pnl_app_destroy(app);
+}
+
 static void test_colors(void)
 {
     const char *path = "tuikit_test_theme.txt";
@@ -447,6 +467,7 @@ int main(void)
     test_loop_parts();
     test_cli();
     test_colors();
+    test_motion();
     test_canvas_and_width();
     test_bad_args();
     test_alloc_failure();
