@@ -4,6 +4,21 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.5.0 - 2026-03-07
+
+The status callback and its refresh interval are set apart; contrast can be raised.
+
+- `pnl_app_on_status(app, fn, ctx)` sets the status callback and `pnl_app_set_refresh(app, ms)`
+  how often the panel redraws on its own (0, the default, redraws only after a key, a timer, a
+  task or `pnl_app_redraw`); the interval can now change while the panel is open without touching
+  the callback
+- `TUIKIT_CONTRAST=high` asks for 7:1 on role colors and 4.5:1 on muted text in true color
+
+### Deprecated
+
+- `pnl_app_set_status` still works but warns at compile time; it goes away in 2.0. Define
+  `PNL_NO_DEPRECATED_WARNINGS` to silence the warning meanwhile
+
 ## 1.4.0 - 2026-02-26
 
 Color that measures: values can be drawn, not only printed.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(c-tuikit VERSION 1.4.0 DESCRIPTION "Interactive panels for command line tools: live status, actions, results" LANGUAGES C)
+project(c-tuikit VERSION 1.5.0 DESCRIPTION "Interactive panels for command line tools: live status, actions, results" LANGUAGES C)
 
 option(C_TUIKIT_BUILD_TESTS "Build tests" OFF)
 option(C_TUIKIT_BUILD_EXAMPLES "Build examples" OFF)
