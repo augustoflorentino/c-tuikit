@@ -4,6 +4,17 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.2.0 - 2026-03-12
+
+Changes catch the eye.
+
+- when a status line's text or mark changes between refreshes, its text gets a tint of the accent
+  color that fades out over 600 ms; lines are matched by position and nothing is highlighted on the
+  first draw
+- a result screen opens with a short flash behind its mark, in the mark's own color
+- in 16 colors the highlight is bold for the first half of the fade; with motion off there is no
+  highlight and no flash
+
 ## 2.1.0 - 2026-03-12
 
 Things that wait now show it, and bars fill smoothly.
