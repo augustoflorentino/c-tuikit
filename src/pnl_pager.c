@@ -12,6 +12,7 @@ struct pnl_pager {
     size_t *lines;
     size_t lines_len;
     size_t top;
+    struct pnl_glide glide;
     size_t page;
     size_t match;
     int has_match;
@@ -118,14 +119,16 @@ static void pnl_pager_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct pnl_pager *pager = ctx;
     int height = pnl_canvas_height(canvas);
+    size_t shown;
     size_t i;
 
-    (void)app;
     pager->page = height > 0 ? (size_t)height : 1;
     if (pager->top > pnl_pager_last_top(pager))
         pager->top = pnl_pager_last_top(pager);
-    for (i = 0; i < pager->page && pager->top + i < pager->lines_len; i++)
-        pnl_pager_draw_line(pager, canvas, (int)i, pager->top + i);
+    pnl_glide_to(app, &pager->glide, (double)pager->top, PNL_MOTION_SLIDE);
+    shown = (size_t)(pnl_glide_at(app, &pager->glide, PNL_MOTION_SLIDE) + 0.5);
+    for (i = 0; i < pager->page && shown + i < pager->lines_len; i++)
+        pnl_pager_draw_line(pager, canvas, (int)i, shown + i);
     pnl_pager_status(pager);
 }
 

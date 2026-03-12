@@ -129,8 +129,6 @@ static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t in
         number[0] = (char)('1' + index);
     else if (index == app->actions_len)
         number[0] = 'q';
-    if (index == app->selected)
-        pnl_canvas_text(canvas, 2, y, style | PNL_FG(PNL_ROLE_ACCENT), ">");
     pnl_canvas_text(canvas, 4, y, PNL_FG(PNL_ROLE_MUTED), number);
     pnl_canvas_text(canvas, 6, y, style, label);
 }
@@ -151,6 +149,8 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
 {
     size_t i;
     int y = 0;
+    int first;
+    int marker;
     int rows;
 
     if (!app->anim_frame)
@@ -166,8 +166,13 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
         y++;
     rows = pnl_canvas_height(canvas) - y;
     pnl_menu_scroll(app, rows > 0 ? (size_t)rows : 0);
+    first = y;
     for (i = app->menu_top; i <= app->actions_len && y < pnl_canvas_height(canvas); i++)
         pnl_draw_item(app, canvas, y++, i);
+    pnl_glide_to(app, &app->select_glide, (double)app->selected, PNL_MOTION_SLIDE);
+    marker = first + (int)(pnl_glide_at(app, &app->select_glide, PNL_MOTION_SLIDE) + 0.5) - (int)app->menu_top;
+    if (marker >= first && marker < y)
+        pnl_canvas_text(canvas, 2, marker, PNL_SELECTED_STYLE | PNL_FG(PNL_ROLE_ACCENT), ">");
     if (app->menu_top > 0)
         pnl_canvas_text(canvas, 0, y - rows, PNL_FG(PNL_ROLE_MUTED), "^");
     if (i <= app->actions_len)

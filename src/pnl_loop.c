@@ -167,6 +167,39 @@ long long pnl_app_frame_ms(const pnl_app_t *app)
     return app->frame_ms != 0 ? app->frame_ms : pnl_term_now_ms();
 }
 
+int pnl_app_enable_motion(pnl_app_t *app, int flags)
+{
+    if (app == NULL || (flags & ~PNL_MOTION_ALL) != 0)
+        return PNL_ERR_ARG;
+    app->motion_flags |= flags;
+    return PNL_OK;
+}
+
+int pnl_motion_on(const pnl_app_t *app, int flag)
+{
+    return app->motion && (app->motion_flags & flag) != 0;
+}
+
+double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, int flag)
+{
+    double t;
+
+    if (!pnl_motion_on(app, flag))
+        return glide->to;
+    t = pnl_app_tween(app, glide->start_ms, PNL_GLIDE_MS);
+    t = 1.0 - (1.0 - t) * (1.0 - t);
+    return glide->from + (glide->to - glide->from) * t;
+}
+
+void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag)
+{
+    if (glide->to == target)
+        return;
+    glide->from = pnl_motion_on(app, flag) ? pnl_glide_at(app, glide, flag) : target;
+    glide->to = target;
+    glide->start_ms = pnl_term_now_ms();
+}
+
 int pnl_app_animate(pnl_app_t *app, int duration_ms)
 {
     long long until;
@@ -480,10 +513,12 @@ static void pnl_timers_restart(pnl_app_t *app)
         app->timers[i].due_ms = now + app->timers[i].interval_ms;
 }
 
-static int pnl_motion_detect(void)
+static int pnl_motion_detect(pnl_app_t *app)
 {
     const char *motion = getenv("TUIKIT_MOTION");
 
+    if (motion != NULL && strcmp(motion, "all") == 0)
+        app->motion_flags = PNL_MOTION_ALL;
     return motion == NULL || (strcmp(motion, "off") != 0 && strcmp(motion, "0") != 0);
 }
 
@@ -513,7 +548,8 @@ int pnl_run_interactive(pnl_app_t *app)
     app->selected = 0;
     app->menu_top = 0;
     pnl_run_palette(app);
-    app->motion = pnl_motion_detect();
+    app->motion = pnl_motion_detect(app);
+    app->select_glide.from = app->select_glide.to = 0.0;
     app->seen_len = 0;
     app->seen_ready = 0;
     app->animate_until_ms = 0;

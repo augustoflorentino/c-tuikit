@@ -90,6 +90,8 @@ extern "C" {
 #define PNL_ROLE_INFO 37
 #define PNL_ROLE_SURFACE 38
 
+#define PNL_MOTION_SLIDE 1
+
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1
 
@@ -122,6 +124,7 @@ PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_cod
 PNL_API int pnl_app_quit(pnl_app_t *app);
 PNL_API int pnl_app_redraw(pnl_app_t *app);
 PNL_API int pnl_app_motion(const pnl_app_t *app);
+PNL_API int pnl_app_enable_motion(pnl_app_t *app, int flags);
 PNL_API long long pnl_app_frame_ms(const pnl_app_t *app);
 PNL_API int pnl_app_animate(pnl_app_t *app, int duration_ms);
 PNL_API double pnl_app_tween(pnl_app_t *app, long long start_ms, int duration_ms);

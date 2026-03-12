@@ -215,6 +215,9 @@ static void test_motion(void)
     CHECK(pnl_app_tween(NULL, now, 10) == 1.0);
     CHECK(pnl_app_motion(NULL) == 0);
     CHECK(pnl_app_frame_ms(NULL) == 0);
+    CHECK(pnl_app_enable_motion(app, PNL_MOTION_SLIDE) == PNL_OK);
+    CHECK(pnl_app_enable_motion(app, 0x4000) == PNL_ERR_ARG);
+    CHECK(pnl_app_enable_motion(NULL, PNL_MOTION_SLIDE) == PNL_ERR_ARG);
     pnl_app_destroy(app);
 }
 

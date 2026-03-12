@@ -26,6 +26,8 @@
 #define PNL_TASK_TICK_MS 50
 #define PNL_FRAME_MS 33
 #define PNL_SPIN_MS 80
+#define PNL_GLIDE_MS 140
+#define PNL_MOTION_ALL PNL_MOTION_SLIDE
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
 #define PNL_FADE_FIRST 128
@@ -134,6 +136,12 @@ struct pnl_line {
     char *text;
 };
 
+struct pnl_glide {
+    double from;
+    double to;
+    long long start_ms;
+};
+
 struct pnl_seen {
     unsigned long hash;
     long long changed_ms;
@@ -197,6 +205,8 @@ struct pnl_app {
     size_t watches_cap;
     int tasks_running;
     int motion;
+    int motion_flags;
+    struct pnl_glide select_glide;
     int anim_frame;
     long long frame_ms;
     long long animate_until_ms;
@@ -266,6 +276,9 @@ PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
 PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);
 PNL_INTERNAL int pnl_level_color(double fraction);
 PNL_INTERNAL int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int role, long long start_ms, int from_step);
+PNL_INTERNAL int pnl_motion_on(const pnl_app_t *app, int flag);
+PNL_INTERNAL double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, int flag);
+PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
