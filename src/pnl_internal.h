@@ -27,7 +27,8 @@
 #define PNL_FRAME_MS 33
 #define PNL_SPIN_MS 80
 #define PNL_GLIDE_MS 140
-#define PNL_MOTION_ALL PNL_MOTION_SLIDE
+#define PNL_MOTION_ALL (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION)
+#define PNL_TRANSITION_MS 160
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
 #define PNL_FADE_FIRST 128
@@ -207,6 +208,8 @@ struct pnl_app {
     int motion;
     int motion_flags;
     struct pnl_glide select_glide;
+    long long transition_ms;
+    int transition_shift;
     int anim_frame;
     long long frame_ms;
     long long animate_until_ms;

@@ -91,6 +91,7 @@ extern "C" {
 #define PNL_ROLE_SURFACE 38
 
 #define PNL_MOTION_SLIDE 1
+#define PNL_MOTION_TRANSITION 2
 
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1

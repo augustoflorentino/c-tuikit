@@ -8,6 +8,27 @@
 #define PNL_TITLE_STYLE PNL_BOLD
 #define PNL_FOOTER_STYLE PNL_FG(PNL_ROLE_MUTED)
 
+static void pnl_transition_start(pnl_app_t *app, int divisor)
+{
+    if (!app->running || !pnl_motion_on(app, PNL_MOTION_TRANSITION))
+        return;
+    app->transition_ms = pnl_term_now_ms();
+    app->transition_shift = app->screen.width / divisor;
+}
+
+static int pnl_transition_offset(pnl_app_t *app)
+{
+    double t;
+
+    if (app->transition_shift == 0)
+        return 0;
+    t = pnl_app_tween(app, app->transition_ms, PNL_TRANSITION_MS);
+    if (t >= 1.0)
+        app->transition_shift = 0;
+    t = 1.0 - (1.0 - t) * (1.0 - t);
+    return (int)((1.0 - t) * app->transition_shift + 0.5);
+}
+
 int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
 {
     int status;
@@ -22,6 +43,7 @@ int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
     if (status != PNL_OK)
         return status;
     app->views[app->views_len++] = *view;
+    pnl_transition_start(app, 3);
     app->dirty = 1;
     return PNL_OK;
 }
@@ -61,6 +83,7 @@ int pnl_view_pop(pnl_app_t *app)
     pnl_mem_free(&app->mem, view.hints);
     if (view.drop_fn != NULL)
         view.drop_fn(app, view.ctx);
+    pnl_transition_start(app, 6);
     app->dirty = 1;
     return PNL_OK;
 }
@@ -395,7 +418,7 @@ static int pnl_draw(pnl_app_t *app)
     app->screen.spin = app->motion ? (int)(app->frame_ms / PNL_SPIN_MS % 1000) : -1;
     app->screen.spinning = 0;
     canvas.screen = &app->screen;
-    canvas.x = 0;
+    canvas.x = pnl_transition_offset(app);
     canvas.y = 2;
     canvas.width = width;
     canvas.height = height > 4 ? height - 4 : 0;
@@ -550,6 +573,7 @@ int pnl_run_interactive(pnl_app_t *app)
     pnl_run_palette(app);
     app->motion = pnl_motion_detect(app);
     app->select_glide.from = app->select_glide.to = 0.0;
+    app->transition_shift = 0;
     app->seen_len = 0;
     app->seen_ready = 0;
     app->animate_until_ms = 0;
