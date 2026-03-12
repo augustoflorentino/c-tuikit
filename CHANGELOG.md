@@ -4,6 +4,18 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.3.0 - 2026-03-12
+
+Optional motion, first part: the selection slides and pages scroll smoothly.
+
+- `pnl_app_enable_motion(app, PNL_MOTION_SLIDE)` turns on the first optional animation: the menu's
+  `>` marker travels to the new item over 140 ms instead of jumping, and the pager scrolls a page
+  down or up over the same time
+- `TUIKIT_MOTION=all` turns on every optional animation from the terminal; `TUIKIT_MOTION=off`
+  still turns off all motion, default or optional
+- a key pressed while something slides acts at once, and the slide continues from where it was
+  toward the new place
+
 ## 2.2.0 - 2026-03-12
 
 Changes catch the eye.
