@@ -4,6 +4,17 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.1.0 - 2026-03-12
+
+Things that wait now show it, and bars fill smoothly.
+
+- a `..` mark turns into a spinner while the panel is open, and a running task shows one next to
+  its step; with motion off the marks stay as they were
+- bars, status meters and the task progress bar fill in eighths of a cell, so a 30-cell bar has
+  240 steps instead of 30
+- frames drawn only to move a spinner reuse the status lines from the last refresh instead of
+  calling the status callback again
+
 ## 2.0.0 - 2026-03-07
 
 A frame clock: the panel can now animate, and the deprecated status call is gone.
