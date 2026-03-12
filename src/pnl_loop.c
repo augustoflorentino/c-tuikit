@@ -514,6 +514,8 @@ int pnl_run_interactive(pnl_app_t *app)
     app->menu_top = 0;
     pnl_run_palette(app);
     app->motion = pnl_motion_detect();
+    app->seen_len = 0;
+    app->seen_ready = 0;
     app->animate_until_ms = 0;
     app->dirty = 1;
     app->screen.front_valid = 0;

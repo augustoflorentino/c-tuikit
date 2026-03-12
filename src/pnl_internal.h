@@ -28,6 +28,9 @@
 #define PNL_SPIN_MS 80
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
+#define PNL_FADE_FIRST 128
+#define PNL_FADE_STEPS 16
+#define PNL_FADE_MS 600
 #define PNL_DEPTH_NONE 0
 #define PNL_DEPTH_16 1
 #define PNL_DEPTH_256 2
@@ -53,6 +56,7 @@ struct pnl_cell {
 struct pnl_palette {
     int depth;
     int light;
+    unsigned long background;
     unsigned long rgb[PNL_ROLES];
     int x256[PNL_ROLES];
     int basic[PNL_ROLES];
@@ -130,6 +134,11 @@ struct pnl_line {
     char *text;
 };
 
+struct pnl_seen {
+    unsigned long hash;
+    long long changed_ms;
+};
+
 struct pnl_timer {
     int id;
     int interval_ms;
@@ -169,6 +178,10 @@ struct pnl_app {
     struct pnl_line *lines;
     size_t lines_len;
     size_t lines_cap;
+    struct pnl_seen *seen;
+    size_t seen_len;
+    size_t seen_cap;
+    int seen_ready;
     int in_status;
     size_t selected;
     size_t menu_top;
@@ -252,6 +265,7 @@ PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
 PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);
 PNL_INTERNAL int pnl_level_color(double fraction);
+PNL_INTERNAL int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int role, long long start_ms, int from_step);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);

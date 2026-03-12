@@ -9,8 +9,11 @@
 
 struct pnl_result_view {
     int mark;
+    long long shown_ms;
     char *text;
 };
+
+static const int pnl_mark_roles[] = {PNL_ROLE_OK, PNL_ROLE_WARN, PNL_ROLE_FAIL};
 
 void pnl_menu_clear_lines(pnl_app_t *app)
 {
@@ -49,29 +52,59 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
 void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 {
     static const char *const marks[] = {"ok", "..", "!!"};
-    static const int colors[] = {PNL_ROLE_OK, PNL_ROLE_WARN, PNL_ROLE_FAIL};
-
     if (mark == PNL_MARK_WAIT && canvas->screen->spin >= 0)
-        pnl_draw_spinner(canvas, 2, y, PNL_FG(colors[mark]));
+        pnl_draw_spinner(canvas, 2, y, PNL_FG(pnl_mark_roles[mark]));
     else
-        pnl_canvas_text(canvas, 2, y, PNL_FG(colors[mark]), marks[mark]);
+        pnl_canvas_text(canvas, 2, y, PNL_FG(pnl_mark_roles[mark]), marks[mark]);
     pnl_canvas_text(canvas, 6, y, 0, text);
 }
 
 #define PNL_METER_WIDTH 12
 
-static void pnl_draw_line(pnl_canvas_t *canvas, int y, const struct pnl_line *line)
+static void pnl_draw_line(pnl_canvas_t *canvas, int y, const struct pnl_line *line, int highlight)
 {
     char percent[8];
     int x;
 
     pnl_draw_mark(canvas, y, line->mark, line->text);
+    if (highlight != 0)
+        pnl_canvas_text(canvas, 6, y, highlight, line->text);
     if (line->meter < 0.0)
         return;
     x = 6 + pnl_text_width(line->text) + 2;
     pnl_canvas_bar(canvas, x, y, PNL_METER_WIDTH, line->meter, PNL_METER_LEVEL);
     snprintf(percent, sizeof(percent), "%3d%%", (int)(line->meter * 100 + 0.5));
     pnl_canvas_text(canvas, x + PNL_METER_WIDTH + 1, y, PNL_FG(PNL_ROLE_MUTED), percent);
+}
+
+static unsigned long pnl_line_hash(const struct pnl_line *line)
+{
+    unsigned long hash = 5381UL + (unsigned long)line->mark;
+    const unsigned char *p;
+
+    for (p = (const unsigned char *)line->text; *p != '\0'; p++)
+        hash = hash * 33UL + *p;
+    return hash;
+}
+
+static void pnl_menu_track(pnl_app_t *app)
+{
+    long long now = pnl_app_frame_ms(app);
+    size_t i;
+
+    if (pnl_mem_grow(&app->mem, (void **)&app->seen, &app->seen_cap, app->lines_len, sizeof(*app->seen)) != PNL_OK)
+        return;
+    for (i = 0; i < app->lines_len; i++) {
+        unsigned long hash = pnl_line_hash(&app->lines[i]);
+
+        if (i >= app->seen_len)
+            app->seen[i].changed_ms = app->seen_ready ? now : 0;
+        else if (app->seen[i].hash != hash)
+            app->seen[i].changed_ms = now;
+        app->seen[i].hash = hash;
+    }
+    app->seen_len = app->lines_len;
+    app->seen_ready = 1;
 }
 
 void pnl_menu_refresh(pnl_app_t *app)
@@ -82,6 +115,8 @@ void pnl_menu_refresh(pnl_app_t *app)
     app->in_status = 1;
     app->status_fn(app->status_ctx, app);
     app->in_status = 0;
+    if (app->running)
+        pnl_menu_track(app);
 }
 
 static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t index)
@@ -120,8 +155,13 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
 
     if (!app->anim_frame)
         pnl_menu_refresh(app);
-    for (i = 0; i < app->lines_len; i++)
-        pnl_draw_line(canvas, y++, &app->lines[i]);
+    for (i = 0; i < app->lines_len; i++) {
+        int highlight = i < app->seen_len && app->seen[i].changed_ms != 0
+                            ? pnl_fade_style(app, canvas, PNL_ROLE_ACCENT, app->seen[i].changed_ms, 9)
+                            : 0;
+
+        pnl_draw_line(canvas, y++, &app->lines[i], highlight);
+    }
     if (app->lines_len > 0)
         y++;
     rows = pnl_canvas_height(canvas) - y;
@@ -189,9 +229,14 @@ int pnl_menu_key(pnl_app_t *app, int key)
 static void pnl_result_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct pnl_result_view *view = ctx;
+    int flash;
 
-    (void)app;
+    if (view->shown_ms == 0)
+        view->shown_ms = pnl_app_frame_ms(app);
     pnl_draw_mark(canvas, 0, view->mark, view->text);
+    flash = pnl_fade_style(app, canvas, pnl_mark_roles[view->mark], view->shown_ms, 4);
+    if (flash != 0)
+        pnl_canvas_text(canvas, 1, 0, flash | PNL_BOLD, view->mark == PNL_MARK_OK ? " ok " : view->mark == PNL_MARK_FAIL ? " !! " : " .. ");
 }
 
 static int pnl_result_key(void *ctx, pnl_app_t *app, int key)
@@ -224,6 +269,7 @@ int pnl_result(pnl_app_t *app, int mark, const char *text)
     if (result == NULL)
         return PNL_ERR_NOMEM;
     result->mark = mark;
+    result->shown_ms = 0;
     result->text = pnl_mem_copy(&app->mem, text);
     memset(&view, 0, sizeof(view));
     view.footer = PNL_RESULT_FOOTER;

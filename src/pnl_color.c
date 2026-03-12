@@ -108,6 +108,7 @@ void pnl_palette_init(struct pnl_palette *palette, const struct pnl_theme *theme
 
     palette->depth = depth;
     palette->light = light;
+    palette->background = background;
     for (i = 0; i < PNL_ROLES; i++) {
         double minimum = i + PNL_ROLE_FIRST == PNL_ROLE_MUTED ? PNL_CONTRAST_MUTED : PNL_CONTRAST_TEXT;
 
@@ -190,12 +191,39 @@ static int pnl_level_ink(char *buf, int step, int base, const struct pnl_palette
     return pnl_ink_basic(buf, (unsigned)basic, base, base + 60);
 }
 
+static int pnl_fade_ink(char *buf, int fade, int base, const struct pnl_palette *palette)
+{
+    int role = fade / PNL_FADE_STEPS;
+    int step = fade % PNL_FADE_STEPS;
+    unsigned long rgb = pnl_mix(palette->rgb[role], palette->background, step * 100 / (PNL_FADE_STEPS - 1));
+
+    if (palette->depth == PNL_DEPTH_TRUE)
+        return sprintf(buf, ";%d;2;%lu;%lu;%lu", base + 8, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+    return sprintf(buf, ";%d;5;%d", base + 8, pnl_rgb_to_256(rgb));
+}
+
+int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int role, long long start_ms, int from_step)
+{
+    double t = pnl_app_tween(app, start_ms, PNL_FADE_MS);
+    int depth = canvas->screen->palette.depth;
+    int step;
+
+    if (t >= 1.0)
+        return 0;
+    if (depth != PNL_DEPTH_TRUE && depth != PNL_DEPTH_256)
+        return t < 0.5 ? PNL_BOLD : 0;
+    step = from_step + (int)(t * (PNL_FADE_STEPS - 1 - from_step));
+    return PNL_BG(PNL_FADE_FIRST + (role - PNL_ROLE_FIRST) * PNL_FADE_STEPS + step);
+}
+
 int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette)
 {
     int base = background ? 40 : 30;
     unsigned long rgb;
     int role;
 
+    if (ink >= PNL_FADE_FIRST && ink < PNL_FADE_FIRST + PNL_ROLES * PNL_FADE_STEPS)
+        return pnl_fade_ink(buf, (int)ink - PNL_FADE_FIRST, base, palette);
     if (ink >= PNL_LEVEL_FIRST && ink < PNL_LEVEL_FIRST + PNL_LEVEL_STEPS)
         return pnl_level_ink(buf, (int)ink - PNL_LEVEL_FIRST, base, palette);
     if (ink < PNL_ROLE_FIRST || ink >= PNL_ROLE_FIRST + PNL_ROLES)
