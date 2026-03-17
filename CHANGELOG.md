@@ -4,6 +4,15 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.4.0 - 2026-03-16
+
+Optional motion, second part: screens slide in.
+
+- with `PNL_MOTION_TRANSITION` a screen that opens slides in from the right over 160 ms, starting a
+  third of the width away, and the screen you return to settles in from a sixth of the width; the
+  title and the footer stay put
+- `TUIKIT_MOTION=all` includes it
+
 ## 2.3.0 - 2026-03-12
 
 Optional motion, first part: the selection slides and pages scroll smoothly.
