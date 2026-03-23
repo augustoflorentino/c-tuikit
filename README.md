@@ -30,8 +30,10 @@ up/down: move  enter: choose  ?: help  q: quit
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
   (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`)
 - bars, sparklines and status meters that shift from green to red as the value rises
-- a frame clock for small time-based animations, which never hold back a key and turn off with
-  `TUIKIT_MOTION=off`
+- a frame clock for small time-based animations: spinners, smooth bars, a fading highlight on
+  values that change; optional sliding selection, screen transitions, pulse and typewriter
+  (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
+  or on their own over a slow SSH link
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install

@@ -32,6 +32,7 @@
 #define PNL_PULSE_DEPTH 7
 #define PNL_TYPE_CHAR_MS 12
 #define PNL_TYPE_MAX_MS 400
+#define PNL_SLOW_LINK_MS 60
 #define PNL_TRANSITION_MS 160
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
@@ -212,6 +213,7 @@ struct pnl_app {
     int tasks_running;
     int motion;
     int motion_flags;
+    long reply_ms;
     struct pnl_glide select_glide;
     long long transition_ms;
     int transition_shift;
@@ -277,7 +279,8 @@ PNL_INTERNAL void pnl_palette_init(struct pnl_palette *palette, const struct pnl
                                    long background_rgb, int high_contrast);
 PNL_INTERNAL int pnl_rgb_to_256(unsigned long rgb);
 PNL_INTERNAL int pnl_theme_choose(struct pnl_theme *theme, const char *name);
-PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb);
+PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb, long *out_reply_ms);
+PNL_INTERNAL long pnl_link_probe(struct pnl_term *term);
 
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);

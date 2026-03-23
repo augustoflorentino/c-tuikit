@@ -122,25 +122,51 @@ static int pnl_background_env(long *out_rgb)
     return 1;
 }
 
-int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb)
+static long pnl_query(struct pnl_term *term, const char *query, size_t query_len, long *out_rgb, long *out_reply_ms)
 {
-    long deadline;
+    long long sent = pnl_term_now_ms();
+    long long deadline = sent + PNL_QUERY_WAIT_MS;
     long rgb = -2;
 
-    *out_rgb = -1;
-    if (pnl_background_env(out_rgb))
-        return 1;
-    if (depth == PNL_DEPTH_NONE || pnl_term_write(PNL_QUERY, sizeof(PNL_QUERY) - 1) != PNL_OK)
-        return 0;
-    deadline = (long)pnl_term_now_ms() + PNL_QUERY_WAIT_MS;
-    while (rgb == -2) {
-        long left = deadline - (long)pnl_term_now_ms();
+    *out_reply_ms = -1;
+    if (pnl_term_write(query, query_len) != PNL_OK)
+        return -1;
+    for (;;) {
+        long long left = deadline - pnl_term_now_ms();
+        int answered;
 
         rgb = pnl_take_osc(term);
-        if (rgb != -2 || pnl_take_da(term) || left <= 0 || pnl_term_fill(term, (int)left) <= 0)
+        answered = rgb != -2 || pnl_take_da(term);
+        if (answered && *out_reply_ms < 0)
+            *out_reply_ms = (long)(pnl_term_now_ms() - sent);
+        if (answered || left <= 0 || pnl_term_fill(term, (int)left) <= 0)
             break;
     }
     pnl_take_da(term);
+    *out_rgb = rgb;
+    return rgb;
+}
+
+long pnl_link_probe(struct pnl_term *term)
+{
+    long rgb;
+    long reply_ms;
+
+    pnl_query(term, "\x1b[c", 3, &rgb, &reply_ms);
+    return reply_ms;
+}
+
+int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb, long *out_reply_ms)
+{
+    long rgb;
+
+    *out_rgb = -1;
+    *out_reply_ms = -1;
+    if (pnl_background_env(out_rgb))
+        return 1;
+    if (depth == PNL_DEPTH_NONE)
+        return 0;
+    pnl_query(term, PNL_QUERY, sizeof(PNL_QUERY) - 1, &rgb, out_reply_ms);
     if (rgb < 0)
         return 0;
     *out_rgb = rgb;

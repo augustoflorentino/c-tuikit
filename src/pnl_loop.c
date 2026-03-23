@@ -548,13 +548,28 @@ static void pnl_timers_restart(pnl_app_t *app)
         app->timers[i].due_ms = now + app->timers[i].interval_ms;
 }
 
+static int pnl_link_slow(pnl_app_t *app)
+{
+    const char *ssh = getenv("SSH_CONNECTION");
+
+    if (ssh == NULL || ssh[0] == '\0')
+        return 0;
+    if (app->reply_ms < 0)
+        app->reply_ms = pnl_link_probe(&app->term);
+    return app->reply_ms < 0 || app->reply_ms > PNL_SLOW_LINK_MS;
+}
+
 static int pnl_motion_detect(pnl_app_t *app)
 {
     const char *motion = getenv("TUIKIT_MOTION");
 
     if (motion != NULL && strcmp(motion, "all") == 0)
         app->motion_flags = PNL_MOTION_ALL;
-    return motion == NULL || (strcmp(motion, "off") != 0 && strcmp(motion, "0") != 0);
+    if (motion != NULL && (strcmp(motion, "off") == 0 || strcmp(motion, "0") == 0))
+        return 0;
+    if (motion != NULL && (strcmp(motion, "on") == 0 || strcmp(motion, "all") == 0))
+        return 1;
+    return !pnl_link_slow(app);
 }
 
 static void pnl_run_palette(pnl_app_t *app)
@@ -564,7 +579,7 @@ static void pnl_run_palette(pnl_app_t *app)
     const char *contrast = getenv("TUIKIT_CONTRAST");
     int depth = pnl_color_detect();
     long background = -1;
-    int known = pnl_background_detect(&app->term, depth, &background);
+    int known = pnl_background_detect(&app->term, depth, &background, &app->reply_ms);
 
     if (chosen != NULL && chosen[0] != '\0')
         pnl_theme_choose(&theme, chosen);
