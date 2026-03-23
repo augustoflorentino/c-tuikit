@@ -16,6 +16,17 @@ static void pnl_transition_start(pnl_app_t *app, int divisor)
     app->transition_shift = app->screen.width / divisor;
 }
 
+static int pnl_pulse_step(const pnl_app_t *app)
+{
+    int phase;
+    int depth = app->screen.palette.depth;
+
+    if (!pnl_motion_on(app, PNL_MOTION_PULSE) || (depth != PNL_DEPTH_TRUE && depth != PNL_DEPTH_256))
+        return -1;
+    phase = (int)(app->frame_ms % PNL_PULSE_MS) * 2 * PNL_PULSE_DEPTH / PNL_PULSE_MS;
+    return phase < PNL_PULSE_DEPTH ? phase : 2 * PNL_PULSE_DEPTH - phase;
+}
+
 static int pnl_transition_offset(pnl_app_t *app)
 {
     double t;
@@ -417,6 +428,7 @@ static int pnl_draw(pnl_app_t *app)
     app->frame_ms = pnl_term_now_ms();
     app->screen.spin = app->motion ? (int)(app->frame_ms / PNL_SPIN_MS % 1000) : -1;
     app->screen.spinning = 0;
+    app->screen.pulse = pnl_pulse_step(app);
     canvas.screen = &app->screen;
     canvas.x = pnl_transition_offset(app);
     canvas.y = 2;

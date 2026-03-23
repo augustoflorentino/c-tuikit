@@ -198,13 +198,14 @@ void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, 
 
 int pnl_text_width(const char *text)
 {
-    size_t len;
+    return text == NULL ? 0 : pnl_text_width_n(text, strlen(text));
+}
+
+int pnl_text_width_n(const char *text, size_t len)
+{
     size_t pos = 0;
     int width = 0;
 
-    if (text == NULL)
-        return 0;
-    len = strlen(text);
     while (pos < len) {
         uint32_t cp;
         int w;

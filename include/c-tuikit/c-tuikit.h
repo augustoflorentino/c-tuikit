@@ -92,6 +92,8 @@ extern "C" {
 
 #define PNL_MOTION_SLIDE 1
 #define PNL_MOTION_TRANSITION 2
+#define PNL_MOTION_PULSE 4
+#define PNL_MOTION_TYPEWRITER 8
 
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1

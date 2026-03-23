@@ -52,9 +52,14 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
 void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 {
     static const char *const marks[] = {"ok", "..", "!!"};
-    if (mark == PNL_MARK_WAIT && canvas->screen->spin >= 0)
+    if (mark == PNL_MARK_WAIT && canvas->screen->spin >= 0) {
         pnl_draw_spinner(canvas, 2, y, PNL_FG(pnl_mark_roles[mark]));
-    else
+    } else if (mark == PNL_MARK_FAIL && canvas->screen->pulse >= 0) {
+        canvas->screen->spinning = 1;
+        pnl_canvas_text(canvas, 2, y, PNL_FG(PNL_FADE_FIRST + (PNL_ROLE_FAIL - PNL_ROLE_ACCENT) * PNL_FADE_STEPS +
+                                             canvas->screen->pulse),
+                        marks[mark]);
+    } else
         pnl_canvas_text(canvas, 2, y, PNL_FG(pnl_mark_roles[mark]), marks[mark]);
     pnl_canvas_text(canvas, 6, y, 0, text);
 }
@@ -231,6 +236,31 @@ int pnl_menu_key(pnl_app_t *app, int key)
     return 1;
 }
 
+static void pnl_result_type(pnl_app_t *app, pnl_canvas_t *canvas, const struct pnl_result_view *view)
+{
+    size_t len = strlen(view->text);
+    size_t chars = 0;
+    size_t shown;
+    size_t cut;
+    size_t i;
+    double t;
+
+    if (!pnl_motion_on(app, PNL_MOTION_TYPEWRITER))
+        return;
+    for (i = 0; i < len; i++)
+        chars += ((unsigned char)view->text[i] & 0xc0) != 0x80;
+    t = pnl_app_tween(app, view->shown_ms, chars * PNL_TYPE_CHAR_MS < PNL_TYPE_MAX_MS ? (int)chars * PNL_TYPE_CHAR_MS
+                                                                                       : PNL_TYPE_MAX_MS);
+    if (t >= 1.0)
+        return;
+    shown = (size_t)(t * (double)chars);
+    for (cut = 0; cut < len; cut++) {
+        if (((unsigned char)view->text[cut] & 0xc0) != 0x80 && shown-- == 0)
+            break;
+    }
+    pnl_canvas_fill(canvas, 6 + pnl_text_width_n(view->text, cut), 0, pnl_canvas_width(canvas), 1, 0);
+}
+
 static void pnl_result_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct pnl_result_view *view = ctx;
@@ -239,6 +269,7 @@ static void pnl_result_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     if (view->shown_ms == 0)
         view->shown_ms = pnl_app_frame_ms(app);
     pnl_draw_mark(canvas, 0, view->mark, view->text);
+    pnl_result_type(app, canvas, view);
     flash = pnl_fade_style(app, canvas, pnl_mark_roles[view->mark], view->shown_ms, 4);
     if (flash != 0)
         pnl_canvas_text(canvas, 1, 0, flash | PNL_BOLD, view->mark == PNL_MARK_OK ? " ok " : view->mark == PNL_MARK_FAIL ? " !! " : " .. ");

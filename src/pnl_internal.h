@@ -27,7 +27,11 @@
 #define PNL_FRAME_MS 33
 #define PNL_SPIN_MS 80
 #define PNL_GLIDE_MS 140
-#define PNL_MOTION_ALL (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION)
+#define PNL_MOTION_ALL (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER)
+#define PNL_PULSE_MS 1200
+#define PNL_PULSE_DEPTH 7
+#define PNL_TYPE_CHAR_MS 12
+#define PNL_TYPE_MAX_MS 400
 #define PNL_TRANSITION_MS 160
 #define PNL_LEVEL_FIRST 64
 #define PNL_LEVEL_STEPS 64
@@ -77,6 +81,7 @@ struct pnl_screen {
     int front_valid;
     struct pnl_palette palette;
     int spin;
+    int pulse;
     int spinning;
     struct pnl_cell *back;
     struct pnl_cell *front;
@@ -283,6 +288,7 @@ PNL_INTERNAL int pnl_motion_on(const pnl_app_t *app, int flag);
 PNL_INTERNAL double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, int flag);
 PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
+PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
 PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);
