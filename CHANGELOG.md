@@ -4,6 +4,16 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.5.0 - 2026-03-23
+
+Optional motion, third part: failures pulse and results type themselves out.
+
+- with `PNL_MOTION_PULSE` every `!!` mark breathes slowly between the fail color and a dimmer
+  shade, once every 1.2 s, so a failure on a busy panel is hard to miss; 256 colors or more
+- with `PNL_MOTION_TYPEWRITER` the text of a result screen appears letter by letter, 12 ms each and
+  never more than 400 ms in all; a key pressed meanwhile acts at once
+- `TUIKIT_MOTION=all` includes both
+
 ## 2.4.0 - 2026-03-16
 
 Optional motion, second part: screens slide in.
