@@ -1,4 +1,4 @@
-<abi-corpus version='3.0' architecture='elf-amd-x86_64' soname='libtuikit.so.2' tracking-non-reachable-types='yes'>
+<abi-corpus version='3.0' architecture='elf-amd-x86_64' soname='libtuikit.so.3' tracking-non-reachable-types='yes'>
   <elf-needed>
     <dependency name='libc.so.6'/>
   </elf-needed>
@@ -8,6 +8,7 @@
     <elf-symbol name='pnl_app_animate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_app_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_app_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_app_enable_motion' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_app_frame_ms' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_app_motion' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_app_on_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
@@ -23,6 +24,7 @@
     <elf-symbol name='pnl_app_with_terminal' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_canvas_bar' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_canvas_fill' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_canvas_focused' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_canvas_height' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_canvas_sparkline' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_canvas_text' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
@@ -31,6 +33,12 @@
     <elf-symbol name='pnl_confirm' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_input' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_key_decode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_focus' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_panel' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_size' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_layout_split' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_pager' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_pick' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_result' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
@@ -48,6 +56,7 @@
     <elf-symbol name='pnl_text_width' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_view_pop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_view_push' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='pnl_view_push_layout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='pnl_view_set_hints' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
   </elf-function-symbols>
   <abi-types>
@@ -60,395 +69,461 @@
     <pointer-type-def type-id='type-id-6' size-in-bits='64' hash='462ed913cfdb1d83' id='type-id-7'/>
     <qualified-type-def type-id='type-id-8' const='yes' hash='5b554ef661d318c6' id='type-id-9'/>
     <pointer-type-def type-id='type-id-9' size-in-bits='64' hash='fdb7ed2f1a74590d' id='type-id-10'/>
-    <qualified-type-def type-id='type-id-11' const='yes' hash='e82e96c38a7321f7' id='type-id-12'/>
-    <pointer-type-def type-id='type-id-12' size-in-bits='64' hash='1ae86ece2e5f320e' id='type-id-13'/>
-    <qualified-type-def type-id='type-id-14' const='yes' hash='feef088ff8930de2' id='type-id-15'/>
-    <pointer-type-def type-id='type-id-15' size-in-bits='64' hash='5c47c52341287848' id='type-id-16'/>
-    <qualified-type-def type-id='type-id-17' const='yes' hash='1341ea448978b3ff' id='type-id-18'/>
-    <pointer-type-def type-id='type-id-18' size-in-bits='64' hash='945d60bbed1a29fa' id='type-id-19'/>
+    <qualified-type-def type-id='type-id-11' const='yes' hash='429c6f27cc2685d8' id='type-id-12'/>
+    <pointer-type-def type-id='type-id-12' size-in-bits='64' hash='5e782202144ebe2a' id='type-id-13'/>
+    <qualified-type-def type-id='type-id-14' const='yes' hash='e82e96c38a7321f7' id='type-id-15'/>
+    <pointer-type-def type-id='type-id-15' size-in-bits='64' hash='1ae86ece2e5f320e' id='type-id-16'/>
+    <qualified-type-def type-id='type-id-17' const='yes' hash='feef088ff8930de2' id='type-id-18'/>
+    <pointer-type-def type-id='type-id-18' size-in-bits='64' hash='5c47c52341287848' id='type-id-19'/>
+    <qualified-type-def type-id='type-id-20' const='yes' hash='6297dc13c2f17ab9' id='type-id-21'/>
+    <pointer-type-def type-id='type-id-21' size-in-bits='64' hash='5cc4ff88c54c00b1' id='type-id-22'/>
+    <qualified-type-def type-id='type-id-23' const='yes' hash='1341ea448978b3ff' id='type-id-24'/>
+    <pointer-type-def type-id='type-id-24' size-in-bits='64' hash='945d60bbed1a29fa' id='type-id-25'/>
     <type-decl name='double' size-in-bits='64' hash='e9e9b320886d9aa6' id='type-id-8'/>
-    <function-type size-in-bits='64' hash='1d2a0e161d00b727' id='type-id-20'>
-      <parameter type-id='type-id-21'/>
+    <function-type size-in-bits='64' hash='1d2a0e161d00b727' id='type-id-26'>
+      <parameter type-id='type-id-11'/>
       <return type-id='type-id-5'/>
     </function-type>
-    <function-type size-in-bits='64' hash='5cb63e53d6ebb803' id='type-id-22'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-24'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-8'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='4f53694fc82c0041' id='type-id-25'>
-      <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='ac1ceeb9a102a650' id='type-id-26'>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-27'/>
+    <function-type size-in-bits='64' hash='5cb63e53d6ebb803' id='type-id-27'>
       <parameter type-id='type-id-28'/>
       <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-30'/>
-      <return type-id='type-id-21'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-8'/>
     </function-type>
-    <function-type size-in-bits='64' hash='dff1eb234dd98037' id='type-id-31'>
-      <parameter type-id='type-id-13'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='7e1a0bb98055efa2' id='type-id-32'>
-      <parameter type-id='type-id-16'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='ef4ab7ef8705f961' id='type-id-33'>
-      <parameter type-id='type-id-23'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='d886ddccd04d35ee' id='type-id-34'>
-      <parameter type-id='type-id-23'/>
+    <function-type size-in-bits='64' hash='4f53694fc82c0041' id='type-id-30'>
       <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='b8dffcf9999f8c69' id='type-id-35'>
-      <parameter type-id='type-id-23'/>
+    <function-type size-in-bits='64' hash='ac1ceeb9a102a650' id='type-id-31'>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-32'/>
+      <parameter type-id='type-id-33'/>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-35'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='dff1eb234dd98037' id='type-id-36'>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='7e1a0bb98055efa2' id='type-id-37'>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='ef4ab7ef8705f961' id='type-id-38'>
+      <parameter type-id='type-id-28'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='d886ddccd04d35ee' id='type-id-39'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='b8dffcf9999f8c69' id='type-id-40'>
+      <parameter type-id='type-id-28'/>
       <parameter type-id='type-id-5'/>
       <parameter type-id='type-id-2'/>
-      <parameter type-id='type-id-36'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-21'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='922a92fcf1f0947d' id='type-id-38'>
-      <parameter type-id='type-id-23'/>
+    <function-type size-in-bits='64' hash='30bc6fa886a93c9b' id='type-id-43'>
+      <parameter type-id='type-id-28'/>
       <parameter type-id='type-id-5'/>
       <parameter type-id='type-id-7'/>
-      <parameter type-id='type-id-36'/>
-      <parameter type-id='type-id-7'/>
-      <parameter type-id='type-id-36'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='61e0474993e78673' id='type-id-39'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-7'/>
-      <parameter type-id='type-id-36'/>
-      <parameter type-id='type-id-40'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='d5d23869064619e6' id='type-id-41'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-36'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='aa2570a281bfc7c4' id='type-id-42'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='6e75f3a127d8b62b' id='type-id-43'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-44'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='8f645a984dc26dfe' id='type-id-45'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-46'/>
-      <parameter type-id='type-id-47'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='d6a070d6fc912aa9' id='type-id-48'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-49'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='814daa37c0198c10' id='type-id-50'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='59aeb5ca50811507' id='type-id-51'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-3'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='9b41fa8120727cc8' id='type-id-52'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='c165f9cabce7cf80' id='type-id-53'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-5'/>
-      <parameter type-id='type-id-8'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='177b07dae517ab84' id='type-id-54'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-55'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='4603039088cb190b' id='type-id-56'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-57'/>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='af4a252055c4aa8c' id='type-id-58'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-59'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='a26891c2040fa675' id='type-id-60'>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-61'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='8abc3f49baa56d30' id='type-id-62'>
-      <parameter type-id='type-id-63'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='ac6a4bd1cca7765a' id='type-id-64'>
-      <parameter type-id='type-id-65'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='6ca334c9d04f275f' id='type-id-66'>
-      <parameter type-id='type-id-65'/>
-      <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='3ade2d9f9ee508a8' id='type-id-67'>
-      <parameter type-id='type-id-65'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-5'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='d944c69c38acfd4b' id='type-id-68'>
-      <parameter type-id='type-id-65'/>
-      <parameter type-id='type-id-44'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='674662ad261e59a7' id='type-id-69'>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='91999fafc37c1262' id='type-id-70'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-21'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='d52839268b767b7d' id='type-id-71'>
       <parameter type-id='type-id-13'/>
-      <return type-id='type-id-24'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-7'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='11a68826d6d5d792' id='type-id-72'>
-      <parameter type-id='type-id-19'/>
-      <parameter type-id='type-id-36'/>
-      <parameter type-id='type-id-37'/>
-      <return type-id='type-id-36'/>
+    <function-type size-in-bits='64' hash='61e0474993e78673' id='type-id-44'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-7'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-45'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='449e1441ed468611' id='type-id-73'>
-      <parameter type-id='type-id-23'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='d5d23869064619e6' id='type-id-46'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='d86ddedb3e2ab58d' id='type-id-75'>
-      <parameter type-id='type-id-63'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-10'/>
-      <parameter type-id='type-id-36'/>
+    <function-type size-in-bits='64' hash='ea53b925545c2f2a' id='type-id-47'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-22'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='aa2570a281bfc7c4' id='type-id-48'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='6e75f3a127d8b62b' id='type-id-49'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-50'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='8f645a984dc26dfe' id='type-id-51'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-52'/>
+      <parameter type-id='type-id-53'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='d6a070d6fc912aa9' id='type-id-54'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-55'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='814daa37c0198c10' id='type-id-56'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='59aeb5ca50811507' id='type-id-57'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='9b41fa8120727cc8' id='type-id-58'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='c165f9cabce7cf80' id='type-id-59'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
       <parameter type-id='type-id-8'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-74'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='0bbb3ea58c5b16a1' id='type-id-76'>
+    <function-type size-in-bits='64' hash='177b07dae517ab84' id='type-id-60'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-61'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='eff5d99c4fd5ee4b' id='type-id-62'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
       <parameter type-id='type-id-63'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-8'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-74'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='6b384500291e1e58' id='type-id-77'>
-      <parameter type-id='type-id-63'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-74'/>
-    </function-type>
-    <function-type size-in-bits='64' hash='f9626abd2ffa741f' id='type-id-78'>
+    <function-type size-in-bits='64' hash='4603039088cb190b' id='type-id-64'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
       <parameter type-id='type-id-65'/>
-      <parameter type-id='type-id-79'/>
-      <parameter type-id='type-id-79'/>
-      <return type-id='type-id-74'/>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='71d135a6f08f3c58' id='type-id-80'>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='af4a252055c4aa8c' id='type-id-66'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-67'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='eabfe1ac4083587b' id='type-id-81'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-23'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='a26891c2040fa675' id='type-id-68'>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-69'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='4b883e003c909c85' id='type-id-82'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-21'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='8abc3f49baa56d30' id='type-id-70'>
+      <parameter type-id='type-id-71'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='4157c96220c2fa85' id='type-id-83'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-23'/>
-      <parameter type-id='type-id-63'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='6fb9e8baeb3af39c' id='type-id-72'>
+      <parameter type-id='type-id-73'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='034b7d1779a0afc5' id='type-id-84'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-65'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='d22e5bb3acae7782' id='type-id-74'>
+      <parameter type-id='type-id-73'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-52'/>
+      <parameter type-id='type-id-53'/>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='edf938d82551349a' id='type-id-85'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-29'/>
-      <return type-id='type-id-74'/>
+    <function-type size-in-bits='64' hash='9dbe01de3e645fe0' id='type-id-75'>
+      <parameter type-id='type-id-73'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-11'/>
     </function-type>
-    <function-type size-in-bits='64' hash='dbc09a9870c76547' id='type-id-86'>
-      <parameter type-id='type-id-29'/>
-      <parameter type-id='type-id-36'/>
+    <function-type size-in-bits='64' hash='1b5c838878ffb0fc' id='type-id-76'>
+      <parameter type-id='type-id-73'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='ac6a4bd1cca7765a' id='type-id-77'>
+      <parameter type-id='type-id-78'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='6ca334c9d04f275f' id='type-id-79'>
+      <parameter type-id='type-id-78'/>
+      <parameter type-id='type-id-5'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='3ade2d9f9ee508a8' id='type-id-80'>
+      <parameter type-id='type-id-78'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-5'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='d944c69c38acfd4b' id='type-id-81'>
+      <parameter type-id='type-id-78'/>
+      <parameter type-id='type-id-50'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='674662ad261e59a7' id='type-id-82'>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='91999fafc37c1262' id='type-id-83'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-11'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='d52839268b767b7d' id='type-id-84'>
+      <parameter type-id='type-id-16'/>
       <return type-id='type-id-29'/>
     </function-type>
-    <type-decl name='int' size-in-bits='32' hash='09d17c08f594edc7' id='type-id-21'/>
-    <pointer-type-def type-id='type-id-70' size-in-bits='64' hash='33d3c6cbbd83c705' id='type-id-87'/>
-    <pointer-type-def type-id='type-id-21' size-in-bits='64' hash='d546a866961a5bb9' id='type-id-37'/>
-    <type-decl name='long long int' size-in-bits='64' hash='8aa1e1a2ab2c2d3e' id='type-id-24'/>
-    <pointer-type-def type-id='type-id-11' size-in-bits='64' hash='e369396bf715deb3' id='type-id-23'/>
-    <pointer-type-def type-id='type-id-23' size-in-bits='64' hash='38602d0aa463996a' id='type-id-30'/>
-    <pointer-type-def type-id='type-id-14' size-in-bits='64' hash='f9811f408fb05850' id='type-id-63'/>
-    <pointer-type-def type-id='type-id-88' size-in-bits='64' hash='a311970d1c9b83f6' id='type-id-65'/>
-    <pointer-type-def type-id='type-id-36' size-in-bits='64' hash='fce61c10660e5f2d' id='type-id-40'/>
-    <class-decl name='pnl_app' is-struct='yes' visibility='default' is-declaration-only='yes' hash='2fb5b5e3dd576dcc' id='type-id-89'/>
-    <class-decl name='pnl_canvas' is-struct='yes' visibility='default' is-declaration-only='yes' hash='fe15f9338b9c2159' id='type-id-90'/>
-    <class-decl name='pnl_task' is-struct='yes' visibility='default' is-declaration-only='yes' hash='e81bb75071daeac7' id='type-id-91'/>
-    <typedef-decl name='pnl_action_fn' type-id='type-id-92' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-44'/>
-    <typedef-decl name='pnl_alloc_fn' type-id='type-id-93' size-in-bits='64' hash='77dcac2fc426a312' id='type-id-27'/>
-    <typedef-decl name='pnl_app_t' type-id='type-id-89' hash='2fb5b5e3dd576dcc' id='type-id-11'/>
-    <typedef-decl name='pnl_canvas_t' type-id='type-id-90' hash='fe15f9338b9c2159' id='type-id-14'/>
-    <typedef-decl name='pnl_draw_fn' type-id='type-id-94' size-in-bits='64' hash='5be36b6f85296002' id='type-id-46'/>
-    <typedef-decl name='pnl_fd_fn' type-id='type-id-95' size-in-bits='64' hash='b07b278465201802' id='type-id-55'/>
-    <typedef-decl name='pnl_free_fn' type-id='type-id-96' size-in-bits='64' hash='21d4fa73e6c6f741' id='type-id-28'/>
-    <typedef-decl name='pnl_key_fn' type-id='type-id-87' size-in-bits='64' hash='72ad4395ae550ea3' id='type-id-47'/>
-    <typedef-decl name='pnl_status_fn' type-id='type-id-92' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-59'/>
-    <typedef-decl name='pnl_task_t' type-id='type-id-91' hash='e81bb75071daeac7' id='type-id-88'/>
-    <typedef-decl name='pnl_terminal_fn' type-id='type-id-97' size-in-bits='64' hash='cf5d5995059acedb' id='type-id-61'/>
-    <typedef-decl name='pnl_timer_fn' type-id='type-id-92' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-57'/>
-    <typedef-decl name='pnl_work_fn' type-id='type-id-98' size-in-bits='64' hash='40a12369c7bbe1b1' id='type-id-49'/>
-    <typedef-decl name='size_t' type-id='type-id-99' size-in-bits='64' hash='8b230c0ebd12548b' id='type-id-36'/>
-    <type-decl name='unsigned char' size-in-bits='8' hash='6ebac62b3366db68' id='type-id-17'/>
-    <type-decl name='unsigned long int' size-in-bits='64' hash='da551c1631705dfe' id='type-id-99'/>
-    <type-decl name='unsigned long long int' size-in-bits='64' hash='da551c1631705dfe#1' id='type-id-79'/>
-    <type-decl name='void' hash='8dcbc64750c3d4e3' id='type-id-74'/>
-    <pointer-type-def type-id='type-id-80' size-in-bits='64' hash='3c6555b15ff3c2e2' id='type-id-97'/>
-    <pointer-type-def type-id='type-id-81' size-in-bits='64' hash='eff2bc4278e0dd15' id='type-id-92'/>
-    <pointer-type-def type-id='type-id-82' size-in-bits='64' hash='7f98ffe330bd1b49' id='type-id-95'/>
-    <pointer-type-def type-id='type-id-83' size-in-bits='64' hash='4d47c4fc8c789b6b' id='type-id-94'/>
-    <pointer-type-def type-id='type-id-84' size-in-bits='64' hash='cb805c9f54bb0b10' id='type-id-98'/>
-    <pointer-type-def type-id='type-id-85' size-in-bits='64' hash='c559852600f1c7c8' id='type-id-96'/>
-    <pointer-type-def type-id='type-id-74' hash='19e246ce75ee6a42' id='type-id-29'/>
-    <pointer-type-def type-id='type-id-86' size-in-bits='64' hash='2390ef35ddf7f554' id='type-id-93'/>
+    <function-type size-in-bits='64' hash='11a68826d6d5d792' id='type-id-85'>
+      <parameter type-id='type-id-25'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-41'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='449e1441ed468611' id='type-id-86'>
+      <parameter type-id='type-id-28'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='d86ddedb3e2ab58d' id='type-id-88'>
+      <parameter type-id='type-id-71'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-10'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-8'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='0bbb3ea58c5b16a1' id='type-id-89'>
+      <parameter type-id='type-id-71'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-8'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='6b384500291e1e58' id='type-id-90'>
+      <parameter type-id='type-id-71'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='191eabedaa06f2b0' id='type-id-91'>
+      <parameter type-id='type-id-73'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='f9626abd2ffa741f' id='type-id-92'>
+      <parameter type-id='type-id-78'/>
+      <parameter type-id='type-id-93'/>
+      <parameter type-id='type-id-93'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='71d135a6f08f3c58' id='type-id-94'>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='eabfe1ac4083587b' id='type-id-95'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-28'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='4b883e003c909c85' id='type-id-96'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-11'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='4157c96220c2fa85' id='type-id-97'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-28'/>
+      <parameter type-id='type-id-71'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='034b7d1779a0afc5' id='type-id-98'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-78'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='edf938d82551349a' id='type-id-99'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-87'/>
+    </function-type>
+    <function-type size-in-bits='64' hash='dbc09a9870c76547' id='type-id-100'>
+      <parameter type-id='type-id-34'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-34'/>
+    </function-type>
+    <type-decl name='int' size-in-bits='32' hash='09d17c08f594edc7' id='type-id-11'/>
+    <pointer-type-def type-id='type-id-83' size-in-bits='64' hash='33d3c6cbbd83c705' id='type-id-101'/>
+    <pointer-type-def type-id='type-id-11' size-in-bits='64' hash='d546a866961a5bb9' id='type-id-42'/>
+    <type-decl name='long long int' size-in-bits='64' hash='8aa1e1a2ab2c2d3e' id='type-id-29'/>
+    <pointer-type-def type-id='type-id-14' size-in-bits='64' hash='e369396bf715deb3' id='type-id-28'/>
+    <pointer-type-def type-id='type-id-28' size-in-bits='64' hash='38602d0aa463996a' id='type-id-35'/>
+    <pointer-type-def type-id='type-id-17' size-in-bits='64' hash='f9811f408fb05850' id='type-id-71'/>
+    <pointer-type-def type-id='type-id-20' size-in-bits='64' hash='0036d670cfbed9aa' id='type-id-73'/>
+    <pointer-type-def type-id='type-id-73' size-in-bits='64' hash='cc38f4850138bf9f' id='type-id-63'/>
+    <pointer-type-def type-id='type-id-102' size-in-bits='64' hash='a311970d1c9b83f6' id='type-id-78'/>
+    <pointer-type-def type-id='type-id-41' size-in-bits='64' hash='fce61c10660e5f2d' id='type-id-45'/>
+    <class-decl name='pnl_app' is-struct='yes' visibility='default' is-declaration-only='yes' hash='2fb5b5e3dd576dcc' id='type-id-103'/>
+    <class-decl name='pnl_canvas' is-struct='yes' visibility='default' is-declaration-only='yes' hash='fe15f9338b9c2159' id='type-id-104'/>
+    <class-decl name='pnl_layout' is-struct='yes' visibility='default' is-declaration-only='yes' hash='49bb85c6f8533285' id='type-id-105'/>
+    <class-decl name='pnl_task' is-struct='yes' visibility='default' is-declaration-only='yes' hash='e81bb75071daeac7' id='type-id-106'/>
+    <typedef-decl name='pnl_action_fn' type-id='type-id-107' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-50'/>
+    <typedef-decl name='pnl_alloc_fn' type-id='type-id-108' size-in-bits='64' hash='77dcac2fc426a312' id='type-id-32'/>
+    <typedef-decl name='pnl_app_t' type-id='type-id-103' hash='2fb5b5e3dd576dcc' id='type-id-14'/>
+    <typedef-decl name='pnl_canvas_t' type-id='type-id-104' hash='fe15f9338b9c2159' id='type-id-17'/>
+    <typedef-decl name='pnl_draw_fn' type-id='type-id-109' size-in-bits='64' hash='5be36b6f85296002' id='type-id-52'/>
+    <typedef-decl name='pnl_fd_fn' type-id='type-id-110' size-in-bits='64' hash='b07b278465201802' id='type-id-61'/>
+    <typedef-decl name='pnl_free_fn' type-id='type-id-111' size-in-bits='64' hash='21d4fa73e6c6f741' id='type-id-33'/>
+    <typedef-decl name='pnl_key_fn' type-id='type-id-101' size-in-bits='64' hash='72ad4395ae550ea3' id='type-id-53'/>
+    <typedef-decl name='pnl_layout_t' type-id='type-id-105' hash='49bb85c6f8533285' id='type-id-20'/>
+    <typedef-decl name='pnl_status_fn' type-id='type-id-107' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-67'/>
+    <typedef-decl name='pnl_task_t' type-id='type-id-106' hash='e81bb75071daeac7' id='type-id-102'/>
+    <typedef-decl name='pnl_terminal_fn' type-id='type-id-112' size-in-bits='64' hash='cf5d5995059acedb' id='type-id-69'/>
+    <typedef-decl name='pnl_timer_fn' type-id='type-id-107' size-in-bits='64' hash='73844ba66f183dfa' id='type-id-65'/>
+    <typedef-decl name='pnl_work_fn' type-id='type-id-113' size-in-bits='64' hash='40a12369c7bbe1b1' id='type-id-55'/>
+    <typedef-decl name='size_t' type-id='type-id-114' size-in-bits='64' hash='8b230c0ebd12548b' id='type-id-41'/>
+    <type-decl name='unsigned char' size-in-bits='8' hash='6ebac62b3366db68' id='type-id-23'/>
+    <type-decl name='unsigned long int' size-in-bits='64' hash='da551c1631705dfe' id='type-id-114'/>
+    <type-decl name='unsigned long long int' size-in-bits='64' hash='da551c1631705dfe#1' id='type-id-93'/>
+    <type-decl name='void' hash='8dcbc64750c3d4e3' id='type-id-87'/>
+    <pointer-type-def type-id='type-id-94' size-in-bits='64' hash='3c6555b15ff3c2e2' id='type-id-112'/>
+    <pointer-type-def type-id='type-id-95' size-in-bits='64' hash='eff2bc4278e0dd15' id='type-id-107'/>
+    <pointer-type-def type-id='type-id-96' size-in-bits='64' hash='7f98ffe330bd1b49' id='type-id-110'/>
+    <pointer-type-def type-id='type-id-97' size-in-bits='64' hash='4d47c4fc8c789b6b' id='type-id-109'/>
+    <pointer-type-def type-id='type-id-98' size-in-bits='64' hash='cb805c9f54bb0b10' id='type-id-113'/>
+    <pointer-type-def type-id='type-id-99' size-in-bits='64' hash='c559852600f1c7c8' id='type-id-111'/>
+    <pointer-type-def type-id='type-id-87' hash='19e246ce75ee6a42' id='type-id-34'/>
+    <pointer-type-def type-id='type-id-100' size-in-bits='64' hash='2390ef35ddf7f554' id='type-id-108'/>
   </abi-types>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/tuikit.c' language='LANG_C99'>
-      <function-decl name='pnl_strerror' type-id='type-id-20' mangled-name='pnl_strerror' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_strerror'/>
-      <function-decl name='pnl_app_add_action' type-id='type-id-43' mangled-name='pnl_app_add_action' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_add_action'/>
-      <function-decl name='pnl_app_create' type-id='type-id-26' mangled-name='pnl_app_create' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_create'/>
-      <function-decl name='pnl_app_on_status' type-id='type-id-58' mangled-name='pnl_app_on_status' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_on_status'/>
-      <function-decl name='pnl_app_set_refresh' type-id='type-id-50' mangled-name='pnl_app_set_refresh' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_set_refresh'/>
-      <function-decl name='pnl_canvas_height' type-id='type-id-32' mangled-name='pnl_canvas_height' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_height'/>
-      <function-decl name='pnl_canvas_text' type-id='type-id-62' mangled-name='pnl_canvas_text' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_text'/>
-      <function-decl name='pnl_canvas_width' type-id='type-id-32' mangled-name='pnl_canvas_width' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_width'/>
-      <function-decl name='pnl_text_width' type-id='type-id-25' mangled-name='pnl_text_width' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_text_width'/>
-      <function-decl name='pnl_app_destroy' type-id='type-id-73' mangled-name='pnl_app_destroy' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_destroy'/>
-      <function-decl name='pnl_canvas_fill' type-id='type-id-77' mangled-name='pnl_canvas_fill' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_fill'/>
+      <function-decl name='pnl_strerror' type-id='type-id-26' mangled-name='pnl_strerror' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_strerror'/>
+      <function-decl name='pnl_app_add_action' type-id='type-id-49' mangled-name='pnl_app_add_action' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_add_action'/>
+      <function-decl name='pnl_app_create' type-id='type-id-31' mangled-name='pnl_app_create' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_create'/>
+      <function-decl name='pnl_app_on_status' type-id='type-id-66' mangled-name='pnl_app_on_status' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_on_status'/>
+      <function-decl name='pnl_app_set_refresh' type-id='type-id-56' mangled-name='pnl_app_set_refresh' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_set_refresh'/>
+      <function-decl name='pnl_canvas_focused' type-id='type-id-37' mangled-name='pnl_canvas_focused' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_focused'/>
+      <function-decl name='pnl_canvas_height' type-id='type-id-37' mangled-name='pnl_canvas_height' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_height'/>
+      <function-decl name='pnl_canvas_text' type-id='type-id-70' mangled-name='pnl_canvas_text' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_text'/>
+      <function-decl name='pnl_canvas_width' type-id='type-id-37' mangled-name='pnl_canvas_width' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_width'/>
+      <function-decl name='pnl_text_width' type-id='type-id-30' mangled-name='pnl_text_width' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_text_width'/>
+      <function-decl name='pnl_app_destroy' type-id='type-id-86' mangled-name='pnl_app_destroy' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_destroy'/>
+      <function-decl name='pnl_canvas_fill' type-id='type-id-90' mangled-name='pnl_canvas_fill' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_fill'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_cli.c' language='LANG_C99'>
-      <function-decl name='pnl_app_run' type-id='type-id-51' mangled-name='pnl_app_run' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_run'/>
+      <function-decl name='pnl_app_run' type-id='type-id-57' mangled-name='pnl_app_run' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_run'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_color.c' language='LANG_C99'>
-      <function-decl name='pnl_color_depth' type-id='type-id-69' mangled-name='pnl_color_depth' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_color_depth'/>
+      <function-decl name='pnl_color_depth' type-id='type-id-82' mangled-name='pnl_color_depth' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_color_depth'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_keys.c' language='LANG_C99'>
-      <function-decl name='pnl_key_decode' type-id='type-id-72' mangled-name='pnl_key_decode' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_key_decode'/>
+      <function-decl name='pnl_key_decode' type-id='type-id-85' mangled-name='pnl_key_decode' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_key_decode'/>
+  </abi-instr>
+  <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_layout.c' language='LANG_C99'>
+      <function-decl name='pnl_layout_create' type-id='type-id-62' mangled-name='pnl_layout_create' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_create'/>
+      <function-decl name='pnl_layout_focus' type-id='type-id-72' mangled-name='pnl_layout_focus' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_focus'/>
+      <function-decl name='pnl_layout_panel' type-id='type-id-74' mangled-name='pnl_layout_panel' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_panel'/>
+      <function-decl name='pnl_layout_size' type-id='type-id-76' mangled-name='pnl_layout_size' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_size'/>
+      <function-decl name='pnl_layout_split' type-id='type-id-75' mangled-name='pnl_layout_split' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_split'/>
+      <function-decl name='pnl_view_push_layout' type-id='type-id-47' mangled-name='pnl_view_push_layout' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_push_layout'/>
+      <function-decl name='pnl_layout_destroy' type-id='type-id-91' mangled-name='pnl_layout_destroy' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_layout_destroy'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_loop.c' language='LANG_C99'>
-      <function-decl name='pnl_app_tween' type-id='type-id-22' mangled-name='pnl_app_tween' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_tween'/>
-      <function-decl name='pnl_app_add_timer' type-id='type-id-56' mangled-name='pnl_app_add_timer' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_add_timer'/>
-      <function-decl name='pnl_app_animate' type-id='type-id-50' mangled-name='pnl_app_animate' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_animate'/>
-      <function-decl name='pnl_app_motion' type-id='type-id-31' mangled-name='pnl_app_motion' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_motion'/>
-      <function-decl name='pnl_app_quit' type-id='type-id-33' mangled-name='pnl_app_quit' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_quit'/>
-      <function-decl name='pnl_app_redraw' type-id='type-id-33' mangled-name='pnl_app_redraw' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_redraw'/>
-      <function-decl name='pnl_app_remove_timer' type-id='type-id-50' mangled-name='pnl_app_remove_timer' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_remove_timer'/>
-      <function-decl name='pnl_app_unwatch_fd' type-id='type-id-50' mangled-name='pnl_app_unwatch_fd' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_unwatch_fd'/>
-      <function-decl name='pnl_app_watch_fd' type-id='type-id-54' mangled-name='pnl_app_watch_fd' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_watch_fd'/>
-      <function-decl name='pnl_app_with_terminal' type-id='type-id-60' mangled-name='pnl_app_with_terminal' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_with_terminal'/>
-      <function-decl name='pnl_view_pop' type-id='type-id-33' mangled-name='pnl_view_pop' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_pop'/>
-      <function-decl name='pnl_view_push' type-id='type-id-45' mangled-name='pnl_view_push' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_push'/>
-      <function-decl name='pnl_view_set_hints' type-id='type-id-34' mangled-name='pnl_view_set_hints' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_set_hints'/>
-      <function-decl name='pnl_app_frame_ms' type-id='type-id-71' mangled-name='pnl_app_frame_ms' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_frame_ms'/>
+      <function-decl name='pnl_app_tween' type-id='type-id-27' mangled-name='pnl_app_tween' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_tween'/>
+      <function-decl name='pnl_app_add_timer' type-id='type-id-64' mangled-name='pnl_app_add_timer' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_add_timer'/>
+      <function-decl name='pnl_app_animate' type-id='type-id-56' mangled-name='pnl_app_animate' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_animate'/>
+      <function-decl name='pnl_app_enable_motion' type-id='type-id-56' mangled-name='pnl_app_enable_motion' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_enable_motion'/>
+      <function-decl name='pnl_app_motion' type-id='type-id-36' mangled-name='pnl_app_motion' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_motion'/>
+      <function-decl name='pnl_app_quit' type-id='type-id-38' mangled-name='pnl_app_quit' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_quit'/>
+      <function-decl name='pnl_app_redraw' type-id='type-id-38' mangled-name='pnl_app_redraw' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_redraw'/>
+      <function-decl name='pnl_app_remove_timer' type-id='type-id-56' mangled-name='pnl_app_remove_timer' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_remove_timer'/>
+      <function-decl name='pnl_app_unwatch_fd' type-id='type-id-56' mangled-name='pnl_app_unwatch_fd' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_unwatch_fd'/>
+      <function-decl name='pnl_app_watch_fd' type-id='type-id-60' mangled-name='pnl_app_watch_fd' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_watch_fd'/>
+      <function-decl name='pnl_app_with_terminal' type-id='type-id-68' mangled-name='pnl_app_with_terminal' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_with_terminal'/>
+      <function-decl name='pnl_view_pop' type-id='type-id-38' mangled-name='pnl_view_pop' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_pop'/>
+      <function-decl name='pnl_view_push' type-id='type-id-51' mangled-name='pnl_view_push' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_push'/>
+      <function-decl name='pnl_view_set_hints' type-id='type-id-39' mangled-name='pnl_view_set_hints' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_view_set_hints'/>
+      <function-decl name='pnl_app_frame_ms' type-id='type-id-84' mangled-name='pnl_app_frame_ms' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_frame_ms'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_menu.c' language='LANG_C99'>
-      <function-decl name='pnl_result' type-id='type-id-52' mangled-name='pnl_result' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_result'/>
-      <function-decl name='pnl_status_line' type-id='type-id-52' mangled-name='pnl_status_line' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_status_line'/>
+      <function-decl name='pnl_result' type-id='type-id-58' mangled-name='pnl_result' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_result'/>
+      <function-decl name='pnl_status_line' type-id='type-id-58' mangled-name='pnl_status_line' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_status_line'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_meter.c' language='LANG_C99'>
-      <function-decl name='pnl_status_meter' type-id='type-id-53' mangled-name='pnl_status_meter' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_status_meter'/>
-      <function-decl name='pnl_canvas_bar' type-id='type-id-76' mangled-name='pnl_canvas_bar' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_bar'/>
-      <function-decl name='pnl_canvas_sparkline' type-id='type-id-75' mangled-name='pnl_canvas_sparkline' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_sparkline'/>
+      <function-decl name='pnl_status_meter' type-id='type-id-59' mangled-name='pnl_status_meter' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_status_meter'/>
+      <function-decl name='pnl_canvas_bar' type-id='type-id-89' mangled-name='pnl_canvas_bar' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_bar'/>
+      <function-decl name='pnl_canvas_sparkline' type-id='type-id-88' mangled-name='pnl_canvas_sparkline' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_canvas_sparkline'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_pager.c' language='LANG_C99'>
-      <function-decl name='pnl_pager' type-id='type-id-41' mangled-name='pnl_pager' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_pager'/>
+      <function-decl name='pnl_pager' type-id='type-id-46' mangled-name='pnl_pager' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_pager'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_prompt.c' language='LANG_C99'>
-      <function-decl name='pnl_confirm' type-id='type-id-42' mangled-name='pnl_confirm' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_confirm'/>
-      <function-decl name='pnl_input' type-id='type-id-35' mangled-name='pnl_input' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_input'/>
-      <function-decl name='pnl_pick' type-id='type-id-39' mangled-name='pnl_pick' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_pick'/>
+      <function-decl name='pnl_confirm' type-id='type-id-48' mangled-name='pnl_confirm' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_confirm'/>
+      <function-decl name='pnl_input' type-id='type-id-40' mangled-name='pnl_input' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_input'/>
+      <function-decl name='pnl_pick' type-id='type-id-44' mangled-name='pnl_pick' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_pick'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_table.c' language='LANG_C99'>
-      <function-decl name='pnl_table' type-id='type-id-38' mangled-name='pnl_table' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_table'/>
+      <function-decl name='pnl_table' type-id='type-id-43' mangled-name='pnl_table' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_table'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_task.c' language='LANG_C99'>
-      <function-decl name='pnl_task_cancelled' type-id='type-id-64' mangled-name='pnl_task_cancelled' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_cancelled'/>
-      <function-decl name='pnl_task_log' type-id='type-id-66' mangled-name='pnl_task_log' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_log'/>
-      <function-decl name='pnl_task_result' type-id='type-id-67' mangled-name='pnl_task_result' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_result'/>
-      <function-decl name='pnl_task_run' type-id='type-id-48' mangled-name='pnl_task_run' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_run'/>
-      <function-decl name='pnl_task_step' type-id='type-id-66' mangled-name='pnl_task_step' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_step'/>
-      <function-decl name='pnl_task_then' type-id='type-id-68' mangled-name='pnl_task_then' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_then'/>
-      <function-decl name='pnl_task_progress' type-id='type-id-78' mangled-name='pnl_task_progress' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_progress'/>
+      <function-decl name='pnl_task_cancelled' type-id='type-id-77' mangled-name='pnl_task_cancelled' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_cancelled'/>
+      <function-decl name='pnl_task_log' type-id='type-id-79' mangled-name='pnl_task_log' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_log'/>
+      <function-decl name='pnl_task_result' type-id='type-id-80' mangled-name='pnl_task_result' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_result'/>
+      <function-decl name='pnl_task_run' type-id='type-id-54' mangled-name='pnl_task_run' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_run'/>
+      <function-decl name='pnl_task_step' type-id='type-id-79' mangled-name='pnl_task_step' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_step'/>
+      <function-decl name='pnl_task_then' type-id='type-id-81' mangled-name='pnl_task_then' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_then'/>
+      <function-decl name='pnl_task_progress' type-id='type-id-92' mangled-name='pnl_task_progress' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_task_progress'/>
   </abi-instr>
   <abi-instr address-size='64' path='/home/augustofl/opensources/libs-c/c-tuikit/src/pnl_theme.c' language='LANG_C99'>
-      <function-decl name='pnl_app_set_theme' type-id='type-id-34' mangled-name='pnl_app_set_theme' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_set_theme'/>
+      <function-decl name='pnl_app_set_theme' type-id='type-id-39' mangled-name='pnl_app_set_theme' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pnl_app_set_theme'/>
   </abi-instr>
 </abi-corpus>

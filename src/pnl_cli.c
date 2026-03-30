@@ -180,7 +180,8 @@ static int pnl_cli_column_width(const char *const *headers, size_t columns, cons
     return width;
 }
 
-int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows)
+int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_flags, size_t columns,
+                  const char *const *cells, size_t rows)
 {
     int *widths;
     size_t r;
@@ -198,9 +199,10 @@ int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, co
     for (r = 0; r <= rows; r++) {
         for (c = 0; c < columns; c++) {
             const char *text = pnl_cli_cell(headers, columns, cells, r, c);
-            int pad = c + 1 < columns ? widths[c] - pnl_text_width(text) + 2 : 0;
+            int pad = widths[c] - pnl_text_width(text);
+            int right = column_flags != NULL && (column_flags[c] & PNL_COLUMN_RIGHT);
 
-            printf("%s%*s", text, pad, "");
+            printf("%*s%s%*s", right ? pad : 0, "", text, c + 1 < columns ? (right ? 0 : pad) + 2 : 0, "");
         }
         putchar('\n');
     }

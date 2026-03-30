@@ -430,6 +430,7 @@ static int pnl_draw(pnl_app_t *app)
     app->screen.spinning = 0;
     app->screen.pulse = pnl_pulse_step(app);
     canvas.screen = &app->screen;
+    canvas.focused = 1;
     canvas.x = pnl_transition_offset(app);
     canvas.y = 2;
     canvas.width = width;
@@ -498,6 +499,8 @@ static void pnl_dispatch_watches(pnl_app_t *app, const unsigned char *ready)
     size_t count = app->watches_len;
     size_t i;
 
+    if (count == 0)
+        return;
     memcpy(watches, app->watches, count * sizeof(*watches));
     for (i = 0; i < count && !app->quit; i++) {
         if (!ready[i])

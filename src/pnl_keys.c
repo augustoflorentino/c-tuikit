@@ -30,7 +30,9 @@ static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_
     for (i = 2; i < data_len; i++) {
         if (data[i] < 0x40 || data[i] > 0x7e)
             continue;
-        if (i == 2)
+        if (i == 2 && data[i] == 'Z')
+            *out_key = PNL_KEY_BACKTAB;
+        else if (i == 2)
             *out_key = pnl_keys_letter(data[i]);
         else if (data[i] == '~')
             *out_key = pnl_keys_tilde(data, i);
@@ -99,6 +101,10 @@ size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key)
         return pnl_keys_escape(data, data_len, out_key);
     if (data[0] == '\r' || data[0] == '\n') {
         *out_key = PNL_KEY_ENTER;
+        return 1;
+    }
+    if (data[0] == '\t') {
+        *out_key = PNL_KEY_TAB;
         return 1;
     }
     if (data[0] == 0x7f || data[0] == 0x08) {

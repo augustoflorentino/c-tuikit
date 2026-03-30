@@ -152,6 +152,11 @@ int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_f
     return PNL_OK;
 }
 
+int pnl_canvas_focused(const pnl_canvas_t *canvas)
+{
+    return canvas != NULL && canvas->focused;
+}
+
 int pnl_canvas_width(const pnl_canvas_t *canvas)
 {
     return canvas ? canvas->width : 0;

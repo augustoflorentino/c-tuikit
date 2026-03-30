@@ -146,6 +146,7 @@ static void choose_target(void *ctx, pnl_app_t *app)
 static void releases(void *ctx, pnl_app_t *app)
 {
     static const char *const headers[] = {"version", "environment", "time", "status"};
+    static const int flags[] = {0, PNL_COLUMN_OPTIONAL, PNL_COLUMN_OPTIONAL, 0};
     struct deployer *dep = ctx;
     const char *cells[RELEASES_MAX * 4];
     size_t i;
@@ -156,7 +157,7 @@ static void releases(void *ctx, pnl_app_t *app)
         cells[i * 4 + 2] = dep->releases[i].when;
         cells[i * 4 + 3] = dep->releases[i].status;
     }
-    pnl_table(app, "releases", headers, 4, cells, dep->releases_len);
+    pnl_table(app, "releases", headers, flags, 4, cells, dep->releases_len);
 }
 
 static void build_log(void *ctx, pnl_app_t *app)

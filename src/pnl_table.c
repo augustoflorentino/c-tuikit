@@ -15,6 +15,9 @@ struct pnl_table {
     size_t *order;
     size_t *scratch;
     int *widths;
+    int *flags;
+    unsigned char *hidden;
+    size_t hidden_len;
     size_t selected;
     size_t top;
     size_t column;
@@ -85,19 +88,63 @@ static void pnl_table_sort(struct pnl_table *table)
     }
 }
 
+static int pnl_table_total(const struct pnl_table *table)
+{
+    int total = 1;
+    size_t c;
+
+    for (c = 0; c < table->columns; c++) {
+        if (!table->hidden[c])
+            total += table->widths[c] + PNL_TABLE_GAP;
+    }
+    return total;
+}
+
+static void pnl_table_fit(struct pnl_table *table, int width)
+{
+    size_t c = table->columns;
+
+    memset(table->hidden, 0, table->columns);
+    table->hidden_len = 0;
+    while (c-- > 0 && pnl_table_total(table) > width) {
+        if (table->flags[c] & PNL_COLUMN_OPTIONAL) {
+            table->hidden[c] = 1;
+            table->hidden_len++;
+        }
+    }
+    while (table->column > 0 && table->hidden[table->column])
+        table->column--;
+}
+
+static int pnl_table_text(pnl_canvas_t *canvas, const struct pnl_table *table, size_t c, int x, int y, int style,
+                          const char *text)
+{
+    int pad = table->flags[c] & PNL_COLUMN_RIGHT ? table->widths[c] - pnl_text_width(text) : 0;
+
+    return pnl_canvas_clip(canvas, x + (pad > 0 ? pad : 0), y, table->widths[c], style, text);
+}
+
 static void pnl_table_draw_header(struct pnl_table *table, pnl_canvas_t *canvas)
 {
+    char more[16];
     size_t c;
     int x = 1;
 
     for (c = 0; c < table->columns; c++) {
         int style = PNL_BOLD | (c == table->column ? PNL_UNDERLINE : 0);
-        int end = pnl_canvas_clip(canvas, x, 0, table->widths[c], style, table->cells[c]);
+        int end;
 
+        if (table->hidden[c])
+            continue;
+        end = pnl_table_text(canvas, table, c, x, 0, style, table->cells[c]);
         if (table->sorted && c == table->sorted_by)
             pnl_canvas_text(canvas, end, 0, PNL_FG(PNL_ROLE_MUTED), table->descending ? " v" : " ^");
         x += table->widths[c] + PNL_TABLE_GAP;
     }
+    if (table->hidden_len == 0)
+        return;
+    snprintf(more, sizeof(more), "+%zu", table->hidden_len);
+    pnl_canvas_text(canvas, pnl_canvas_width(canvas) - (int)strlen(more), 0, PNL_FG(PNL_ROLE_MUTED), more);
 }
 
 static void pnl_table_draw_row(struct pnl_table *table, pnl_canvas_t *canvas, int y, size_t index)
@@ -110,7 +157,9 @@ static void pnl_table_draw_row(struct pnl_table *table, pnl_canvas_t *canvas, in
     if (selected)
         pnl_canvas_fill(canvas, 0, y, pnl_canvas_width(canvas), 1, PNL_REVERSE);
     for (c = 0; c < table->columns; c++) {
-        pnl_canvas_clip(canvas, x, y, table->widths[c], selected ? PNL_REVERSE : 0, pnl_table_cell(table, row, c));
+        if (table->hidden[c])
+            continue;
+        pnl_table_text(canvas, table, c, x, y, selected ? PNL_REVERSE : 0, pnl_table_cell(table, row, c));
         pnl_canvas_fill(canvas, x + table->widths[c], y, PNL_TABLE_GAP, 1, selected ? PNL_REVERSE : 0);
         x += table->widths[c] + PNL_TABLE_GAP;
     }
@@ -123,6 +172,7 @@ static void pnl_table_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     size_t i;
 
     (void)app;
+    pnl_table_fit(table, pnl_canvas_width(canvas));
     pnl_table_draw_header(table, canvas);
     if (rows <= 0)
         return;
@@ -150,15 +200,26 @@ static void pnl_table_move(struct pnl_table *table, int key)
         table->selected = table->selected + step < table->rows ? table->selected + step : table->rows - 1;
 }
 
+static void pnl_table_step_column(struct pnl_table *table, int direction)
+{
+    size_t c = table->column;
+
+    while ((direction < 0 && c > 0) || (direction > 0 && c + 1 < table->columns)) {
+        c = direction < 0 ? c - 1 : c + 1;
+        if (!table->hidden[c]) {
+            table->column = c;
+            return;
+        }
+    }
+}
+
 static int pnl_table_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_table *table = ctx;
 
     (void)app;
-    if (key == PNL_KEY_LEFT || key == 'h')
-        table->column = table->column > 0 ? table->column - 1 : 0;
-    else if (key == PNL_KEY_RIGHT || key == 'l')
-        table->column = table->column + 1 < table->columns ? table->column + 1 : table->column;
+    if (key == PNL_KEY_LEFT || key == 'h' || key == PNL_KEY_RIGHT || key == 'l')
+        pnl_table_step_column(table, key == PNL_KEY_LEFT || key == 'h' ? -1 : 1);
     else if (key == 's') {
         table->descending = table->sorted && table->sorted_by == table->column && !table->descending;
         table->sorted_by = table->column;
@@ -183,6 +244,8 @@ static void pnl_table_drop(pnl_app_t *app, void *ctx)
     pnl_mem_free(&app->mem, table->order);
     pnl_mem_free(&app->mem, table->scratch);
     pnl_mem_free(&app->mem, table->widths);
+    pnl_mem_free(&app->mem, table->flags);
+    pnl_mem_free(&app->mem, table->hidden);
     pnl_mem_free(&app->mem, table);
 }
 
@@ -208,8 +271,8 @@ static int pnl_table_fill(pnl_app_t *app, struct pnl_table *table, const char *c
     return PNL_OK;
 }
 
-static struct pnl_table *pnl_table_create(pnl_app_t *app, const char *const *headers, size_t columns,
-                                          const char *const *cells, size_t rows)
+static struct pnl_table *pnl_table_create(pnl_app_t *app, const char *const *headers, const int *column_flags,
+                                          size_t columns, const char *const *cells, size_t rows)
 {
     struct pnl_table *table = pnl_mem_alloc(&app->mem, sizeof(*table));
 
@@ -222,11 +285,20 @@ static struct pnl_table *pnl_table_create(pnl_app_t *app, const char *const *hea
     table->order = pnl_mem_alloc(&app->mem, (rows ? rows : 1) * sizeof(*table->order));
     table->scratch = pnl_mem_alloc(&app->mem, (rows ? rows : 1) * sizeof(*table->scratch));
     table->widths = pnl_mem_alloc(&app->mem, columns * sizeof(*table->widths));
+    table->flags = pnl_mem_alloc(&app->mem, columns * sizeof(*table->flags));
+    table->hidden = pnl_mem_alloc(&app->mem, columns);
+    if (table->flags != NULL && column_flags != NULL)
+        memcpy(table->flags, column_flags, columns * sizeof(*table->flags));
+    else if (table->flags != NULL)
+        memset(table->flags, 0, columns * sizeof(*table->flags));
+    if (table->hidden != NULL)
+        memset(table->hidden, 0, columns);
     if (table->cells != NULL)
         memset(table->cells, 0, (rows + 1) * columns * sizeof(*table->cells));
     if (table->widths != NULL)
         memset(table->widths, 0, columns * sizeof(*table->widths));
     if (table->cells == NULL || table->order == NULL || table->scratch == NULL || table->widths == NULL ||
+        table->flags == NULL || table->hidden == NULL ||
         pnl_table_fill(app, table, headers, cells) != PNL_OK) {
         pnl_table_drop(app, table);
         return NULL;
@@ -234,8 +306,8 @@ static struct pnl_table *pnl_table_create(pnl_app_t *app, const char *const *hea
     return table;
 }
 
-int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, size_t columns,
-              const char *const *cells, size_t rows)
+int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, const int *column_flags,
+              size_t columns, const char *const *cells, size_t rows)
 {
     struct pnl_table *table;
     struct pnl_view view;
@@ -245,8 +317,8 @@ int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, siz
         rows > ((size_t)-1) / sizeof(char *) / (columns + 1) - 1 || (!app->running && !app->cli))
         return PNL_ERR_ARG;
     if (app->cli)
-        return pnl_cli_table(app, headers, columns, cells, rows);
-    table = pnl_table_create(app, headers, columns, cells, rows);
+        return pnl_cli_table(app, headers, column_flags, columns, cells, rows);
+    table = pnl_table_create(app, headers, column_flags, columns, cells, rows);
     if (table == NULL)
         return PNL_ERR_NOMEM;
     memset(&view, 0, sizeof(view));

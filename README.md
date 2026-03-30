@@ -34,6 +34,9 @@ up/down: move  enter: choose  ?: help  q: quit
   values that change; optional sliding selection, screen transitions, pulse and typewriter
   (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
   or on their own over a slow SSH link
+- screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
+  focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
+  terminal gets narrow
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install
@@ -99,7 +102,8 @@ Work given to `pnl_task_run` runs on a thread in the panel and in the foreground
 line, so the same function serves both.
 
 See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
-[`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be. The
+[`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be, and
+[`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
 
 Conventions:

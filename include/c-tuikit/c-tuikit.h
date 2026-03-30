@@ -56,6 +56,8 @@ extern "C" {
 #define PNL_KEY_END 0x110009
 #define PNL_KEY_BACKSPACE 0x11000a
 #define PNL_KEY_DELETE 0x11000b
+#define PNL_KEY_TAB 0x11000c
+#define PNL_KEY_BACKTAB 0x11000d
 
 #define PNL_BOLD 0x01
 #define PNL_DIM 0x02
@@ -95,12 +97,21 @@ extern "C" {
 #define PNL_MOTION_PULSE 4
 #define PNL_MOTION_TYPEWRITER 8
 
+#define PNL_COLUMN_RIGHT 1
+#define PNL_COLUMN_OPTIONAL 2
+
+#define PNL_SPLIT_ROWS 0
+#define PNL_SPLIT_COLUMNS 1
+#define PNL_SPLIT_TABS 2
+#define PNL_LAYOUT_ROOT 0
+
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1
 
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
+typedef struct pnl_layout pnl_layout_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
@@ -151,8 +162,18 @@ PNL_API int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t tex
 PNL_API int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len,
                      size_t *out_index, int *out_ok);
 PNL_API int pnl_pager(pnl_app_t *app, const char *title, const char *text, size_t text_len);
-PNL_API int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, size_t columns,
-                      const char *const *cells, size_t rows);
+PNL_API int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, const int *column_flags,
+                      size_t columns, const char *const *cells, size_t rows);
+PNL_API int pnl_layout_create(pnl_app_t *app, int kind, pnl_layout_t **out_layout);
+PNL_API void pnl_layout_destroy(pnl_layout_t *layout);
+PNL_API int pnl_layout_split(pnl_layout_t *layout, int parent, int kind, const char *title, int *out_node);
+PNL_API int pnl_layout_panel(pnl_layout_t *layout, int parent, const char *title, pnl_draw_fn draw_fn,
+                             pnl_key_fn key_fn, void *panel_ctx, int *out_node);
+PNL_API int pnl_layout_size(pnl_layout_t *layout, int node, int size, int min_size);
+PNL_API int pnl_layout_focus(pnl_layout_t *layout, int node);
+PNL_API int pnl_view_push_layout(pnl_app_t *app, const char *title, const pnl_layout_t *layout);
+
+PNL_API int pnl_canvas_focused(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);

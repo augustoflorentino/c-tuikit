@@ -125,6 +125,7 @@ struct pnl_edit {
 
 struct pnl_canvas {
     struct pnl_screen *screen;
+    int focused;
     int x;
     int y;
     int width;
@@ -293,7 +294,8 @@ PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double t
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
-PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, size_t columns, const char *const *cells, size_t rows);
+PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_flags, size_t columns,
+                               const char *const *cells, size_t rows);
 PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);
 PNL_INTERNAL int pnl_text_contains(const char *text, const char *needle);
 

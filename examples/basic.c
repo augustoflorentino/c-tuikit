@@ -216,6 +216,7 @@ static void show_log(void *ctx, pnl_app_t *app)
 static void processes(void *ctx, pnl_app_t *app)
 {
     static const char *const headers[] = {"pid", "name", "cpu %", "memory"};
+    static const int flags[] = {PNL_COLUMN_RIGHT, 0, PNL_COLUMN_RIGHT | PNL_COLUMN_OPTIONAL, PNL_COLUMN_RIGHT | PNL_COLUMN_OPTIONAL};
     static const char *const cells[] = {
         "812",  "worker",    "12.5", "220 MB", "77",   "scheduler", "0.4", "48 MB",
         "1290", "http",      "33.0", "512 MB", "4",    "init",      "0.0", "8 MB",
@@ -223,7 +224,7 @@ static void processes(void *ctx, pnl_app_t *app)
     };
 
     (void)ctx;
-    pnl_table(app, "processes", headers, 4, cells, 6);
+    pnl_table(app, "processes", headers, flags, 4, cells, 6);
 }
 
 static void print_lines(void *ctx)

@@ -102,6 +102,8 @@ static void test_keys(void)
     CHECK(decode("\x1b[9~", &used) == PNL_KEY_NONE && used == 4);
     CHECK(decode("\x1b[15~", &used) == PNL_KEY_NONE && used == 5);
     CHECK(decode("\x7f", &used) == PNL_KEY_BACKSPACE && used == 1);
+    CHECK(decode("\t", &used) == PNL_KEY_TAB && used == 1);
+    CHECK(decode("\x1b[Z", &used) == PNL_KEY_BACKTAB && used == 3);
     CHECK(decode("\x1b]11;rgb:ffff/ffff/ffff\x1b\\q", &used) == PNL_KEY_NONE && used == 25);
     CHECK(decode("\x1b]11;rgb:0/0/0\x07q", &used) == PNL_KEY_NONE && used == 15);
     CHECK(decode("\x1b[?62;22c", &used) == PNL_KEY_NONE && used == 9);
@@ -221,6 +223,45 @@ static void test_motion(void)
     pnl_app_destroy(app);
 }
 
+static void test_layout(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_app_t *other = NULL;
+    pnl_layout_t *layout = NULL;
+    int tabs = -1;
+    int panel = -1;
+
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("other", NULL, NULL, NULL, &other) == PNL_OK);
+    CHECK(pnl_layout_create(app, 7, &layout) == PNL_ERR_ARG && layout == NULL);
+    CHECK(pnl_layout_create(NULL, PNL_SPLIT_ROWS, &layout) == PNL_ERR_ARG);
+    CHECK(pnl_layout_create(app, PNL_SPLIT_ROWS, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_create(app, PNL_SPLIT_COLUMNS, &layout) == PNL_OK);
+    CHECK(pnl_layout_split(layout, PNL_LAYOUT_ROOT, PNL_SPLIT_TABS, "tabs", &tabs) == PNL_OK && tabs > 0);
+    CHECK(pnl_layout_panel(layout, tabs, "one", noop_draw, NULL, NULL, &panel) == PNL_OK && panel > tabs);
+    CHECK(pnl_layout_panel(layout, panel, "inside a panel", noop_draw, NULL, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_split(layout, panel, PNL_SPLIT_ROWS, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_panel(layout, 99, "nowhere", noop_draw, NULL, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_panel(layout, tabs, "no draw", NULL, NULL, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_split(layout, PNL_LAYOUT_ROOT, 9, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_layout_size(layout, panel, 10, 4) == PNL_OK);
+    CHECK(pnl_layout_size(layout, PNL_LAYOUT_ROOT, 10, 4) == PNL_ERR_ARG);
+    CHECK(pnl_layout_size(layout, panel, -1, 0) == PNL_ERR_ARG);
+    CHECK(pnl_layout_focus(layout, panel) == PNL_OK);
+    CHECK(pnl_layout_focus(layout, tabs) == PNL_ERR_ARG);
+    CHECK(pnl_view_push_layout(other, "wrong app", layout) == PNL_ERR_ARG);
+    CHECK(pnl_view_push_layout(app, "layout", NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_push_layout(app, "layout", layout) == PNL_OK);
+    CHECK(pnl_view_push_layout(app, NULL, layout) == PNL_OK);
+    pnl_layout_destroy(layout);
+    CHECK(pnl_view_pop(app) == PNL_OK);
+    CHECK(pnl_view_pop(app) == PNL_OK);
+    pnl_layout_destroy(NULL);
+    CHECK(pnl_canvas_focused(NULL) == 0);
+    pnl_app_destroy(other);
+    pnl_app_destroy(app);
+}
+
 static void test_colors(void)
 {
     const char *path = "tuikit_test_theme.txt";
@@ -313,6 +354,7 @@ static void components_action(void *ctx, pnl_app_t *app)
 {
     static const char *const items[] = {"alpha", "beta"};
     static const char *const headers[] = {"name", "size"};
+    static const int flags[] = {0, PNL_COLUMN_RIGHT | PNL_COLUMN_OPTIONAL};
     static const char *const cells[] = {"a", "10", "b", NULL};
     int *answers = ctx;
     char text[8] = "x";
@@ -324,10 +366,10 @@ static void components_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_pick(app, "pick", items, 2, &index, &ok) == PNL_OK && !ok && index == 0);
     CHECK(pnl_pager(app, "text", "one\ttwo\nthree", 13) == PNL_OK);
     CHECK(pnl_pager(app, "empty", NULL, 0) == PNL_OK);
-    CHECK(pnl_table(app, "table", headers, 2, cells, 2) == PNL_OK);
-    CHECK(pnl_table(app, "table", headers, 2, cells, 0) == PNL_OK);
+    CHECK(pnl_table(app, "table", headers, NULL, 2, cells, 2) == PNL_OK);
+    CHECK(pnl_table(app, "table", headers, flags, 2, cells, 0) == PNL_OK);
     CHECK(pnl_pick(app, "pick", items, 0, &index, &ok) == PNL_ERR_ARG);
-    CHECK(pnl_table(app, "table", headers, 0, cells, 1) == PNL_ERR_ARG);
+    CHECK(pnl_table(app, "table", headers, NULL, 0, cells, 1) == PNL_ERR_ARG);
     CHECK(pnl_input(app, "name", text, 0, &ok) == PNL_ERR_ARG);
     answers[1] = 1;
 }
@@ -470,6 +512,7 @@ int main(void)
     test_loop_parts();
     test_cli();
     test_colors();
+    test_layout();
     test_motion();
     test_canvas_and_width();
     test_bad_args();

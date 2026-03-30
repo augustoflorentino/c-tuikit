@@ -73,7 +73,7 @@ static int pnl_confirm_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_confirm_view *view = ctx;
 
-    if (key == PNL_KEY_LEFT || key == PNL_KEY_RIGHT || key == '\t' || key == 'h' || key == 'l') {
+    if (key == PNL_KEY_LEFT || key == PNL_KEY_RIGHT || key == PNL_KEY_TAB || key == 'h' || key == 'l') {
         view->yes = !view->yes;
         return 1;
     }
