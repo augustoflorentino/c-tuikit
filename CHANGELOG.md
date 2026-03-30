@@ -4,6 +4,17 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.6.0 - 2026-03-30
+
+Motion turns itself off over a slow link.
+
+- inside an SSH session (`SSH_CONNECTION` set) the panel times the terminal's reply to the query it
+  already sends at start; when the reply takes more than 60 ms, or never comes, all motion is off
+  for that run, so a remote panel does not stream frames through a slow connection
+- when the background query is skipped (`TUIKIT_BACKGROUND`, `COLORFGBG` or no colors) a lone
+  device attributes query measures the link instead, only over SSH
+- `TUIKIT_MOTION=on` keeps motion on regardless, and `TUIKIT_MOTION=all` implies it
+
 ## 2.5.0 - 2026-03-23
 
 Optional motion, third part: failures pulse and results type themselves out.
