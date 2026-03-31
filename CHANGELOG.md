@@ -4,6 +4,37 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.0.0 - 2026-03-30
+
+Layouts: a screen can be made of panels, and what does not fit folds away.
+
+- `pnl_layout_create(app, kind, &layout)` starts a tree whose root splits its children into rows,
+  columns or tabs (`PNL_SPLIT_ROWS`, `PNL_SPLIT_COLUMNS`, `PNL_SPLIT_TABS`);
+  `pnl_layout_split` nests another split and `pnl_layout_panel` adds a panel with its own title,
+  draw function and key function
+- `pnl_layout_size(layout, node, size, min_size)` gives a node a fixed size along its parent's
+  direction (0 shares the space left) and the least it can live with; when a split runs out of
+  room its last children are hidden first
+- `pnl_view_push_layout(app, title, layout)` opens it as a screen; the screen keeps its own copy,
+  so the layout can be destroyed right away or pushed again. Tab and shift-tab move the focus
+  between visible panels, `[` and `]` switch tabs, other keys go to the focused panel, and
+  `pnl_canvas_focused(canvas)` tells a panel whether it has the focus
+- `pnl_layout_focus` picks the panel that starts focused
+- new example: `examples/dashboard.c`
+
+### Breaking
+
+- `pnl_table` takes per-column flags after the headers: `PNL_COLUMN_RIGHT` aligns a column to the
+  right, also on the command line, and `PNL_COLUMN_OPTIONAL` lets the table hide it, rightmost
+  first, when the terminal is too narrow; the header then shows how many are hidden. Pass `NULL`
+  for no flags
+- tab now arrives as `PNL_KEY_TAB` instead of `'\t'`, and shift-tab as `PNL_KEY_BACKTAB`
+- the shared library is now `libtuikit.so.3`
+
+### Fixed
+
+- the panel no longer passes a null pointer to `memcpy` when no file descriptor is watched
+
 ## 2.6.0 - 2026-03-30
 
 Motion turns itself off over a slow link.
