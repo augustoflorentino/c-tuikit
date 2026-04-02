@@ -248,6 +248,10 @@ static void test_layout(void)
     CHECK(pnl_layout_size(layout, PNL_LAYOUT_ROOT, 10, 4) == PNL_ERR_ARG);
     CHECK(pnl_layout_size(layout, panel, -1, 0) == PNL_ERR_ARG);
     CHECK(pnl_layout_focus(layout, panel) == PNL_OK);
+    CHECK(pnl_layout_hints(layout, panel, "x: do it") == PNL_OK);
+    CHECK(pnl_layout_hints(layout, panel, "y: again") == PNL_OK);
+    CHECK(pnl_layout_hints(layout, tabs, "x: do it") == PNL_ERR_ARG);
+    CHECK(pnl_layout_hints(layout, panel, NULL) == PNL_ERR_ARG);
     CHECK(pnl_layout_focus(layout, tabs) == PNL_ERR_ARG);
     CHECK(pnl_view_push_layout(other, "wrong app", layout) == PNL_ERR_ARG);
     CHECK(pnl_view_push_layout(app, "layout", NULL) == PNL_ERR_ARG);

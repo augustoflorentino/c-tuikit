@@ -171,6 +171,7 @@ PNL_API int pnl_layout_panel(pnl_layout_t *layout, int parent, const char *title
                              pnl_key_fn key_fn, void *panel_ctx, int *out_node);
 PNL_API int pnl_layout_size(pnl_layout_t *layout, int node, int size, int min_size);
 PNL_API int pnl_layout_focus(pnl_layout_t *layout, int node);
+PNL_API int pnl_layout_hints(pnl_layout_t *layout, int node, const char *hints);
 PNL_API int pnl_view_push_layout(pnl_app_t *app, const char *title, const pnl_layout_t *layout);
 
 PNL_API int pnl_canvas_focused(const pnl_canvas_t *canvas);

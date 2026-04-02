@@ -137,6 +137,8 @@ static int build(struct dashboard *dash, pnl_layout_t *layout)
     if (status == PNL_OK)
         status = pnl_layout_size(layout, node, 0, 30);
     if (status == PNL_OK)
+        status = pnl_layout_hints(layout, node, "up/down: pick a service");
+    if (status == PNL_OK)
         status = pnl_layout_split(layout, PNL_LAYOUT_ROOT, PNL_SPLIT_ROWS, NULL, &right);
     if (status == PNL_OK)
         status = pnl_layout_size(layout, right, 0, 36);

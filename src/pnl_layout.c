@@ -1,16 +1,19 @@
 #include "pnl_internal.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define PNL_NODE_PANEL -1
 #define PNL_LAYOUT_MIN_COLUMNS 16
 #define PNL_LAYOUT_MIN_ROWS 3
-#define PNL_LAYOUT_HINTS "tab: next panel  [ ]: switch tab  esc: back"
+#define PNL_LAYOUT_FOOTER_MAX 256
+#define PNL_FOCUS_MARK "\xe2\x96\x8e"
 
 struct pnl_node {
     int kind;
     int parent;
     char *title;
+    char *hints;
     pnl_draw_fn draw_fn;
     pnl_key_fn key_fn;
     void *ctx;
@@ -35,6 +38,9 @@ struct pnl_layout {
     size_t visible_len;
     size_t visible_cap;
     int focus;
+    int has_tabs;
+    char footer_text[PNL_LAYOUT_FOOTER_MAX];
+    const char *footer;
 };
 
 static int pnl_layout_valid(const pnl_layout_t *layout, int node)
@@ -102,8 +108,10 @@ void pnl_layout_destroy(pnl_layout_t *layout)
     if (layout == NULL)
         return;
     mem = layout->app->mem;
-    for (i = 0; i < layout->nodes_len; i++)
+    for (i = 0; i < layout->nodes_len; i++) {
         pnl_mem_free(&mem, layout->nodes[i].title);
+        pnl_mem_free(&mem, layout->nodes[i].hints);
+    }
     pnl_mem_free(&mem, layout->nodes);
     pnl_mem_free(&mem, layout->visible);
     pnl_mem_free(&mem, layout);
@@ -144,6 +152,20 @@ int pnl_layout_size(pnl_layout_t *layout, int node, int size, int min_size)
         return PNL_ERR_ARG;
     layout->nodes[node].size = size;
     layout->nodes[node].min_size = min_size;
+    return PNL_OK;
+}
+
+int pnl_layout_hints(pnl_layout_t *layout, int node, const char *hints)
+{
+    char *copy;
+
+    if (!pnl_layout_valid(layout, node) || layout->nodes[node].kind != PNL_NODE_PANEL || hints == NULL)
+        return PNL_ERR_ARG;
+    copy = pnl_mem_copy(&layout->app->mem, hints);
+    if (copy == NULL)
+        return PNL_ERR_NOMEM;
+    pnl_mem_free(&layout->app->mem, layout->nodes[node].hints);
+    layout->nodes[node].hints = copy;
     return PNL_OK;
 }
 
@@ -216,7 +238,9 @@ static void pnl_layout_draw_panel(pnl_layout_t *layout, pnl_canvas_t *canvas, in
                      sizeof(*layout->visible)) == PNL_OK)
         layout->visible[layout->visible_len++] = node;
     if (n->title != NULL && rect.height > 0 && layout->nodes[n->parent].kind != PNL_SPLIT_TABS) {
-        pnl_canvas_clip(canvas, rect.x, rect.y, rect.width,
+        if (focused)
+            pnl_canvas_clip(canvas, rect.x, rect.y, rect.width, PNL_FG(PNL_ROLE_ACCENT), PNL_FOCUS_MARK);
+        pnl_canvas_clip(canvas, rect.x + 1, rect.y, rect.width - 1,
                         PNL_BOLD | (focused ? PNL_FG(PNL_ROLE_ACCENT) : PNL_FG(PNL_ROLE_MUTED)), n->title);
         rect.y++;
         rect.height--;
@@ -235,7 +259,10 @@ static void pnl_layout_draw_tabs(pnl_layout_t *layout, pnl_canvas_t *canvas, int
 {
     int active = pnl_layout_active(layout, node);
     int child;
-    int x = rect.x;
+    int x = rect.x + 1;
+
+    if (active >= 0 && pnl_layout_inside(layout, layout->focus, active))
+        pnl_canvas_clip(canvas, rect.x, rect.y, rect.width, PNL_FG(PNL_ROLE_ACCENT), PNL_FOCUS_MARK);
 
     for (child = pnl_layout_next_child(layout, node, -1); child >= 0; child = pnl_layout_next_child(layout, node, child)) {
         const char *title = layout->nodes[child].title ? layout->nodes[child].title : "-";
@@ -335,6 +362,16 @@ static int pnl_layout_is_visible(const pnl_layout_t *layout, int node)
     return 0;
 }
 
+static void pnl_layout_footer(pnl_layout_t *layout)
+{
+    const char *hints = layout->focus >= 0 ? layout->nodes[layout->focus].hints : NULL;
+
+    snprintf(layout->footer_text, sizeof(layout->footer_text), "%s%s%s%sesc: back", hints ? hints : "",
+             hints ? "  " : "", layout->visible_len > 1 ? "tab: next panel  " : "",
+             layout->has_tabs ? "[ ]: switch tab  " : "");
+    layout->footer = layout->footer_text;
+}
+
 static void pnl_layout_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     pnl_layout_t *layout = ctx;
@@ -350,6 +387,7 @@ static void pnl_layout_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
         layout->focus = layout->visible[0];
         app->dirty = 1;
     }
+    pnl_layout_footer(layout);
 }
 
 static void pnl_layout_cycle(pnl_layout_t *layout, int step)
@@ -449,7 +487,14 @@ static pnl_layout_t *pnl_layout_copy(const pnl_layout_t *layout)
     for (i = 0; i < layout->nodes_len; i++) {
         copy->nodes[i] = layout->nodes[i];
         copy->nodes[i].title = NULL;
+        copy->nodes[i].hints = NULL;
         copy->nodes_len++;
+        copy->has_tabs |= layout->nodes[i].kind == PNL_SPLIT_TABS;
+        if (layout->nodes[i].hints != NULL &&
+            (copy->nodes[i].hints = pnl_mem_copy(&copy->app->mem, layout->nodes[i].hints)) == NULL) {
+            pnl_layout_destroy(copy);
+            return NULL;
+        }
         if (layout->nodes[i].title != NULL &&
             (copy->nodes[i].title = pnl_mem_copy(&copy->app->mem, layout->nodes[i].title)) == NULL) {
             pnl_layout_destroy(copy);
@@ -461,20 +506,25 @@ static pnl_layout_t *pnl_layout_copy(const pnl_layout_t *layout)
 
 int pnl_view_push_layout(pnl_app_t *app, const char *title, const pnl_layout_t *layout)
 {
+    pnl_layout_t *copy;
     struct pnl_view view;
     int status;
 
     if (app == NULL || layout == NULL || layout->app != app)
         return PNL_ERR_ARG;
     memset(&view, 0, sizeof(view));
-    view.footer = PNL_LAYOUT_HINTS;
     view.draw_fn = pnl_layout_draw;
     view.key_fn = pnl_layout_key;
     view.drop_fn = pnl_layout_drop;
     if (title != NULL && (view.title = pnl_mem_copy(&app->mem, title)) == NULL)
         return PNL_ERR_NOMEM;
-    view.ctx = pnl_layout_copy(layout);
-    status = view.ctx == NULL ? PNL_ERR_NOMEM : pnl_view_push_internal(app, &view);
+    copy = pnl_layout_copy(layout);
+    if (copy != NULL) {
+        pnl_layout_footer(copy);
+        view.footer_ref = &copy->footer;
+    }
+    view.ctx = copy;
+    status = copy == NULL ? PNL_ERR_NOMEM : pnl_view_push_internal(app, &view);
     if (status != PNL_OK) {
         pnl_mem_free(&app->mem, view.title);
         pnl_layout_destroy(view.ctx);
