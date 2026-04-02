@@ -4,6 +4,16 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.1.0 - 2026-04-02
+
+Focus: it is always clear which panel listens, and what it listens to.
+
+- the focused panel's title, or the tab bar holding it, gets a mark in the accent color
+- `pnl_layout_hints(layout, panel, hints)` gives a panel its own key hints; the footer shows those
+  of the focused panel followed by the layout's own keys, and `?` lists them in the help screen
+- the footer offers tab only when more than one panel is visible and `[ ]` only when the layout
+  has tabs
+
 ## 3.0.0 - 2026-03-30
 
 Layouts: a screen can be made of panels, and what does not fit folds away.
