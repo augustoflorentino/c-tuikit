@@ -180,6 +180,17 @@ struct pnl_view {
     pnl_key_fn key_fn;
     pnl_drop_fn drop_fn;
     void *ctx;
+    int dialog_width;
+    int dialog_height;
+};
+
+#define PNL_TOASTS 3
+#define PNL_TOAST_TEXT 120
+
+struct pnl_toast {
+    int mark;
+    long long shown_ms;
+    char text[PNL_TOAST_TEXT];
 };
 
 struct pnl_app {
@@ -214,6 +225,8 @@ struct pnl_app {
     int tasks_running;
     int motion;
     int motion_flags;
+    struct pnl_toast toasts[PNL_TOASTS];
+    size_t toasts_len;
     long reply_ms;
     struct pnl_glide select_glide;
     long long transition_ms;
@@ -291,6 +304,10 @@ PNL_INTERNAL int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int 
 PNL_INTERNAL int pnl_motion_on(const pnl_app_t *app, int flag);
 PNL_INTERNAL double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, int flag);
 PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag);
+PNL_INTERNAL void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, const struct pnl_view *view, int focused);
+PNL_INTERNAL long long pnl_toasts_next_ms(const pnl_app_t *app);
+PNL_INTERNAL void pnl_toasts_expire(pnl_app_t *app);
+PNL_INTERNAL void pnl_toasts_draw(pnl_app_t *app);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);

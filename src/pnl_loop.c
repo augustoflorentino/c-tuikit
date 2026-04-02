@@ -54,7 +54,8 @@ int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
     if (status != PNL_OK)
         return status;
     app->views[app->views_len++] = *view;
-    pnl_transition_start(app, 3);
+    if (view->dialog_width == 0)
+        pnl_transition_start(app, 3);
     app->dirty = 1;
     return PNL_OK;
 }
@@ -81,6 +82,31 @@ int pnl_view_push(pnl_app_t *app, const char *title, pnl_draw_fn draw_fn, pnl_ke
     return status;
 }
 
+int pnl_view_push_dialog(pnl_app_t *app, const char *title, int width, int height, pnl_draw_fn draw_fn,
+                         pnl_key_fn key_fn, void *view_ctx)
+{
+    struct pnl_view view;
+    int status;
+
+    if (app == NULL || draw_fn == NULL || width <= 0 || height <= 0)
+        return PNL_ERR_ARG;
+    memset(&view, 0, sizeof(view));
+    view.draw_fn = draw_fn;
+    view.key_fn = key_fn;
+    view.ctx = view_ctx;
+    view.dialog_width = width;
+    view.dialog_height = height;
+    if (title != NULL) {
+        view.title = pnl_mem_copy(&app->mem, title);
+        if (view.title == NULL)
+            return PNL_ERR_NOMEM;
+    }
+    status = pnl_view_push_internal(app, &view);
+    if (status != PNL_OK)
+        pnl_mem_free(&app->mem, view.title);
+    return status;
+}
+
 int pnl_view_pop(pnl_app_t *app)
 {
     struct pnl_view view;
@@ -94,7 +120,8 @@ int pnl_view_pop(pnl_app_t *app)
     pnl_mem_free(&app->mem, view.hints);
     if (view.drop_fn != NULL)
         view.drop_fn(app, view.ctx);
-    pnl_transition_start(app, 6);
+    if (view.dialog_width == 0)
+        pnl_transition_start(app, 6);
     app->dirty = 1;
     return PNL_OK;
 }
@@ -277,6 +304,8 @@ int pnl_timers_timeout(const pnl_app_t *app)
     long long next = pnl_frame_wait(app, now);
     size_t i;
 
+    if (app->toasts_len > 0 && (next < 0 || pnl_toasts_next_ms(app) - now < next))
+        next = pnl_toasts_next_ms(app) > now ? pnl_toasts_next_ms(app) - now : 0;
     for (i = 0; i < app->timers_len; i++) {
         long long wait = app->timers[i].due_ms - now;
 
@@ -410,8 +439,31 @@ static void pnl_draw_title(pnl_app_t *app, const struct pnl_view *top)
     pnl_screen_text(&app->screen, x, 0, -1, PNL_TITLE_STYLE, top->title);
 }
 
+static size_t pnl_base_view(const pnl_app_t *app)
+{
+    size_t base = app->views_len;
+
+    while (base > 0 && app->views[base - 1].dialog_width > 0)
+        base--;
+    return base;
+}
+
+static void pnl_draw_views(pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    size_t base = pnl_base_view(app);
+    size_t i;
+
+    if (base > 0)
+        app->views[base - 1].draw_fn(app->views[base - 1].ctx, app, canvas);
+    else
+        pnl_menu_draw(app, canvas);
+    for (i = base; i < app->views_len; i++)
+        pnl_dialog_draw(app, canvas, &app->views[i], i + 1 == app->views_len);
+}
+
 static int pnl_draw(pnl_app_t *app)
 {
+    size_t base = pnl_base_view(app);
     const struct pnl_view *top = app->views_len ? &app->views[app->views_len - 1] : NULL;
     const char *footer = PNL_MENU_FOOTER;
     struct pnl_canvas canvas;
@@ -424,24 +476,22 @@ static int pnl_draw(pnl_app_t *app)
     if (status != PNL_OK)
         return status;
     pnl_screen_clear(&app->screen);
-    pnl_draw_title(app, top);
+    pnl_draw_title(app, base > 0 ? &app->views[base - 1] : NULL);
     app->frame_ms = pnl_term_now_ms();
     app->screen.spin = app->motion ? (int)(app->frame_ms / PNL_SPIN_MS % 1000) : -1;
     app->screen.spinning = 0;
     app->screen.pulse = pnl_pulse_step(app);
     canvas.screen = &app->screen;
-    canvas.focused = 1;
+    canvas.focused = base == app->views_len;
     canvas.x = pnl_transition_offset(app);
     canvas.y = 2;
     canvas.width = width;
     canvas.height = height > 4 ? height - 4 : 0;
-    if (top != NULL)
-        top->draw_fn(top->ctx, app, &canvas);
-    else
-        pnl_menu_draw(app, &canvas);
+    pnl_draw_views(app, &canvas);
     if (top != NULL)
         footer = pnl_view_hints(app);
     pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
+    pnl_toasts_draw(app);
     app->dirty = 0;
     app->anim_frame = 0;
     if (app->screen.spinning)
@@ -532,6 +582,7 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
             status = pnl_read_keys(app);
         pnl_dispatch_watches(app, ready);
         pnl_timers_run(app);
+        pnl_toasts_expire(app);
         if (app->tasks_running > 0)
             app->dirty = 1;
         if (!app->dirty && (app->animate_until_ms > pnl_term_now_ms() || app->animate_until_ms > app->frame_ms)) {
