@@ -78,14 +78,22 @@ static void draw_services(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 static int services_key(void *ctx, pnl_app_t *app, int key)
 {
     struct dashboard *dash = ctx;
+    char line[64];
+    int yes = 0;
 
-    (void)app;
     if (key == PNL_KEY_UP || key == 'k')
         dash->selected = (dash->selected + SERVICES - 1) % SERVICES;
     else if (key == PNL_KEY_DOWN || key == 'j')
         dash->selected = (dash->selected + 1) % SERVICES;
-    else
+    else if (key != PNL_KEY_ENTER)
         return 0;
+    if (key != PNL_KEY_ENTER)
+        return 1;
+    snprintf(line, sizeof(line), "restart %s?", names[dash->selected]);
+    if (pnl_confirm(app, line, &yes) == PNL_OK && yes) {
+        snprintf(line, sizeof(line), "%s restarted", names[dash->selected]);
+        pnl_toast(app, PNL_MARK_OK, line);
+    }
     return 1;
 }
 
@@ -137,7 +145,7 @@ static int build(struct dashboard *dash, pnl_layout_t *layout)
     if (status == PNL_OK)
         status = pnl_layout_size(layout, node, 0, 30);
     if (status == PNL_OK)
-        status = pnl_layout_hints(layout, node, "up/down: pick a service");
+        status = pnl_layout_hints(layout, node, "up/down: pick a service  enter: restart");
     if (status == PNL_OK)
         status = pnl_layout_split(layout, PNL_LAYOUT_ROOT, PNL_SPLIT_ROWS, NULL, &right);
     if (status == PNL_OK)

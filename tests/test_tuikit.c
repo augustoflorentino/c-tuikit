@@ -185,6 +185,17 @@ static void test_loop_parts(void)
     CHECK(pnl_view_set_hints(app, NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_push(app, NULL, noop_draw, NULL, NULL) == PNL_OK);
     CHECK(pnl_view_pop(app) == PNL_OK);
+    CHECK(pnl_view_push_dialog(app, "ask", 30, 4, noop_draw, NULL, NULL) == PNL_OK);
+    CHECK(pnl_view_pop(app) == PNL_OK);
+    CHECK(pnl_view_push_dialog(app, "ask", 0, 4, noop_draw, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_view_push_dialog(app, "ask", 30, 4, NULL, NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_toast(app, PNL_MARK_OK, "one") == PNL_OK);
+    CHECK(pnl_toast(app, PNL_MARK_WAIT, "two") == PNL_OK);
+    CHECK(pnl_toast(app, PNL_MARK_FAIL, "three") == PNL_OK);
+    CHECK(pnl_toast(app, PNL_MARK_OK, "four") == PNL_OK);
+    CHECK(pnl_toast(app, 7, "bad") == PNL_ERR_ARG);
+    CHECK(pnl_toast(app, PNL_MARK_OK, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_toast(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_app_with_terminal(app, count_call, &calls) == PNL_OK && calls == 1);
     CHECK(pnl_app_redraw(app) == PNL_OK);
     CHECK(pnl_app_quit(app) == PNL_OK);

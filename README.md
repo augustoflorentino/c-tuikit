@@ -37,6 +37,8 @@ up/down: move  enter: choose  ?: help  q: quit
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
   terminal gets narrow
+- dialogs drawn over the current screen (`pnl_view_push_dialog`; confirmation, input and pick
+  lists use them) and short notifications in the corner that go away on their own (`pnl_toast`)
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install

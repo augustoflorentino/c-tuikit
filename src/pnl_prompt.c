@@ -39,13 +39,15 @@ static int pnl_prompt_ready(const pnl_app_t *app)
     return app->running || app->cli;
 }
 
-static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *footer, pnl_draw_fn draw_fn,
-                            pnl_key_fn key_fn, void *ctx)
+static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *footer, int width, int height,
+                            pnl_draw_fn draw_fn, pnl_key_fn key_fn, void *ctx)
 {
     struct pnl_view view;
     int status;
 
     memset(&view, 0, sizeof(view));
+    view.dialog_width = width < 24 ? 24 : width;
+    view.dialog_height = height;
     view.footer = footer;
     view.draw_fn = draw_fn;
     view.key_fn = key_fn;
@@ -64,9 +66,9 @@ static void pnl_confirm_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     struct pnl_confirm_view *view = ctx;
 
     (void)app;
-    pnl_canvas_text(canvas, 2, 0, PNL_BOLD, view->question);
-    pnl_canvas_text(canvas, 2, 2, view->yes ? PNL_REVERSE : 0, " yes ");
-    pnl_canvas_text(canvas, 9, 2, view->yes ? 0 : PNL_REVERSE, " no ");
+    pnl_canvas_text(canvas, 0, 0, PNL_BOLD, view->question);
+    pnl_canvas_text(canvas, 0, 2, view->yes ? PNL_REVERSE : 0, " yes ");
+    pnl_canvas_text(canvas, 7, 2, view->yes ? 0 : PNL_REVERSE, " no ");
 }
 
 static int pnl_confirm_key(void *ctx, pnl_app_t *app, int key)
@@ -117,7 +119,7 @@ int pnl_confirm(pnl_app_t *app, const char *question, int *out_yes)
         return pnl_confirm_cli(app, question, out_yes);
     memset(&view, 0, sizeof(view));
     view.question = question;
-    status = pnl_prompt_modal(app, "confirm", PNL_CONFIRM_FOOTER, pnl_confirm_draw, pnl_confirm_key, &view);
+    status = pnl_prompt_modal(app, "confirm", PNL_CONFIRM_FOOTER, pnl_text_width(question), 3, pnl_confirm_draw, pnl_confirm_key, &view);
     *out_yes = view.answered && view.yes;
     return status;
 }
@@ -127,9 +129,9 @@ static void pnl_input_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     struct pnl_input_view *view = ctx;
 
     (void)app;
-    pnl_canvas_text(canvas, 2, 0, PNL_BOLD, view->prompt);
-    pnl_canvas_fill(canvas, 2, 2, pnl_canvas_width(canvas) - 4, 1, PNL_UNDERLINE);
-    pnl_edit_draw(&view->edit, canvas, 2, 2, pnl_canvas_width(canvas) - 4, 1);
+    pnl_canvas_text(canvas, 0, 0, PNL_BOLD, view->prompt);
+    pnl_canvas_fill(canvas, 0, 2, pnl_canvas_width(canvas), 1, PNL_UNDERLINE);
+    pnl_edit_draw(&view->edit, canvas, 0, 2, pnl_canvas_width(canvas), 1);
 }
 
 static int pnl_input_key(void *ctx, pnl_app_t *app, int key)
@@ -169,7 +171,7 @@ int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t text_len, i
     memset(&view, 0, sizeof(view));
     view.prompt = prompt;
     pnl_edit_init(&view.edit, work, text_len);
-    status = pnl_prompt_modal(app, "input", PNL_INPUT_FOOTER, pnl_input_draw, pnl_input_key, &view);
+    status = pnl_prompt_modal(app, "input", PNL_INPUT_FOOTER, 48, 3, pnl_input_draw, pnl_input_key, &view);
     if (view.ok)
         memcpy(text, work, view.edit.len + 1);
     *out_ok = view.ok;
@@ -224,8 +226,8 @@ static void pnl_pick_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     size_t i;
 
     (void)app;
-    pnl_canvas_text(canvas, 2, 0, PNL_FG(PNL_ROLE_MUTED), "filter:");
-    pnl_edit_draw(&view->edit, canvas, 10, 0, pnl_canvas_width(canvas) - 12, 1);
+    pnl_canvas_text(canvas, 0, 0, PNL_FG(PNL_ROLE_MUTED), "filter:");
+    pnl_edit_draw(&view->edit, canvas, 8, 0, pnl_canvas_width(canvas) - 8, 1);
     if (rows <= 0)
         return;
     if (view->selected < view->top)
@@ -236,11 +238,11 @@ static void pnl_pick_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
         int y = 2 + (int)(i - view->top);
         int selected = i == view->selected;
 
-        pnl_canvas_text(canvas, 2, y, selected ? PNL_BOLD : 0, selected ? "> " : "  ");
-        pnl_canvas_text(canvas, 4, y, selected ? PNL_BOLD : 0, view->items[view->shown[i]]);
+        pnl_canvas_text(canvas, 0, y, selected ? PNL_BOLD : 0, selected ? "> " : "  ");
+        pnl_canvas_text(canvas, 2, y, selected ? PNL_BOLD : 0, view->items[view->shown[i]]);
     }
     if (view->shown_len == 0)
-        pnl_canvas_text(canvas, 4, 2, PNL_FG(PNL_ROLE_MUTED), "no match");
+        pnl_canvas_text(canvas, 2, 2, PNL_FG(PNL_ROLE_MUTED), "no match");
 }
 
 static void pnl_pick_move(struct pnl_pick_view *view, int key)
@@ -300,6 +302,18 @@ static int pnl_pick_cli(const char *title, const char *const *items, size_t item
     return PNL_OK;
 }
 
+static int pnl_pick_width(const char *const *items, size_t items_len)
+{
+    int width = 30;
+    size_t i;
+
+    for (i = 0; i < items_len; i++) {
+        if (pnl_text_width(items[i]) + 2 > width)
+            width = pnl_text_width(items[i]) + 2;
+    }
+    return width;
+}
+
 int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len, size_t *out_index,
              int *out_ok)
 {
@@ -326,7 +340,8 @@ int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t
         return PNL_ERR_NOMEM;
     pnl_edit_init(&view.edit, view.filter, sizeof(view.filter));
     pnl_pick_filter(&view);
-    status = pnl_prompt_modal(app, title, PNL_PICK_FOOTER, pnl_pick_draw, pnl_pick_key, &view);
+    status = pnl_prompt_modal(app, title, PNL_PICK_FOOTER, pnl_pick_width(items, items_len),
+                              items_len + 2 < 16 ? (int)items_len + 2 : 16, pnl_pick_draw, pnl_pick_key, &view);
     if (view.ok) {
         *out_index = view.shown[view.selected];
         *out_ok = 1;
