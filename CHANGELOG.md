@@ -4,6 +4,18 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.2.0 - 2026-04-02
+
+On top: some screens should not replace the one below them.
+
+- `pnl_view_push_dialog` opens a framed box centered over the current screen; the screen below
+  keeps drawing and updating, only the dialog takes keys
+- confirmation, input and pick lists open as dialogs instead of taking the whole screen
+- `pnl_toast(app, mark, text)` shows a short notification in the lower right corner for three
+  seconds, up to three at once; with motion on it slides in. On the command line it goes to
+  stderr, and it is silent with `--json`
+- the dashboard example restarts a service with enter, asking first and confirming with a toast
+
 ## 3.1.0 - 2026-04-02
 
 Focus: it is always clear which panel listens, and what it listens to.
