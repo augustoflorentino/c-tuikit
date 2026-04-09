@@ -50,7 +50,7 @@ static int pnl_clamp_size(int want, int room)
     return want < 1 ? 1 : want > room ? room : want;
 }
 
-void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, const struct pnl_view *view, int focused)
+void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *view, int focused)
 {
     struct pnl_canvas inner;
     int width = pnl_clamp_size(view->dialog_width + 4, area->width - 2);
@@ -67,6 +67,12 @@ void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, const struct pnl_
     inner.y = y + 1;
     inner.width = width - 4;
     inner.height = height - 2;
+    view->origin_x = inner.x;
+    view->origin_y = inner.y;
+    view->box_x = x;
+    view->box_y = y;
+    view->box_width = width;
+    view->box_height = height;
     view->draw_fn(view->ctx, app, &inner);
 }
 

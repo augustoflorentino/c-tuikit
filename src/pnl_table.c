@@ -213,19 +213,47 @@ static void pnl_table_step_column(struct pnl_table *table, int direction)
     }
 }
 
+static void pnl_table_sort_column(struct pnl_table *table)
+{
+    table->descending = table->sorted && table->sorted_by == table->column && !table->descending;
+    table->sorted_by = table->column;
+    table->sorted = 1;
+    pnl_table_sort(table);
+}
+
+static void pnl_table_click(struct pnl_table *table, pnl_app_t *app)
+{
+    size_t c;
+    int x;
+    int y;
+    int left = 1;
+
+    pnl_mouse_position(app, &x, &y);
+    if (y >= 2 && table->top + (size_t)(y - 2) < table->rows)
+        table->selected = table->top + (size_t)(y - 2);
+    for (c = 0; y == 0 && c < table->columns; c++) {
+        if (table->hidden[c])
+            continue;
+        if (x >= left && x < left + table->widths[c] + PNL_TABLE_GAP) {
+            table->column = c;
+            pnl_table_sort_column(table);
+            return;
+        }
+        left += table->widths[c] + PNL_TABLE_GAP;
+    }
+}
+
 static int pnl_table_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_table *table = ctx;
 
-    (void)app;
-    if (key == PNL_KEY_LEFT || key == 'h' || key == PNL_KEY_RIGHT || key == 'l')
+    if (key == PNL_KEY_CLICK)
+        pnl_table_click(table, app);
+    else if (key == PNL_KEY_LEFT || key == 'h' || key == PNL_KEY_RIGHT || key == 'l')
         pnl_table_step_column(table, key == PNL_KEY_LEFT || key == 'h' ? -1 : 1);
-    else if (key == 's') {
-        table->descending = table->sorted && table->sorted_by == table->column && !table->descending;
-        table->sorted_by = table->column;
-        table->sorted = 1;
-        pnl_table_sort(table);
-    } else if (key == PNL_KEY_UP || key == PNL_KEY_DOWN || key == 'j' || key == 'k' ||
+    else if (key == 's')
+        pnl_table_sort_column(table);
+    else if (key == PNL_KEY_UP || key == PNL_KEY_DOWN || key == 'j' || key == 'k' ||
                (key >= PNL_KEY_PAGE_UP && key <= PNL_KEY_END))
         pnl_table_move(table, key);
     else

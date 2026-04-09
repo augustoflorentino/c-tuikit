@@ -453,6 +453,10 @@ static void pnl_draw_views(pnl_app_t *app, pnl_canvas_t *canvas)
     size_t base = pnl_base_view(app);
     size_t i;
 
+    if (base > 0) {
+        app->views[base - 1].origin_x = canvas->x;
+        app->views[base - 1].origin_y = canvas->y;
+    }
     if (base > 0)
         app->views[base - 1].draw_fn(app->views[base - 1].ctx, app, canvas);
     else
@@ -499,6 +503,55 @@ static int pnl_draw(pnl_app_t *app)
     return pnl_screen_render(&app->screen, &app->mem);
 }
 
+int pnl_is_mouse_key(int key)
+{
+    return key == PNL_KEY_CLICK || key == PNL_KEY_WHEEL_UP || key == PNL_KEY_WHEEL_DOWN;
+}
+
+int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y)
+{
+    if (app == NULL || out_x == NULL || out_y == NULL)
+        return PNL_ERR_ARG;
+    *out_x = app->term.mouse_x - app->mouse_ox;
+    *out_y = app->term.mouse_y - app->mouse_oy;
+    return PNL_OK;
+}
+
+void pnl_wheel_keys(pnl_app_t *app, pnl_key_fn key_fn, void *ctx, int key)
+{
+    size_t depth = app->views_len;
+    int i;
+
+    for (i = 0; i < 3 && key != PNL_KEY_CLICK && app->views_len == depth; i++)
+        key_fn(ctx, app, key == PNL_KEY_WHEEL_UP ? PNL_KEY_UP : PNL_KEY_DOWN);
+}
+
+static int pnl_outside_dialog(const pnl_app_t *app, const struct pnl_view *view)
+{
+    int x = app->term.mouse_x;
+    int y = app->term.mouse_y;
+
+    return view->dialog_width > 0 && (x < view->box_x || y < view->box_y || x >= view->box_x + view->box_width ||
+                                      y >= view->box_y + view->box_height);
+}
+
+static void pnl_dispatch_mouse(pnl_app_t *app, int key)
+{
+    struct pnl_view top;
+
+    if (app->views_len == 0) {
+        pnl_menu_mouse(app, key);
+        return;
+    }
+    top = app->views[app->views_len - 1];
+    if (top.key_fn == NULL || pnl_outside_dialog(app, &top))
+        return;
+    app->mouse_ox = top.origin_x;
+    app->mouse_oy = top.origin_y;
+    if (!top.key_fn(top.ctx, app, key))
+        pnl_wheel_keys(app, top.key_fn, top.ctx, key);
+}
+
 static void pnl_dispatch_key(pnl_app_t *app, int key)
 {
     struct pnl_view top;
@@ -506,6 +559,10 @@ static void pnl_dispatch_key(pnl_app_t *app, int key)
     app->dirty = 1;
     if (key == PNL_KEY_CTRL_C) {
         app->quit = 1;
+        return;
+    }
+    if (pnl_is_mouse_key(key)) {
+        pnl_dispatch_mouse(app, key);
         return;
     }
     if (app->views_len == 0 && pnl_menu_key(app, key))
@@ -643,7 +700,11 @@ static void pnl_run_palette(pnl_app_t *app)
 
 int pnl_run_interactive(pnl_app_t *app)
 {
-    int status = pnl_term_enter(&app->term);
+    const char *mouse = getenv("TUIKIT_MOUSE");
+    int status;
+
+    app->term.mouse = mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0);
+    status = pnl_term_enter(&app->term);
 
     if (status != PNL_OK)
         return status;

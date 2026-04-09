@@ -39,6 +39,8 @@ up/down: move  enter: choose  ?: help  q: quit
   terminal gets narrow
 - dialogs drawn over the current screen (`pnl_view_push_dialog`; confirmation, input and pick
   lists use them) and short notifications in the corner that go away on their own (`pnl_toast`)
+- the mouse works too: click an action, a row, a table header, a panel or a tab; the wheel
+  scrolls. `TUIKIT_MOUSE=off` leaves the mouse to the terminal
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install

@@ -228,6 +228,8 @@ static int pnl_task_key(void *ctx, pnl_app_t *app, int key)
 {
     pnl_task_t *task = ctx;
 
+    if (key == PNL_KEY_WHEEL_UP || key == PNL_KEY_WHEEL_DOWN)
+        return 1;
     if (task->joined) {
         pnl_view_pop(app);
         return 1;

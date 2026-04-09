@@ -23,14 +23,54 @@ static int pnl_keys_tilde(const unsigned char *data, size_t end)
     return codes[data[2] - '0'];
 }
 
-static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_key)
+static size_t pnl_keys_number(const unsigned char *data, size_t end, size_t at, int *out_value)
+{
+    int value = 0;
+
+    while (at < end && data[at] >= '0' && data[at] <= '9') {
+        if (value < 100000)
+            value = value * 10 + (data[at] - '0');
+        at++;
+    }
+    *out_value = value;
+    return at;
+}
+
+static void pnl_keys_mouse(const unsigned char *data, size_t end, int *out_key, int *out_x, int *out_y)
+{
+    int button;
+    int x;
+    int y;
+    size_t at = pnl_keys_number(data, end, 3, &button);
+
+    if (at >= end || data[at] != ';')
+        return;
+    at = pnl_keys_number(data, end, at + 1, &x);
+    if (at >= end || data[at] != ';')
+        return;
+    at = pnl_keys_number(data, end, at + 1, &y);
+    if (at != end || x < 1 || y < 1)
+        return;
+    if (button == 64 || button == 65)
+        *out_key = button == 64 ? PNL_KEY_WHEEL_UP : PNL_KEY_WHEEL_DOWN;
+    else if (button == 0 && data[end] == 'M')
+        *out_key = PNL_KEY_CLICK;
+    else
+        return;
+    *out_x = x - 1;
+    *out_y = y - 1;
+}
+
+static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_key, int *out_x, int *out_y)
 {
     size_t i;
 
     for (i = 2; i < data_len; i++) {
         if (data[i] < 0x40 || data[i] > 0x7e)
             continue;
-        if (i == 2 && data[i] == 'Z')
+        if (data[2] == '<' && (data[i] == 'M' || data[i] == 'm'))
+            pnl_keys_mouse(data, i, out_key, out_x, out_y);
+        else if (i == 2 && data[i] == 'Z')
             *out_key = PNL_KEY_BACKTAB;
         else if (i == 2)
             *out_key = pnl_keys_letter(data[i]);
@@ -54,7 +94,7 @@ static size_t pnl_keys_osc(const unsigned char *data, size_t data_len)
     return data_len;
 }
 
-static size_t pnl_keys_escape(const unsigned char *data, size_t data_len, int *out_key)
+static size_t pnl_keys_escape(const unsigned char *data, size_t data_len, int *out_key, int *out_x, int *out_y)
 {
     if (data_len > 1 && data[1] == ']')
         return pnl_keys_osc(data, data_len);
@@ -63,7 +103,7 @@ static size_t pnl_keys_escape(const unsigned char *data, size_t data_len, int *o
         return 1;
     }
     if (data[1] == '[')
-        return pnl_keys_csi(data, data_len, out_key);
+        return pnl_keys_csi(data, data_len, out_key, out_x, out_y);
     if (data_len < 3)
         return data_len;
     *out_key = pnl_keys_letter(data[2]);
@@ -92,13 +132,21 @@ static size_t pnl_keys_utf8(const unsigned char *data, size_t data_len, int *out
 
 size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key)
 {
+    int x;
+    int y;
+
+    return pnl_key_decode_at(data, data_len, out_key, &x, &y);
+}
+
+size_t pnl_key_decode_at(const unsigned char *data, size_t data_len, int *out_key, int *out_x, int *out_y)
+{
     if (out_key == NULL)
         return 0;
     *out_key = PNL_KEY_NONE;
     if (data == NULL || data_len == 0)
         return 0;
     if (data[0] == 0x1b)
-        return pnl_keys_escape(data, data_len, out_key);
+        return pnl_keys_escape(data, data_len, out_key, out_x, out_y);
     if (data[0] == '\r' || data[0] == '\n') {
         *out_key = PNL_KEY_ENTER;
         return 1;

@@ -172,8 +172,10 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     rows = pnl_canvas_height(canvas) - y;
     pnl_menu_scroll(app, rows > 0 ? (size_t)rows : 0);
     first = y;
+    app->menu_y = canvas->y + first;
     for (i = app->menu_top; i <= app->actions_len && y < pnl_canvas_height(canvas); i++)
         pnl_draw_item(app, canvas, y++, i);
+    app->menu_end = canvas->y + y;
     pnl_glide_to(app, &app->select_glide, (double)app->selected, PNL_MOTION_SLIDE);
     marker = first + (int)(pnl_glide_at(app, &app->select_glide, PNL_MOTION_SLIDE) + 0.5) - (int)app->menu_top;
     if (marker >= first && marker < y)
@@ -236,6 +238,20 @@ int pnl_menu_key(pnl_app_t *app, int key)
     return 1;
 }
 
+int pnl_menu_mouse(pnl_app_t *app, int key)
+{
+    int y = app->term.mouse_y;
+
+    if (key == PNL_KEY_WHEEL_UP && app->selected > 0)
+        app->selected--;
+    else if (key == PNL_KEY_WHEEL_DOWN && app->selected < app->actions_len)
+        app->selected++;
+    if (key != PNL_KEY_CLICK || y < app->menu_y || y >= app->menu_end)
+        return 1;
+    app->selected = app->menu_top + (size_t)(y - app->menu_y);
+    return pnl_menu_key(app, PNL_KEY_ENTER);
+}
+
 static void pnl_result_type(pnl_app_t *app, pnl_canvas_t *canvas, const struct pnl_result_view *view)
 {
     size_t len = strlen(view->text);
@@ -278,8 +294,8 @@ static void pnl_result_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 static int pnl_result_key(void *ctx, pnl_app_t *app, int key)
 {
     (void)ctx;
-    (void)key;
-    pnl_view_pop(app);
+    if (key != PNL_KEY_WHEEL_UP && key != PNL_KEY_WHEEL_DOWN)
+        pnl_view_pop(app);
     return 1;
 }
 

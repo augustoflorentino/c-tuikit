@@ -74,7 +74,16 @@ static void pnl_confirm_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 static int pnl_confirm_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_confirm_view *view = ctx;
+    int x;
+    int y;
 
+    if (key == PNL_KEY_CLICK) {
+        pnl_mouse_position(app, &x, &y);
+        if (y != 2 || x < 0 || x > 10 || x == 5 || x == 6)
+            return 1;
+        view->yes = x < 5;
+        key = PNL_KEY_ENTER;
+    }
     if (key == PNL_KEY_LEFT || key == PNL_KEY_RIGHT || key == PNL_KEY_TAB || key == 'h' || key == 'l') {
         view->yes = !view->yes;
         return 1;
@@ -260,7 +269,18 @@ static void pnl_pick_move(struct pnl_pick_view *view, int key)
 static int pnl_pick_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_pick_view *view = ctx;
+    int x;
+    int y;
 
+    if (key == PNL_KEY_WHEEL_UP || key == PNL_KEY_WHEEL_DOWN)
+        key = key == PNL_KEY_WHEEL_UP ? PNL_KEY_UP : PNL_KEY_DOWN;
+    if (key == PNL_KEY_CLICK) {
+        pnl_mouse_position(app, &x, &y);
+        if (y < 2 || view->top + (size_t)(y - 2) >= view->shown_len)
+            return 1;
+        view->selected = view->top + (size_t)(y - 2);
+        key = PNL_KEY_ENTER;
+    }
     if (key == PNL_KEY_UP || key == PNL_KEY_DOWN || key == PNL_KEY_PAGE_UP || key == PNL_KEY_PAGE_DOWN) {
         pnl_pick_move(view, key);
         return 1;

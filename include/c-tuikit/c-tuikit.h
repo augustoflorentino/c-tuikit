@@ -58,6 +58,9 @@ extern "C" {
 #define PNL_KEY_DELETE 0x11000b
 #define PNL_KEY_TAB 0x11000c
 #define PNL_KEY_BACKTAB 0x11000d
+#define PNL_KEY_CLICK 0x11000e
+#define PNL_KEY_WHEEL_UP 0x11000f
+#define PNL_KEY_WHEEL_DOWN 0x110010
 
 #define PNL_BOLD 0x01
 #define PNL_DIM 0x02
@@ -132,6 +135,7 @@ PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);
+PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);
 PNL_API int pnl_toast(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *text, double fraction);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);

@@ -81,6 +81,15 @@ static int services_key(void *ctx, pnl_app_t *app, int key)
     char line[64];
     int yes = 0;
 
+    int x;
+    int y;
+
+    if (key == PNL_KEY_CLICK) {
+        pnl_mouse_position(app, &x, &y);
+        if (y >= 0 && y < SERVICES)
+            dash->selected = (size_t)y;
+        return 1;
+    }
     if (key == PNL_KEY_UP || key == 'k')
         dash->selected = (dash->selected + SERVICES - 1) % SERVICES;
     else if (key == PNL_KEY_DOWN || key == 'j')

@@ -29,6 +29,17 @@ struct pnl_rect {
     int height;
 };
 
+struct pnl_hit {
+    int node;
+    int tabs;
+    int x;
+    int y;
+    int width;
+    int height;
+    int origin_x;
+    int origin_y;
+};
+
 struct pnl_layout {
     pnl_app_t *app;
     struct pnl_node *nodes;
@@ -37,6 +48,9 @@ struct pnl_layout {
     int *visible;
     size_t visible_len;
     size_t visible_cap;
+    struct pnl_hit *hits;
+    size_t hits_len;
+    size_t hits_cap;
     int focus;
     int has_tabs;
     char footer_text[PNL_LAYOUT_FOOTER_MAX];
@@ -114,6 +128,7 @@ void pnl_layout_destroy(pnl_layout_t *layout)
     }
     pnl_mem_free(&mem, layout->nodes);
     pnl_mem_free(&mem, layout->visible);
+    pnl_mem_free(&mem, layout->hits);
     pnl_mem_free(&mem, layout);
 }
 
@@ -199,6 +214,25 @@ static int pnl_layout_min(const pnl_layout_t *layout, int node, int axis)
     return axis == PNL_SPLIT_COLUMNS ? PNL_LAYOUT_MIN_COLUMNS : PNL_LAYOUT_MIN_ROWS;
 }
 
+static void pnl_layout_hit_add(pnl_layout_t *layout, const pnl_canvas_t *canvas, int node, int tabs,
+                               struct pnl_rect rect, int inner_y)
+{
+    struct pnl_hit *hit;
+
+    if (pnl_mem_grow(&layout->app->mem, (void **)&layout->hits, &layout->hits_cap, layout->hits_len + 1,
+                     sizeof(*layout->hits)) != PNL_OK)
+        return;
+    hit = &layout->hits[layout->hits_len++];
+    hit->node = node;
+    hit->tabs = tabs;
+    hit->x = canvas->x + rect.x;
+    hit->y = canvas->y + rect.y;
+    hit->width = rect.width;
+    hit->height = rect.height;
+    hit->origin_x = hit->x;
+    hit->origin_y = canvas->y + inner_y;
+}
+
 static int pnl_layout_inside(const pnl_layout_t *layout, int node, int ancestor)
 {
     while (node >= 0 && node != ancestor)
@@ -232,6 +266,7 @@ static void pnl_layout_draw_panel(pnl_layout_t *layout, pnl_canvas_t *canvas, in
 {
     const struct pnl_node *n = &layout->nodes[node];
     struct pnl_canvas inner;
+    struct pnl_rect full = rect;
     int focused = node == layout->focus;
 
     if (pnl_mem_grow(&layout->app->mem, (void **)&layout->visible, &layout->visible_cap, layout->visible_len + 1,
@@ -245,6 +280,7 @@ static void pnl_layout_draw_panel(pnl_layout_t *layout, pnl_canvas_t *canvas, in
         rect.y++;
         rect.height--;
     }
+    pnl_layout_hit_add(layout, canvas, node, -1, full, rect.y);
     inner.screen = canvas->screen;
     inner.focused = focused && canvas->focused;
     inner.x = canvas->x + rect.x;
@@ -267,8 +303,13 @@ static void pnl_layout_draw_tabs(pnl_layout_t *layout, pnl_canvas_t *canvas, int
     for (child = pnl_layout_next_child(layout, node, -1); child >= 0; child = pnl_layout_next_child(layout, node, child)) {
         const char *title = layout->nodes[child].title ? layout->nodes[child].title : "-";
         int style = child == active ? PNL_BOLD | PNL_UNDERLINE | PNL_FG(PNL_ROLE_ACCENT) : PNL_FG(PNL_ROLE_MUTED);
+        struct pnl_rect label = rect;
 
+        label.x = x;
+        label.height = 1;
         x = pnl_canvas_clip(canvas, x, rect.y, rect.x + rect.width - x, style, title);
+        label.width = x - label.x;
+        pnl_layout_hit_add(layout, canvas, child, node, label, rect.y);
         x = pnl_canvas_clip(canvas, x, rect.y, rect.x + rect.width - x, 0, "  ");
     }
     if (active < 0 || rect.height < 2)
@@ -382,6 +423,7 @@ static void pnl_layout_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     rect.width = pnl_canvas_width(canvas);
     rect.height = pnl_canvas_height(canvas);
     layout->visible_len = 0;
+    layout->hits_len = 0;
     pnl_layout_draw_node(layout, canvas, PNL_LAYOUT_ROOT, rect);
     if (layout->visible_len > 0 && !pnl_layout_is_visible(layout, layout->focus)) {
         layout->focus = layout->visible[0];
@@ -446,10 +488,51 @@ static int pnl_layout_switch(pnl_layout_t *layout, int step)
     return 1;
 }
 
+static const struct pnl_hit *pnl_layout_hit(const pnl_layout_t *layout, int x, int y)
+{
+    size_t i;
+
+    for (i = 0; i < layout->hits_len; i++) {
+        const struct pnl_hit *hit = &layout->hits[i];
+
+        if (x >= hit->x && y >= hit->y && x < hit->x + hit->width && y < hit->y + hit->height)
+            return hit;
+    }
+    return NULL;
+}
+
+static int pnl_layout_mouse(pnl_layout_t *layout, pnl_app_t *app, int key)
+{
+    const struct pnl_hit *hit = pnl_layout_hit(layout, app->term.mouse_x, app->term.mouse_y);
+    const struct pnl_node *n;
+
+    if (hit == NULL)
+        return 1;
+    if (hit->tabs >= 0) {
+        if (key == PNL_KEY_CLICK) {
+            layout->nodes[hit->tabs].active = hit->node;
+            if (pnl_layout_first_panel(layout, hit->node) >= 0)
+                layout->focus = pnl_layout_first_panel(layout, hit->node);
+        }
+        return 1;
+    }
+    n = &layout->nodes[hit->node];
+    if (key == PNL_KEY_CLICK)
+        layout->focus = hit->node;
+    app->mouse_ox = hit->origin_x;
+    app->mouse_oy = hit->origin_y;
+    if (n->key_fn != NULL && !n->key_fn(n->ctx, app, key))
+        pnl_wheel_keys(app, n->key_fn, n->ctx, key);
+    return 1;
+}
+
 static int pnl_layout_key(void *ctx, pnl_app_t *app, int key)
 {
     pnl_layout_t *layout = ctx;
     const struct pnl_node *focused;
+
+    if (pnl_is_mouse_key(key))
+        return pnl_layout_mouse(layout, app, key);
 
     if (key == PNL_KEY_TAB || key == PNL_KEY_BACKTAB) {
         pnl_layout_cycle(layout, key == PNL_KEY_TAB ? 1 : -1);

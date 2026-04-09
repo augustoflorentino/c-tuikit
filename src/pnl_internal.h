@@ -96,6 +96,9 @@ struct pnl_term {
     unsigned int surrogate;
     unsigned char input[PNL_INPUT_MAX];
     size_t input_len;
+    int mouse;
+    int mouse_x;
+    int mouse_y;
 };
 
 union pnl_storage {
@@ -182,6 +185,12 @@ struct pnl_view {
     void *ctx;
     int dialog_width;
     int dialog_height;
+    int origin_x;
+    int origin_y;
+    int box_x;
+    int box_y;
+    int box_width;
+    int box_height;
 };
 
 #define PNL_TOASTS 3
@@ -226,6 +235,10 @@ struct pnl_app {
     int motion;
     int motion_flags;
     struct pnl_toast toasts[PNL_TOASTS];
+    int mouse_ox;
+    int mouse_oy;
+    int menu_y;
+    int menu_end;
     size_t toasts_len;
     long reply_ms;
     struct pnl_glide select_glide;
@@ -304,7 +317,10 @@ PNL_INTERNAL int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int 
 PNL_INTERNAL int pnl_motion_on(const pnl_app_t *app, int flag);
 PNL_INTERNAL double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, int flag);
 PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag);
-PNL_INTERNAL void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, const struct pnl_view *view, int focused);
+PNL_INTERNAL void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *view, int focused);
+PNL_INTERNAL int pnl_menu_mouse(pnl_app_t *app, int key);
+PNL_INTERNAL void pnl_wheel_keys(pnl_app_t *app, pnl_key_fn key_fn, void *ctx, int key);
+PNL_INTERNAL int pnl_is_mouse_key(int key);
 PNL_INTERNAL long long pnl_toasts_next_ms(const pnl_app_t *app);
 PNL_INTERNAL void pnl_toasts_expire(pnl_app_t *app);
 PNL_INTERNAL void pnl_toasts_draw(pnl_app_t *app);
@@ -324,6 +340,7 @@ PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
 PNL_INTERNAL void pnl_menu_refresh(pnl_app_t *app);
 PNL_INTERNAL int pnl_valid_mark(int mark);
+PNL_INTERNAL size_t pnl_key_decode_at(const unsigned char *data, size_t data_len, int *out_key, int *out_x, int *out_y);
 PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
 PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);
 PNL_INTERNAL void pnl_cli_progress(const char *step, unsigned long long done, unsigned long long total);
