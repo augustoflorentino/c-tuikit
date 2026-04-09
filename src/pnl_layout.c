@@ -6,6 +6,7 @@
 #define PNL_NODE_PANEL -1
 #define PNL_LAYOUT_MIN_COLUMNS 16
 #define PNL_LAYOUT_MIN_ROWS 3
+#define PNL_LAYOUT_STACK_ROWS 5
 #define PNL_LAYOUT_FOOTER_MAX 256
 #define PNL_FOCUS_MARK "\xe2\x96\x8e"
 
@@ -334,12 +335,32 @@ static int pnl_layout_shown(const pnl_layout_t *layout, int node, int axis, int 
     return shown;
 }
 
+static int pnl_layout_children(const pnl_layout_t *layout, int node)
+{
+    int count = 0;
+    int child;
+
+    for (child = pnl_layout_next_child(layout, node, -1); child >= 0; child = pnl_layout_next_child(layout, node, child))
+        count++;
+    return count;
+}
+
+static int pnl_layout_stacks(const pnl_layout_t *layout, int node, struct pnl_rect rect)
+{
+    int count = pnl_layout_children(layout, node);
+
+    return layout->nodes[node].kind == PNL_SPLIT_COLUMNS &&
+           pnl_layout_shown(layout, node, PNL_SPLIT_COLUMNS, rect.width, 1) < count &&
+           rect.height >= count * PNL_LAYOUT_STACK_ROWS;
+}
+
 static void pnl_layout_draw_split(pnl_layout_t *layout, pnl_canvas_t *canvas, int node, struct pnl_rect rect)
 {
-    int axis = layout->nodes[node].kind;
+    int stacked = pnl_layout_stacks(layout, node, rect);
+    int axis = stacked ? PNL_SPLIT_ROWS : layout->nodes[node].kind;
     int length = axis == PNL_SPLIT_COLUMNS ? rect.width : rect.height;
     int gap = axis == PNL_SPLIT_COLUMNS ? 1 : 0;
-    int shown = pnl_layout_shown(layout, node, axis, length, gap);
+    int shown = stacked ? pnl_layout_children(layout, node) : pnl_layout_shown(layout, node, axis, length, gap);
     int flexible = 0;
     int left = length - gap * (shown > 0 ? shown - 1 : 0);
     int child = -1;
@@ -347,13 +368,13 @@ static void pnl_layout_draw_split(pnl_layout_t *layout, pnl_canvas_t *canvas, in
     int i;
 
     for (i = 0, child = pnl_layout_next_child(layout, node, -1); i < shown; i++, child = pnl_layout_next_child(layout, node, child)) {
-        if (layout->nodes[child].size > 0)
+        if (layout->nodes[child].size > 0 && !stacked)
             left -= layout->nodes[child].size;
         else
             flexible++;
     }
     for (i = 0, child = pnl_layout_next_child(layout, node, -1); i < shown; i++, child = pnl_layout_next_child(layout, node, child)) {
-        int size = layout->nodes[child].size;
+        int size = stacked ? 0 : layout->nodes[child].size;
         struct pnl_rect part = rect;
 
         if (size == 0) {
