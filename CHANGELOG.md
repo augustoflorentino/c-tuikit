@@ -4,6 +4,20 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.3.0 - 2026-04-08
+
+Mouse: click and scroll, for when a hand is already on it.
+
+- the panel turns on SGR mouse reporting; `TUIKIT_MOUSE=off` leaves the mouse to the terminal,
+  and shift-drag still selects text in most terminals
+- new keys `PNL_KEY_CLICK`, `PNL_KEY_WHEEL_UP` and `PNL_KEY_WHEEL_DOWN`; `pnl_mouse_position`
+  gives the position inside the screen, dialog or panel receiving the event
+- a view that does not handle the wheel gets three up or down keys instead, so pagers, tables
+  and custom lists scroll without changes
+- click an action to run it, a table row to select it, a table header to sort by that column,
+  an item of a pick list to choose it, yes or no in a confirmation, a panel to focus it and a
+  tab to open it; clicks outside an open dialog are ignored
+
 ## 3.2.0 - 2026-04-02
 
 On top: some screens should not replace the one below them.
