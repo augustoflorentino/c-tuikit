@@ -4,6 +4,16 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.4.0 - 2026-04-11
+
+Narrow terminals, the kind you get on a phone over SSH or in a split pane.
+
+- columns that do not fit side by side stack as rows when there is height for them, before
+  any of them is hidden; the dashboard example shows services above load on a narrow, tall
+  terminal
+- a footer wider than the screen keeps the hints that fit, whole, and ends with `?: help`,
+  where the rest can be read (inside dialogs it just ends)
+
 ## 3.3.0 - 2026-04-08
 
 Mouse: click and scroll, for when a hand is already on it.
