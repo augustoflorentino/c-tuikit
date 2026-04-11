@@ -1,5 +1,6 @@
 #include "pnl_internal.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -439,6 +440,27 @@ static void pnl_draw_title(pnl_app_t *app, const struct pnl_view *top)
     pnl_screen_text(&app->screen, x, 0, -1, PNL_TITLE_STYLE, top->title);
 }
 
+static void pnl_draw_footer(pnl_app_t *app, const char *footer, int in_dialog)
+{
+    const char *more = in_dialog ? "" : "?: help";
+    int room = app->screen.width - pnl_text_width(more) - 2;
+    const char *at = footer;
+    const char *cut;
+    size_t keep = 0;
+    char text[512];
+
+    if (pnl_text_width(footer) <= app->screen.width) {
+        pnl_screen_text(&app->screen, 0, app->screen.height - 1, -1, PNL_FOOTER_STYLE, footer);
+        return;
+    }
+    while ((cut = (strstr)(at, "  ")) != NULL && pnl_text_width_n(footer, (size_t)(cut - footer)) <= room) {
+        keep = (size_t)(cut - footer);
+        at = cut + 2;
+    }
+    snprintf(text, sizeof(text), "%.*s%s%s", (int)keep, footer, keep > 0 && more[0] ? "  " : "", more);
+    pnl_screen_text(&app->screen, 0, app->screen.height - 1, -1, PNL_FOOTER_STYLE, text);
+}
+
 static size_t pnl_base_view(const pnl_app_t *app)
 {
     size_t base = app->views_len;
@@ -494,7 +516,7 @@ static int pnl_draw(pnl_app_t *app)
     pnl_draw_views(app, &canvas);
     if (top != NULL)
         footer = pnl_view_hints(app);
-    pnl_screen_text(&app->screen, 0, height - 1, -1, PNL_FOOTER_STYLE, footer);
+    pnl_draw_footer(app, footer, top != NULL && top->dialog_width > 0);
     pnl_toasts_draw(app);
     app->dirty = 0;
     app->anim_frame = 0;
