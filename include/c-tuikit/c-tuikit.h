@@ -127,6 +127,8 @@ typedef void (*pnl_draw_fn)(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas);
 typedef int (*pnl_key_fn)(void *ctx, pnl_app_t *app, int key);
 typedef void (*pnl_terminal_fn)(void *ctx);
 typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
+typedef const char *(*pnl_cell_fn)(void *ctx, size_t row, size_t column, char *buf, size_t buf_len);
+typedef void (*pnl_release_fn)(void *ctx);
 
 PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
                            pnl_app_t **out_app);
@@ -175,6 +177,8 @@ PNL_API int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t tex
 PNL_API int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len,
                      size_t *out_index, int *out_ok);
 PNL_API int pnl_pager(pnl_app_t *app, const char *title, const char *text, size_t text_len);
+PNL_API int pnl_table_source(pnl_app_t *app, const char *title, const char *const *headers, const int *column_flags,
+                             size_t columns, size_t rows, pnl_cell_fn cell_fn, pnl_release_fn release_fn, void *ctx);
 PNL_API int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, const int *column_flags,
                       size_t columns, const char *const *cells, size_t rows);
 PNL_API int pnl_layout_create(pnl_app_t *app, int kind, pnl_layout_t **out_layout);

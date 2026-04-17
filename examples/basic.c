@@ -225,6 +225,30 @@ static void processes(void *ctx, pnl_app_t *app)
     pnl_table(app, "processes", headers, flags, 4, cells, 6);
 }
 
+static const char *file_cell(void *ctx, size_t row, size_t column, char *buf, size_t buf_len)
+{
+    static const char *const kinds[] = {"log", "txt", "png", "tar.gz", "json", "c"};
+    unsigned long mix = (unsigned long)row * 2654435761UL;
+
+    (void)ctx;
+    if (column == 0)
+        snprintf(buf, buf_len, "file-%07lu.%s", (unsigned long)row, kinds[mix % 6]);
+    else if (column == 1)
+        snprintf(buf, buf_len, "%lu", (mix >> 8) % 100000);
+    else
+        snprintf(buf, buf_len, "2026-%02lu-%02lu", (mix >> 4) % 12 + 1, (mix >> 12) % 28 + 1);
+    return buf;
+}
+
+static void million_files(void *ctx, pnl_app_t *app)
+{
+    static const char *const headers[] = {"name", "size", "modified"};
+    static const int flags[] = {0, PNL_COLUMN_RIGHT, PNL_COLUMN_OPTIONAL};
+
+    (void)ctx;
+    pnl_table_source(app, "a million files", headers, flags, 3, 1000000, file_cell, NULL, NULL);
+}
+
 static void print_lines(void *ctx)
 {
     (void)ctx;
@@ -276,6 +300,8 @@ int main(int argc, char **argv)
         status = pnl_app_add_action(app, "Show log", show_log, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Processes", processes, NULL);
+    if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Million files", million_files, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Print something", print_something, NULL);
     if (status == PNL_OK)

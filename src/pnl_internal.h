@@ -199,6 +199,7 @@ struct pnl_view {
     int box_height;
 };
 
+#define PNL_CELL_MAX 256
 #define PNL_TOASTS 3
 #define PNL_TOAST_TEXT 120
 
@@ -344,7 +345,7 @@ PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style
 PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);
 PNL_INTERNAL int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_flags, size_t columns,
-                               const char *const *cells, size_t rows);
+                               size_t rows, pnl_cell_fn cell_fn, void *ctx);
 PNL_INTERNAL int pnl_text_contains_at(const char *text, const char *needle);
 PNL_INTERNAL int pnl_text_contains(const char *text, const char *needle);
 

@@ -374,6 +374,23 @@ static void task_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_task_run(app, "count", counting_work, &steps_counted) == PNL_OK);
 }
 
+static int releases;
+
+static const char *number_cell(void *ctx, size_t row, size_t column, char *buf, size_t buf_len)
+{
+    (void)ctx;
+    if (column == 1)
+        return NULL;
+    snprintf(buf, buf_len, "%zu", row * 7 % 5);
+    return buf;
+}
+
+static void count_release(void *ctx)
+{
+    (void)ctx;
+    releases++;
+}
+
 static void components_action(void *ctx, pnl_app_t *app)
 {
     static const char *const items[] = {"alpha", "beta"};
@@ -394,6 +411,9 @@ static void components_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_table(app, "table", headers, flags, 2, cells, 0) == PNL_OK);
     CHECK(pnl_pick(app, "pick", items, 0, &index, &ok) == PNL_ERR_ARG);
     CHECK(pnl_table(app, "table", headers, NULL, 0, cells, 1) == PNL_ERR_ARG);
+    CHECK(pnl_table_source(app, "rows", headers, flags, 2, 3, number_cell, count_release, NULL) == PNL_OK);
+    CHECK(pnl_table_source(app, "rows", headers, flags, 2, 3, NULL, count_release, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_table_source(app, "rows", headers, flags, 0, 3, number_cell, count_release, NULL) == PNL_ERR_ARG);
     CHECK(pnl_input(app, "name", text, 0, &ok) == PNL_ERR_ARG);
     answers[1] = 1;
 }
@@ -438,7 +458,7 @@ static void test_cli(void)
     CHECK(run_cli(app, "fail", "extra") == 2);
     CHECK(run_cli(app, "--bogus", NULL) == 2);
     CHECK(run_cli(app, "count", NULL) == 0 && steps_counted == 3 && then_calls == 1);
-    CHECK(run_cli(app, "components", NULL) == 1 && answers[1] == 1 && answers[0] == 0);
+    CHECK(run_cli(app, "components", NULL) == 1 && answers[1] == 1 && answers[0] == 0 && releases == 1);
     CHECK(run_cli(app, "components", "--yes") == 0 && answers[0] == 1);
     pnl_app_destroy(app);
 }

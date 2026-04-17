@@ -138,16 +138,21 @@ int pnl_cli_read_line(const char *prompt, char *text, size_t text_len)
     return 1;
 }
 
-static const char *pnl_cli_cell(const char *const *headers, size_t columns, const char *const *cells, size_t row,
-                                size_t column)
+static const char *pnl_cli_cell(const char *const *headers, pnl_cell_fn cell_fn, void *ctx, size_t row,
+                                size_t column, char *buf)
 {
-    const char *text = row == 0 ? headers[column] : cells[(row - 1) * columns + column];
+    const char *text;
+
+    buf[0] = '\0';
+    text = row == 0 ? headers[column] : cell_fn(ctx, row - 1, column, buf, PNL_CELL_MAX);
 
     return text ? text : "";
 }
 
-static void pnl_cli_table_json(const char *const *headers, size_t columns, const char *const *cells, size_t rows)
+static void pnl_cli_table_json(const char *const *headers, size_t columns, size_t rows, pnl_cell_fn cell_fn,
+                               void *ctx)
 {
+    char buf[PNL_CELL_MAX];
     size_t r;
     size_t c;
 
@@ -157,48 +162,50 @@ static void pnl_cli_table_json(const char *const *headers, size_t columns, const
         for (c = 0; c < columns; c++) {
             if (c > 0)
                 putchar(',');
-            pnl_json_string(pnl_cli_cell(headers, columns, cells, 0, c));
+            pnl_json_string(pnl_cli_cell(headers, cell_fn, ctx, 0, c, buf));
             putchar(':');
-            pnl_json_string(pnl_cli_cell(headers, columns, cells, r, c));
+            pnl_json_string(pnl_cli_cell(headers, cell_fn, ctx, r, c, buf));
         }
         putchar('}');
     }
     printf("]\n");
 }
 
-static int pnl_cli_column_width(const char *const *headers, size_t columns, const char *const *cells, size_t rows,
+static int pnl_cli_column_width(const char *const *headers, pnl_cell_fn cell_fn, void *ctx, size_t rows,
                                 size_t column)
 {
+    char buf[PNL_CELL_MAX];
     int width = 0;
     size_t r;
 
     for (r = 0; r <= rows; r++) {
-        int w = pnl_text_width(pnl_cli_cell(headers, columns, cells, r, column));
+        int w = pnl_text_width(pnl_cli_cell(headers, cell_fn, ctx, r, column, buf));
 
         width = w > width ? w : width;
     }
     return width;
 }
 
-int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_flags, size_t columns,
-                  const char *const *cells, size_t rows)
+int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_flags, size_t columns, size_t rows,
+                  pnl_cell_fn cell_fn, void *ctx)
 {
+    char buf[PNL_CELL_MAX];
     int *widths;
     size_t r;
     size_t c;
 
     if (app->cli_json) {
-        pnl_cli_table_json(headers, columns, cells, rows);
+        pnl_cli_table_json(headers, columns, rows, cell_fn, ctx);
         return PNL_OK;
     }
     widths = pnl_mem_alloc(&app->mem, columns * sizeof(*widths));
     if (widths == NULL)
         return PNL_ERR_NOMEM;
     for (c = 0; c < columns; c++)
-        widths[c] = pnl_cli_column_width(headers, columns, cells, rows, c);
+        widths[c] = pnl_cli_column_width(headers, cell_fn, ctx, rows, c);
     for (r = 0; r <= rows; r++) {
         for (c = 0; c < columns; c++) {
-            const char *text = pnl_cli_cell(headers, columns, cells, r, c);
+            const char *text = pnl_cli_cell(headers, cell_fn, ctx, r, c, buf);
             int pad = widths[c] - pnl_text_width(text);
             int right = column_flags != NULL && (column_flags[c] & PNL_COLUMN_RIGHT);
 
