@@ -657,6 +657,10 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
         input = pnl_term_wait(&app->term, app->watches, app->watches_len, pnl_timers_timeout(app), ready);
         if (input < 0)
             return PNL_ERR_IO;
+        if (app->term.woken) {
+            app->term.woken = 0;
+            app->dirty = 1;
+        }
         if (input > 0)
             status = pnl_read_keys(app);
         pnl_dispatch_watches(app, ready);

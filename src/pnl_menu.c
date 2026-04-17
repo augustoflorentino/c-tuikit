@@ -6,6 +6,7 @@
 #define PNL_QUIT_LABEL "Quit"
 #define PNL_RESULT_FOOTER "any key: back"
 #define PNL_SELECTED_STYLE PNL_BOLD
+#define PNL_LABEL_MAX 24
 
 struct pnl_result_view {
     int mark;
@@ -19,8 +20,10 @@ void pnl_menu_clear_lines(pnl_app_t *app)
 {
     size_t i;
 
-    for (i = 0; i < app->lines_len; i++)
+    for (i = 0; i < app->lines_len; i++) {
+        pnl_mem_free(&app->mem, app->lines[i].label);
         pnl_mem_free(&app->mem, app->lines[i].text);
+    }
     app->lines_len = 0;
 }
 
@@ -29,7 +32,21 @@ int pnl_valid_mark(int mark)
     return mark == PNL_MARK_OK || mark == PNL_MARK_WAIT || mark == PNL_MARK_FAIL;
 }
 
-int pnl_status_line(pnl_app_t *app, int mark, const char *text)
+int pnl_label_width(const pnl_app_t *app)
+{
+    int width = 0;
+    size_t i;
+
+    for (i = 0; i < app->lines_len; i++) {
+        int w = app->lines[i].label != NULL ? pnl_text_width(app->lines[i].label) : 0;
+
+        if (w > width)
+            width = w;
+    }
+    return width < PNL_LABEL_MAX ? width : PNL_LABEL_MAX;
+}
+
+int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text)
 {
     struct pnl_line *line;
     int status;
@@ -41,8 +58,12 @@ int pnl_status_line(pnl_app_t *app, int mark, const char *text)
         return status;
     line = &app->lines[app->lines_len];
     line->text = pnl_mem_copy(&app->mem, text);
-    if (line->text == NULL)
+    line->label = label != NULL && label[0] != '\0' ? pnl_mem_copy(&app->mem, label) : NULL;
+    if (line->text == NULL || (line->label == NULL && label != NULL && label[0] != '\0')) {
+        pnl_mem_free(&app->mem, line->text);
+        pnl_mem_free(&app->mem, line->label);
         return PNL_ERR_NOMEM;
+    }
     line->mark = mark;
     line->meter = -1.0;
     app->lines_len++;
@@ -66,48 +87,80 @@ void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text)
 
 #define PNL_METER_WIDTH 12
 
-static void pnl_draw_line(pnl_canvas_t *canvas, int y, const struct pnl_line *line, int highlight)
+static void pnl_draw_line(pnl_canvas_t *canvas, int y, const struct pnl_line *line, int label_width,
+                          int highlight)
 {
     char percent[8];
-    int x;
+    int x = line->label != NULL ? 6 + label_width + 2 : 6;
 
-    pnl_draw_mark(canvas, y, line->mark, line->text);
-    if (highlight != 0)
-        pnl_canvas_text(canvas, 6, y, highlight, line->text);
+    pnl_draw_mark(canvas, y, line->mark, "");
+    if (line->label != NULL)
+        pnl_canvas_text(canvas, 6, y, 0, line->label);
+    if (line->label != NULL && pnl_text_width(line->label) > label_width)
+        pnl_canvas_text(canvas, 6 + label_width - 1, y, PNL_FG(PNL_ROLE_MUTED), "\xe2\x80\xa6");
+    pnl_canvas_text(canvas, x, y, highlight, line->text);
     if (line->meter < 0.0)
         return;
-    x = 6 + pnl_text_width(line->text) + 2;
+    if (line->text[0] != '\0')
+        x += pnl_text_width(line->text) + 2;
     pnl_canvas_bar(canvas, x, y, PNL_METER_WIDTH, line->meter, PNL_METER_LEVEL);
     snprintf(percent, sizeof(percent), "%3d%%", (int)(line->meter * 100 + 0.5));
     pnl_canvas_text(canvas, x + PNL_METER_WIDTH + 1, y, PNL_FG(PNL_ROLE_MUTED), percent);
 }
 
-static unsigned long pnl_line_hash(const struct pnl_line *line)
+static unsigned long pnl_hash(unsigned long hash, const char *text)
 {
-    unsigned long hash = 5381UL + (unsigned long)line->mark;
     const unsigned char *p;
 
-    for (p = (const unsigned char *)line->text; *p != '\0'; p++)
+    for (p = (const unsigned char *)text; *p != '\0'; p++)
         hash = hash * 33UL + *p;
     return hash;
+}
+
+static unsigned long pnl_line_id(const struct pnl_line *line, size_t index)
+{
+    return line->label != NULL ? pnl_hash(5381UL, line->label) : 5381UL * 31UL + (unsigned long)index;
+}
+
+static const struct pnl_seen *pnl_seen_find(const pnl_app_t *app, unsigned long id)
+{
+    size_t i;
+
+    for (i = 0; i < app->seen_len; i++) {
+        if (app->seen[i].id == id)
+            return &app->seen[i];
+    }
+    return NULL;
 }
 
 static void pnl_menu_track(pnl_app_t *app)
 {
     long long now = pnl_app_frame_ms(app);
+    struct pnl_seen *swap;
+    size_t cap;
     size_t i;
 
-    if (pnl_mem_grow(&app->mem, (void **)&app->seen, &app->seen_cap, app->lines_len, sizeof(*app->seen)) != PNL_OK)
+    if (pnl_mem_grow(&app->mem, (void **)&app->seen_next, &app->seen_next_cap, app->lines_len,
+                     sizeof(*app->seen_next)) != PNL_OK)
         return;
     for (i = 0; i < app->lines_len; i++) {
-        unsigned long hash = pnl_line_hash(&app->lines[i]);
+        struct pnl_seen *next = &app->seen_next[i];
+        const struct pnl_seen *old;
 
-        if (i >= app->seen_len)
-            app->seen[i].changed_ms = app->seen_ready ? now : 0;
-        else if (app->seen[i].hash != hash)
-            app->seen[i].changed_ms = now;
-        app->seen[i].hash = hash;
+        next->id = pnl_line_id(&app->lines[i], i);
+        next->hash = pnl_hash(5381UL + (unsigned long)app->lines[i].mark, app->lines[i].text);
+        old = pnl_seen_find(app, next->id);
+        if (old == NULL)
+            next->changed_ms = app->seen_ready ? now : 0;
+        else
+            next->changed_ms = old->hash != next->hash ? now : old->changed_ms;
     }
+    swap = app->seen;
+    cap = app->seen_cap;
+    app->seen = app->seen_next;
+    app->seen_cap = app->seen_next_cap;
+    app->seen_next = swap;
+    app->seen_next_cap = cap;
     app->seen_len = app->lines_len;
     app->seen_ready = 1;
 }
@@ -115,11 +168,12 @@ static void pnl_menu_track(pnl_app_t *app)
 void pnl_menu_refresh(pnl_app_t *app)
 {
     pnl_menu_clear_lines(app);
-    if (app->status_fn == NULL)
-        return;
-    app->in_status = 1;
-    app->status_fn(app->status_ctx, app);
-    app->in_status = 0;
+    if (app->status_fn != NULL) {
+        app->in_status = 1;
+        app->status_fn(app->status_ctx, app);
+        app->in_status = 0;
+    }
+    pnl_values_lines(app);
     if (app->running)
         pnl_menu_track(app);
 }
@@ -157,15 +211,17 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     int first;
     int marker;
     int rows;
+    int label_width;
 
     if (!app->anim_frame)
         pnl_menu_refresh(app);
+    label_width = pnl_label_width(app);
     for (i = 0; i < app->lines_len; i++) {
         int highlight = i < app->seen_len && app->seen[i].changed_ms != 0
                             ? pnl_fade_style(app, canvas, PNL_ROLE_ACCENT, app->seen[i].changed_ms, 9)
                             : 0;
 
-        pnl_draw_line(canvas, y++, &app->lines[i], highlight);
+        pnl_draw_line(canvas, y++, &app->lines[i], label_width, highlight);
     }
     if (app->lines_len > 0)
         y++;

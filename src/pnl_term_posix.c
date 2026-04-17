@@ -3,6 +3,7 @@
 #if !defined(_WIN32)
 
 #include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
 #include <string.h>
@@ -230,10 +231,50 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     return PNL_OK;
 }
 
+int pnl_term_wake_open(struct pnl_term *term)
+{
+    int i;
+
+    if (term->wake_open)
+        return PNL_OK;
+    if (pipe(term->wake_fd) != 0)
+        return PNL_ERR_IO;
+    for (i = 0; i < 2; i++) {
+        fcntl(term->wake_fd[i], F_SETFL, fcntl(term->wake_fd[i], F_GETFL) | O_NONBLOCK);
+        fcntl(term->wake_fd[i], F_SETFD, FD_CLOEXEC);
+    }
+    term->wake_open = 1;
+    return PNL_OK;
+}
+
+void pnl_term_wake_close(struct pnl_term *term)
+{
+    if (!term->wake_open)
+        return;
+    close(term->wake_fd[0]);
+    close(term->wake_fd[1]);
+    term->wake_open = 0;
+}
+
+void pnl_term_wake(struct pnl_term *term)
+{
+    if (term->wake_open && write(term->wake_fd[1], "w", 1) < 0)
+        return;
+}
+
+static void pnl_term_drain_wake(struct pnl_term *term)
+{
+    char buf[64];
+
+    while (read(term->wake_fd[0], buf, sizeof(buf)) > 0)
+        ;
+    term->woken = 1;
+}
+
 int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
                   unsigned char *out_ready)
 {
-    struct pollfd pfds[PNL_WATCH_MAX + 1];
+    struct pollfd pfds[PNL_WATCH_MAX + 2];
     size_t count = watches_len < PNL_WATCH_MAX ? watches_len : PNL_WATCH_MAX;
     size_t i;
     int ready;
@@ -246,11 +287,15 @@ int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t
         pfds[i + 1].fd = watches[i].fd;
         pfds[i + 1].events = POLLIN;
     }
-    for (i = 0; i <= count; i++)
+    pfds[count + 1].fd = term->wake_open ? term->wake_fd[0] : -1;
+    pfds[count + 1].events = POLLIN;
+    for (i = 0; i <= count + 1; i++)
         pfds[i].revents = 0;
-    ready = poll(pfds, (nfds_t)(count + 1), timeout_ms);
+    ready = poll(pfds, (nfds_t)(count + 2), timeout_ms);
     if (ready < 0)
         return errno == EINTR ? 0 : -1;
+    if (pfds[count + 1].revents != 0)
+        pnl_term_drain_wake(term);
     for (i = 0; i < count; i++)
         out_ready[i] = (unsigned char)(pfds[i + 1].revents != 0);
     return term->input_len > 0 || pfds[0].revents != 0;

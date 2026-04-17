@@ -103,7 +103,10 @@ void pnl_app_destroy(pnl_app_t *app)
     pnl_mem_free(&app->mem, app->actions);
     pnl_mem_free(&app->mem, app->lines);
     pnl_mem_free(&app->mem, app->seen);
+    pnl_mem_free(&app->mem, app->seen_next);
     pnl_mem_free(&app->mem, app->views);
+    pnl_mem_free(&app->mem, app->values);
+    pnl_term_wake_close(&app->term);
     pnl_mem_free(&app->mem, app->timers);
     pnl_mem_free(&app->mem, app->watches);
     pnl_mem_free(&app->mem, app->title);

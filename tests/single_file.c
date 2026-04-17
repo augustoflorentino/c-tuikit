@@ -18,7 +18,7 @@ int main(void)
         status = pnl_app_on_status(app, NULL, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "First", noop_action, NULL);
-    if (status == PNL_OK && pnl_status_line(app, PNL_MARK_OK, "x") != PNL_ERR_ARG)
+    if (status == PNL_OK && pnl_status_line(app, PNL_MARK_OK, NULL, "x") != PNL_ERR_ARG)
         status = PNL_ERR_ARG;
     if (status == PNL_OK && pnl_result(app, PNL_MARK_OK, "x") != PNL_ERR_ARG)
         status = PNL_ERR_ARG;

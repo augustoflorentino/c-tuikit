@@ -150,7 +150,7 @@ static void test_outside_callbacks(void)
     pnl_app_t *app = NULL;
 
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
-    CHECK(pnl_status_line(app, PNL_MARK_OK, "x") == PNL_ERR_ARG);
+    CHECK(pnl_status_line(app, PNL_MARK_OK, NULL, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(app, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     pnl_app_destroy(app);
 }
@@ -336,7 +336,9 @@ static void view_action(void *ctx, pnl_app_t *app)
 static void wait_status(void *ctx, pnl_app_t *app)
 {
     (void)ctx;
-    pnl_status_line(app, PNL_MARK_WAIT, "warming up");
+    pnl_status_line(app, PNL_MARK_WAIT, "cache", "warming up");
+    pnl_status_line(app, PNL_MARK_OK, NULL, "plain");
+    pnl_status_meter(app, PNL_MARK_OK, "disk", 0.5);
 }
 
 static int then_calls;
@@ -450,7 +452,7 @@ static void test_bad_args(void)
     CHECK(pnl_app_create("demo", NULL, NULL, NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_on_status(NULL, noop_status, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(NULL, "x", noop_action, NULL) == PNL_ERR_ARG);
-    CHECK(pnl_status_line(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
+    CHECK(pnl_status_line(NULL, PNL_MARK_OK, NULL, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     CHECK(pnl_app_run(NULL, 0, NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_quit(NULL) == PNL_ERR_ARG);
@@ -525,6 +527,38 @@ static void test_alloc_failure(void)
     CHECK(n > 1);
 }
 
+static void test_values(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_value_t *first = NULL;
+    pnl_value_t *second = NULL;
+    char long_text[600];
+    double zero = 0.0;
+
+    memset(long_text, 'x', sizeof(long_text) - 1);
+    long_text[sizeof(long_text) - 1] = '\0';
+    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_value_create(app, NULL, &first) == PNL_ERR_ARG && first == NULL);
+    CHECK(pnl_value_create(NULL, "x", &first) == PNL_ERR_ARG);
+    CHECK(pnl_value_create(app, "x", NULL) == PNL_ERR_ARG);
+    CHECK(pnl_value_create(app, "queue", &first) == PNL_OK && first != NULL);
+    CHECK(pnl_value_create(app, "disk", &second) == PNL_OK && second != NULL);
+    CHECK(pnl_value_set(first, PNL_MARK_OK, "12 jobs") == PNL_OK);
+    CHECK(pnl_value_set(first, PNL_MARK_OK, long_text) == PNL_OK);
+    CHECK(pnl_value_set(first, 9, "x") == PNL_ERR_ARG);
+    CHECK(pnl_value_set(first, PNL_MARK_OK, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_value_set(NULL, PNL_MARK_OK, "x") == PNL_ERR_ARG);
+    CHECK(pnl_value_set_meter(second, PNL_MARK_WAIT, 1.5) == PNL_OK);
+    CHECK(pnl_value_set_meter(second, PNL_MARK_WAIT, zero / zero) == PNL_ERR_ARG);
+    CHECK(pnl_value_set_meter(NULL, PNL_MARK_OK, 0.5) == PNL_ERR_ARG);
+    pnl_value_destroy(first);
+    pnl_value_destroy(NULL);
+    CHECK(pnl_value_create(app, "again", &first) == PNL_OK);
+    pnl_value_destroy(second);
+    pnl_value_destroy(first);
+    pnl_app_destroy(app);
+}
+
 int main(void)
 {
     test_keys();
@@ -535,6 +569,7 @@ int main(void)
     test_cli();
     test_colors();
     test_layout();
+    test_values();
     test_motion();
     test_canvas_and_width();
     test_bad_args();

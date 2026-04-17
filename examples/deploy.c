@@ -47,15 +47,14 @@ static void show_status(void *ctx, pnl_app_t *app)
     struct deployer *dep = ctx;
     char line[96];
 
-    snprintf(line, sizeof(line), "target: %s", environments[dep->environment]);
-    pnl_status_line(app, PNL_MARK_OK, line);
+    pnl_status_line(app, PNL_MARK_OK, "target", environments[dep->environment]);
     if (dep->releases_len == 0) {
-        pnl_status_line(app, PNL_MARK_WAIT, "nothing deployed yet");
+        pnl_status_line(app, PNL_MARK_WAIT, "release", "nothing deployed yet");
         return;
     }
-    snprintf(line, sizeof(line), "last release %s: %s", dep->releases[dep->releases_len - 1].version,
+    snprintf(line, sizeof(line), "%s %s", dep->releases[dep->releases_len - 1].version,
              dep->last_failed ? "failed" : "live");
-    pnl_status_line(app, dep->last_failed ? PNL_MARK_FAIL : PNL_MARK_OK, line);
+    pnl_status_line(app, dep->last_failed ? PNL_MARK_FAIL : PNL_MARK_OK, "release", line);
 }
 
 static void record(struct deployer *dep, int failed)

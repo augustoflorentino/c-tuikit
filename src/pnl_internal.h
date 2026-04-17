@@ -99,6 +99,10 @@ struct pnl_term {
     int mouse;
     int mouse_x;
     int mouse_y;
+    int wake_open;
+    int wake_fd[2];
+    void *wake_event;
+    int woken;
 };
 
 union pnl_storage {
@@ -144,6 +148,7 @@ struct pnl_action {
 struct pnl_line {
     int mark;
     double meter;
+    char *label;
     char *text;
 };
 
@@ -154,6 +159,7 @@ struct pnl_glide {
 };
 
 struct pnl_seen {
+    unsigned long id;
     unsigned long hash;
     long long changed_ms;
 };
@@ -217,6 +223,8 @@ struct pnl_app {
     struct pnl_seen *seen;
     size_t seen_len;
     size_t seen_cap;
+    struct pnl_seen *seen_next;
+    size_t seen_next_cap;
     int seen_ready;
     int in_status;
     size_t selected;
@@ -235,6 +243,9 @@ struct pnl_app {
     int motion;
     int motion_flags;
     struct pnl_toast toasts[PNL_TOASTS];
+    pnl_value_t **values;
+    size_t values_len;
+    size_t values_cap;
     int mouse_ox;
     int mouse_oy;
     int menu_y;
@@ -287,6 +298,10 @@ PNL_INTERNAL int pnl_term_resized(void);
 PNL_INTERNAL void pnl_term_size(int *out_width, int *out_height);
 PNL_INTERNAL int pnl_term_write(const char *data, size_t data_len);
 PNL_INTERNAL int pnl_term_fill(struct pnl_term *term, int timeout_ms);
+PNL_INTERNAL int pnl_term_wake_open(struct pnl_term *term);
+PNL_INTERNAL void pnl_term_wake_close(struct pnl_term *term);
+PNL_INTERNAL void pnl_term_wake(struct pnl_term *term);
+PNL_INTERNAL void pnl_values_lines(pnl_app_t *app);
 PNL_INTERNAL int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key);
 PNL_INTERNAL int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len,
                                int timeout_ms, unsigned char *out_ready);
@@ -319,6 +334,7 @@ PNL_INTERNAL double pnl_glide_at(pnl_app_t *app, const struct pnl_glide *glide, 
 PNL_INTERNAL void pnl_glide_to(pnl_app_t *app, struct pnl_glide *glide, double target, int flag);
 PNL_INTERNAL void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *view, int focused);
 PNL_INTERNAL int pnl_menu_mouse(pnl_app_t *app, int key);
+PNL_INTERNAL int pnl_label_width(const pnl_app_t *app);
 PNL_INTERNAL void pnl_wheel_keys(pnl_app_t *app, pnl_key_fn key_fn, void *ctx, int key);
 PNL_INTERNAL int pnl_is_mouse_key(int key);
 PNL_INTERNAL long long pnl_toasts_next_ms(const pnl_app_t *app);

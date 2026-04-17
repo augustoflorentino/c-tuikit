@@ -115,6 +115,7 @@ typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
 typedef struct pnl_layout pnl_layout_t;
+typedef struct pnl_value pnl_value_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
@@ -134,10 +135,15 @@ PNL_API int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *sta
 PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
-PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *text);
+PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text);
 PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);
 PNL_API int pnl_toast(pnl_app_t *app, int mark, const char *text);
-PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *text, double fraction);
+PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *label, double fraction);
+
+PNL_API int pnl_value_create(pnl_app_t *app, const char *label, pnl_value_t **out_value);
+PNL_API void pnl_value_destroy(pnl_value_t *value);
+PNL_API int pnl_value_set(pnl_value_t *value, int mark, const char *text);
+PNL_API int pnl_value_set_meter(pnl_value_t *value, int mark, double fraction);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code);
 PNL_API int pnl_app_quit(pnl_app_t *app);

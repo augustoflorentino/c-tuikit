@@ -315,6 +315,32 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     return PNL_OK;
 }
 
+int pnl_term_wake_open(struct pnl_term *term)
+{
+    if (term->wake_open)
+        return PNL_OK;
+    term->wake_event = CreateEventW(NULL, FALSE, FALSE, NULL);
+    if (term->wake_event == NULL)
+        return PNL_ERR_IO;
+    term->wake_open = 1;
+    return PNL_OK;
+}
+
+void pnl_term_wake_close(struct pnl_term *term)
+{
+    if (!term->wake_open)
+        return;
+    CloseHandle((HANDLE)term->wake_event);
+    term->wake_event = NULL;
+    term->wake_open = 0;
+}
+
+void pnl_term_wake(struct pnl_term *term)
+{
+    if (term->wake_open)
+        SetEvent((HANDLE)term->wake_event);
+}
+
 int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
                   unsigned char *out_ready)
 {
@@ -323,6 +349,19 @@ int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t
     (void)out_ready;
     if (term->input_len > 0)
         return 1;
+    if (term->wake_open) {
+        HANDLE handles[2];
+        DWORD result;
+
+        handles[0] = pnl_term_in();
+        handles[1] = (HANDLE)term->wake_event;
+        result = WaitForMultipleObjects(2, handles, FALSE, timeout_ms < 0 ? INFINITE : (DWORD)timeout_ms);
+        if (result == WAIT_OBJECT_0 + 1)
+            term->woken = 1;
+        if (result != WAIT_OBJECT_0)
+            return result == WAIT_FAILED ? -1 : 0;
+        timeout_ms = 0;
+    }
     return pnl_term_fill(term, timeout_ms) < 0 ? -1 : term->input_len > 0;
 }
 

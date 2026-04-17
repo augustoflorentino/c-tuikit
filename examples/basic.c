@@ -38,13 +38,13 @@ static void show_status(void *ctx, pnl_app_t *app)
     struct service *svc = ctx;
     char line[64];
 
-    pnl_status_line(app, PNL_MARK_OK, "config file found");
+    pnl_status_line(app, PNL_MARK_OK, "config", "file found");
     if (!svc->running) {
-        pnl_status_line(app, PNL_MARK_FAIL, "service stopped");
+        pnl_status_line(app, PNL_MARK_FAIL, "service", "stopped");
         return;
     }
-    snprintf(line, sizeof(line), "service running for %lds", (long)time(NULL) - svc->started);
-    pnl_status_line(app, PNL_MARK_OK, line);
+    snprintf(line, sizeof(line), "running for %lds", (long)time(NULL) - svc->started);
+    pnl_status_line(app, PNL_MARK_OK, "service", line);
     pnl_status_meter(app, PNL_MARK_OK, "memory", (double)((time(NULL) - svc->started) % 60) / 60.0);
 }
 
@@ -188,15 +188,13 @@ static void choose_profile(void *ctx, pnl_app_t *app)
 {
     static const char *const profiles[] = {"development", "staging", "production", "production-eu",
                                            "production-us", "benchmark", "local"};
-    char line[96];
+    pnl_value_t *profile = ctx;
     size_t index = 0;
     int ok = 0;
 
-    (void)ctx;
     if (pnl_pick(app, "profile", profiles, sizeof(profiles) / sizeof(profiles[0]), &index, &ok) != PNL_OK || !ok)
         return;
-    snprintf(line, sizeof(line), "profile set to %s", profiles[index]);
-    pnl_result(app, PNL_MARK_OK, line);
+    pnl_value_set(profile, PNL_MARK_OK, profiles[index]);
 }
 
 static void show_log(void *ctx, pnl_app_t *app)
@@ -247,10 +245,15 @@ int main(int argc, char **argv)
     struct service svc;
     int exit_code = 1;
     pnl_app_t *app = NULL;
+    pnl_value_t *profile = NULL;
     int status;
 
     memset(&svc, 0, sizeof(svc));
     status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
+    if (status == PNL_OK)
+        status = pnl_value_create(app, "profile", &profile);
+    if (status == PNL_OK)
+        status = pnl_value_set(profile, PNL_MARK_OK, "development");
     if (status == PNL_OK)
         status = pnl_app_on_status(app, show_status, &svc);
     if (status == PNL_OK)
@@ -268,7 +271,7 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Rename", rename_service, NULL);
     if (status == PNL_OK)
-        status = pnl_app_add_action(app, "Choose profile", choose_profile, NULL);
+        status = pnl_app_add_action(app, "Choose profile", choose_profile, profile);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Show log", show_log, NULL);
     if (status == PNL_OK)
@@ -277,6 +280,7 @@ int main(int argc, char **argv)
         status = pnl_app_add_action(app, "Print something", print_something, NULL);
     if (status == PNL_OK)
         status = pnl_app_run(app, argc, argv, &exit_code);
+    pnl_value_destroy(profile);
     pnl_app_destroy(app);
     if (status != PNL_OK)
         fprintf(stderr, "error: %s\n", pnl_strerror(status));

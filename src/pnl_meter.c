@@ -73,9 +73,9 @@ void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const d
     }
 }
 
-int pnl_status_meter(pnl_app_t *app, int mark, const char *text, double fraction)
+int pnl_status_meter(pnl_app_t *app, int mark, const char *label, double fraction)
 {
-    int status = pnl_status_line(app, mark, text);
+    int status = pnl_status_line(app, mark, label, "");
 
     if (status == PNL_OK)
         app->lines[app->lines_len - 1].meter = pnl_clamp(fraction);

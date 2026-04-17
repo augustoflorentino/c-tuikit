@@ -211,15 +211,20 @@ int pnl_cli_table(pnl_app_t *app, const char *const *headers, const int *column_
     return PNL_OK;
 }
 
-static void pnl_cli_status_line(pnl_app_t *app, const struct pnl_line *line)
+static void pnl_cli_status_line(pnl_app_t *app, const struct pnl_line *line, int label_width)
 {
-    char text[512];
+    char percent[16] = "";
+    char text[640];
 
-    if (line->meter < 0.0) {
-        pnl_cli_line(app, line->mark, line->text);
-        return;
-    }
-    snprintf(text, sizeof(text), "%s  %d%%", line->text, (int)(line->meter * 100 + 0.5));
+    if (line->meter >= 0.0)
+        snprintf(percent, sizeof(percent), "%s%d%%", line->text[0] != '\0' ? "  " : "",
+                 (int)(line->meter * 100 + 0.5));
+    if (line->label != NULL)
+        snprintf(text, sizeof(text), "%s%*s  %s%s", line->label,
+                 label_width > pnl_text_width(line->label) ? label_width - pnl_text_width(line->label) : 0, "",
+                 line->text, percent);
+    else
+        snprintf(text, sizeof(text), "%s%s", line->text, percent);
     pnl_cli_line(app, line->mark, text);
 }
 
@@ -234,14 +239,20 @@ static void pnl_cli_status(pnl_app_t *app)
         const struct pnl_line *line = &app->lines[i];
 
         if (!app->cli_json) {
-            pnl_cli_status_line(app, line);
+            pnl_cli_status_line(app, line, pnl_label_width(app));
             continue;
         }
         if (line->mark > app->cli_worst)
             app->cli_worst = line->mark;
         if (i > 0)
             putchar(',');
-        pnl_json_fields(line->mark, line->text);
+        printf("{\"mark\":\"%s\"", pnl_mark_json[line->mark]);
+        if (line->label != NULL) {
+            printf(",\"label\":");
+            pnl_json_string(line->label);
+        }
+        printf(",\"text\":");
+        pnl_json_string(line->text);
         if (line->meter >= 0.0)
             printf(",\"meter\":%.3f", line->meter);
         putchar('}');
