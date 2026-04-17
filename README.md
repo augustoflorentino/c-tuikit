@@ -7,8 +7,8 @@ can take, and the outcome of each one.
 ```
 service - demo
 
-  ok  config file found
-  ok  service running for 42s
+  ok  config   file found
+  ok  service  running for 42s
 
   > 1 Start
     2 Stop
@@ -17,7 +17,10 @@ service - demo
 up/down: move  enter: choose  ?: help  q: quit
 ```
 
-- status lines with a mark (`ok`, `..`, `!!`) refreshed on a timer while the panel waits for a key
+- status lines with a mark (`ok`, `..`, `!!`), a label and a value, refreshed on a timer while the
+  panel waits for a key; a value that changes is highlighted for a moment
+- values that live outside the status callback (`pnl_value_t`), set from any thread; the panel
+  wakes up and redraws only what changed
 - actions chosen with the arrow keys (or `j`/`k`) and enter, by number, by first letter, or by
   name with `:`; `?` lists the keys of the current screen
 - an action may leave a result, open a live screen of its own, or hand the terminal back
@@ -81,7 +84,7 @@ Define `PNL_STATIC` as well to keep every function private to that file.
 ```c
 static void show_status(void *ctx, pnl_app_t *app)
 {
-    pnl_status_line(app, PNL_MARK_OK, "config file found");
+    pnl_status_line(app, PNL_MARK_OK, "config", "file found");
 }
 
 static void start(void *ctx, pnl_app_t *app)
@@ -99,7 +102,8 @@ pnl_app_destroy(app);
 return exit_code;
 ```
 
-`pnl_status_line` works only inside the status callback; `pnl_result` and `pnl_task_run` while
+`pnl_status_line` works only inside the status callback; `pnl_value_set` works anywhere, from any
+thread; `pnl_result` and `pnl_task_run` while
 the panel or a command runs. Without a command and with a terminal, `pnl_app_run` opens the
 panel; otherwise it prints the status lines, which makes the tool usable in scripts and pipes.
 Work given to `pnl_task_run` runs on a thread in the panel and in the foreground on the command

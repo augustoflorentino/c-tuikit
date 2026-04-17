@@ -4,6 +4,29 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.0.0 - 2026-04-17
+
+Data sources: what the panel shows can come from anywhere, and only what changed is redrawn.
+
+- `pnl_value_create(app, label, &value)` adds a status line that lives outside the status
+  callback; `pnl_value_set(value, mark, text)` and `pnl_value_set_meter(value, mark, fraction)`
+  change it from any thread. The panel wakes up at once, through a pipe on POSIX and an event on
+  Windows, and the renderer sends only the cells that changed; no refresh timer is needed
+- values also appear in `tool status` and `tool status --json`, after the lines of the callback
+- labels form a column, so values line up under each other, in the panel and on the command
+  line; JSON status entries carry a `"label"` field
+- the highlight on a changed value follows the label: inserting or removing a line above no
+  longer makes every line below it flash
+- the basic example keeps the chosen profile in a value
+
+### Breaking
+
+- `pnl_status_line(app, mark, label, text)` takes a label before the text; pass `NULL` for a
+  line without one
+- `pnl_status_meter(app, mark, label, fraction)`: the text before the bar is now a label and
+  lines up with the other labels
+- the shared library is now `libtuikit.so.4`
+
 ## 3.4.0 - 2026-04-11
 
 Narrow terminals, the kind you get on a phone over SSH or in a split pane.
