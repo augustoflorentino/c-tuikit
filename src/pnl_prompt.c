@@ -6,9 +6,12 @@
 
 #define PNL_CONFIRM_FOOTER "y/n  left/right: choose  enter: answer  esc: no"
 #define PNL_INPUT_FOOTER "enter: accept  esc: cancel"
+#define PNL_INPUT_HISTORY_FOOTER "up/down: history  enter: accept  esc: cancel"
 #define PNL_PICK_FOOTER "type to filter  up/down: move  enter: choose  esc: cancel"
 #define PNL_FILTER_MAX 128
 #define PNL_ANSWER_MAX 16
+#define PNL_HISTORY_MAX 20
+#define PNL_HISTORY_TEXT 4096
 
 struct pnl_confirm_view {
     const char *question;
@@ -19,6 +22,9 @@ struct pnl_confirm_view {
 struct pnl_input_view {
     const char *prompt;
     struct pnl_edit edit;
+    const char *history;
+    const char *draft;
+    size_t recalled;
     int ok;
 };
 
@@ -143,10 +149,72 @@ static void pnl_input_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     pnl_edit_draw(&view->edit, canvas, 0, 2, pnl_canvas_width(canvas), 1);
 }
 
+static const char *pnl_history_entry(const char *history, size_t index, size_t *out_len)
+{
+    const char *end;
+
+    while (history != NULL && index-- > 0) {
+        history = (strchr)(history, '\n');
+        history = history != NULL ? history + 1 : NULL;
+    }
+    if (history == NULL || *history == '\0')
+        return NULL;
+    end = (strchr)(history, '\n');
+    *out_len = end != NULL ? (size_t)(end - history) : strlen(history);
+    return history;
+}
+
+static void pnl_input_recall(struct pnl_input_view *view, int key)
+{
+    size_t index = key == PNL_KEY_UP ? view->recalled + 1 : view->recalled - 1;
+    const char *entry = view->draft;
+    size_t len = strlen(view->draft);
+
+    if (key == PNL_KEY_DOWN && view->recalled == 0)
+        return;
+    if (index > 0 && (entry = pnl_history_entry(view->history, index - 1, &len)) == NULL)
+        return;
+    view->recalled = index;
+    if (len >= view->edit.cap)
+        len = view->edit.cap - 1;
+    memcpy(view->edit.text, entry, len);
+    view->edit.text[len] = '\0';
+    pnl_edit_init(&view->edit, view->edit.text, view->edit.cap);
+}
+
+static void pnl_history_add(pnl_app_t *app, const char *prompt, const char *text)
+{
+    const char *old = pnl_memory_get(app, "input", prompt);
+    char history[PNL_HISTORY_TEXT];
+    size_t used = 0;
+    size_t count = 1;
+    size_t index;
+    size_t len;
+    const char *entry;
+
+    if (text[0] == '\0' || (strchr)(text, '\n') != NULL || strlen(text) >= sizeof(history))
+        return;
+    used = (size_t)snprintf(history, sizeof(history), "%s", text);
+    for (index = 0; count < PNL_HISTORY_MAX && (entry = pnl_history_entry(old, index, &len)) != NULL; index++) {
+        if ((len == strlen(text) && memcmp(entry, text, len) == 0) || used + len + 2 > sizeof(history))
+            continue;
+        history[used++] = '\n';
+        memcpy(history + used, entry, len);
+        used += len;
+        history[used] = '\0';
+        count++;
+    }
+    pnl_memory_set(app, "input", prompt, history);
+}
+
 static int pnl_input_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_input_view *view = ctx;
 
+    if (key == PNL_KEY_UP || key == PNL_KEY_DOWN) {
+        pnl_input_recall(view, key);
+        return 1;
+    }
     if (key == PNL_KEY_ENTER || key == PNL_KEY_ESCAPE) {
         view->ok = key == PNL_KEY_ENTER;
         pnl_view_pop(app);
@@ -179,10 +247,15 @@ int pnl_input(pnl_app_t *app, const char *prompt, char *text, size_t text_len, i
     memcpy(work, text, text_len);
     memset(&view, 0, sizeof(view));
     view.prompt = prompt;
+    view.draft = text;
+    view.history = pnl_memory_get(app, "input", prompt);
     pnl_edit_init(&view.edit, work, text_len);
-    status = pnl_prompt_modal(app, "input", PNL_INPUT_FOOTER, 48, 3, pnl_input_draw, pnl_input_key, &view);
-    if (view.ok)
+    status = pnl_prompt_modal(app, "input", view.history != NULL ? PNL_INPUT_HISTORY_FOOTER : PNL_INPUT_FOOTER, 48, 3,
+                              pnl_input_draw, pnl_input_key, &view);
+    if (view.ok) {
         memcpy(text, work, view.edit.len + 1);
+        pnl_history_add(app, prompt, text);
+    }
     *out_ok = view.ok;
     pnl_mem_free(&app->mem, work);
     return status;
@@ -334,6 +407,19 @@ static int pnl_pick_width(const char *const *items, size_t items_len)
     return width;
 }
 
+static void pnl_pick_recall(const pnl_app_t *app, const char *title, struct pnl_pick_view *view)
+{
+    const char *last = pnl_memory_get(app, "pick", title);
+    size_t i;
+
+    for (i = 0; last != NULL && i < view->items_len; i++) {
+        if (strcmp(view->items[i], last) == 0) {
+            view->selected = i;
+            return;
+        }
+    }
+}
+
 int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t items_len, size_t *out_index,
              int *out_ok)
 {
@@ -360,11 +446,13 @@ int pnl_pick(pnl_app_t *app, const char *title, const char *const *items, size_t
         return PNL_ERR_NOMEM;
     pnl_edit_init(&view.edit, view.filter, sizeof(view.filter));
     pnl_pick_filter(&view);
+    pnl_pick_recall(app, title, &view);
     status = pnl_prompt_modal(app, title, PNL_PICK_FOOTER, pnl_pick_width(items, items_len),
                               items_len + 2 < 16 ? (int)items_len + 2 : 16, pnl_pick_draw, pnl_pick_key, &view);
     if (view.ok) {
         *out_index = view.shown[view.selected];
         *out_ok = 1;
+        pnl_memory_set(app, "pick", title, items[*out_index]);
     }
     pnl_mem_free(&app->mem, view.shown);
     return status;

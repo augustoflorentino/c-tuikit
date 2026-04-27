@@ -158,6 +158,11 @@ struct pnl_glide {
     long long start_ms;
 };
 
+struct pnl_memo {
+    char *key;
+    char *value;
+};
+
 struct pnl_seen {
     unsigned long id;
     unsigned long hash;
@@ -244,6 +249,11 @@ struct pnl_app {
     int motion;
     int motion_flags;
     struct pnl_toast toasts[PNL_TOASTS];
+    char *memory_path;
+    struct pnl_memo *memos;
+    size_t memos_len;
+    size_t memos_cap;
+    int memos_dirty;
     pnl_value_t **values;
     size_t values_len;
     size_t values_cap;
@@ -325,6 +335,11 @@ PNL_INTERNAL int pnl_theme_choose(struct pnl_theme *theme, const char *name);
 PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb, long *out_reply_ms);
 PNL_INTERNAL long pnl_link_probe(struct pnl_term *term);
 
+PNL_INTERNAL const char *pnl_memory_get(const pnl_app_t *app, const char *kind, const char *name);
+PNL_INTERNAL void pnl_memory_set(pnl_app_t *app, const char *kind, const char *name, const char *value);
+PNL_INTERNAL void pnl_memory_load(pnl_app_t *app);
+PNL_INTERNAL void pnl_memory_save(pnl_app_t *app);
+PNL_INTERNAL void pnl_memory_free(pnl_app_t *app);
 PNL_INTERNAL void pnl_edit_init(struct pnl_edit *edit, char *text, size_t cap);
 PNL_INTERNAL int pnl_edit_key(struct pnl_edit *edit, int key);
 PNL_INTERNAL void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused);

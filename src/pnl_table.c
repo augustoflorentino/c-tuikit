@@ -22,6 +22,7 @@ struct pnl_table_job {
 
 struct pnl_table {
     pnl_app_t *app;
+    char *name;
     size_t columns;
     size_t rows;
     char **headers;
@@ -526,12 +527,45 @@ static int pnl_table_key(void *ctx, pnl_app_t *app, int key)
     return 1;
 }
 
+static void pnl_table_remember(struct pnl_table *table)
+{
+    char text[PNL_TABLE_FILTER_MAX + 64];
+
+    if (table->name == NULL)
+        return;
+    snprintf(text, sizeof(text), "%d %zu %d %s", table->want.sorted, table->want.column, table->want.descending,
+             table->want.filter);
+    pnl_memory_set(table->app, "table", table->name, text);
+}
+
+static void pnl_table_recall(struct pnl_table *table, const char *title)
+{
+    const char *text = pnl_memory_get(table->app, "table", title);
+    struct pnl_table_job job;
+    int used = 0;
+
+    table->name = pnl_mem_copy(&table->app->mem, title);
+    memset(&job, 0, sizeof(job));
+    if (text == NULL || sscanf(text, "%d %zu %d %n", &job.sorted, &job.column, &job.descending, &used) != 3 ||
+        job.column >= table->columns)
+        return;
+    snprintf(job.filter, sizeof(job.filter), "%s", text + used);
+    if (!job.sorted && job.filter[0] == '\0')
+        return;
+    table->want = job;
+    table->column = job.column;
+    pnl_edit_init(&table->edit, table->want.filter, sizeof(table->want.filter));
+    pnl_table_start(table);
+}
+
 static void pnl_table_drop(pnl_app_t *app, void *ctx)
 {
     struct pnl_table *table = ctx;
     size_t i;
 
     pnl_table_stop(table);
+    pnl_table_remember(table);
+    pnl_mem_free(&app->mem, table->name);
     if (table->release_fn != NULL)
         table->release_fn(table->ctx);
     for (i = 0; table->headers != NULL && i < table->columns; i++)
@@ -675,6 +709,8 @@ int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, con
         status = pnl_table_push(app, title, table);
     if (status != PNL_OK)
         pnl_table_drop(app, table);
+    else
+        pnl_table_recall(table, title);
     return status;
 }
 
@@ -705,5 +741,6 @@ int pnl_table_source(pnl_app_t *app, const char *title, const char *const *heade
         return status;
     }
     table->release_fn = release_fn;
+    pnl_table_recall(table, title);
     return PNL_OK;
 }

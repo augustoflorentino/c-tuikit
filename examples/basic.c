@@ -283,6 +283,8 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_set_refresh(app, 1000);
     if (status == PNL_OK)
+        status = pnl_app_set_memory(app, NULL);
+    if (status == PNL_OK)
         status = pnl_app_add_action(app, "Start", start, &svc);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Stop", stop, &svc);

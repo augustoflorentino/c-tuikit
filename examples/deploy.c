@@ -187,6 +187,8 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_set_refresh(app, 1000);
     if (status == PNL_OK)
+        status = pnl_app_set_memory(app, NULL);
+    if (status == PNL_OK)
         status = pnl_app_add_action(app, "Deploy", deploy, &dep);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Target", choose_target, &dep);

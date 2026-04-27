@@ -724,6 +724,24 @@ static void pnl_run_palette(pnl_app_t *app)
                      contrast != NULL && strcmp(contrast, "high") == 0);
 }
 
+static size_t pnl_remembered_action(pnl_app_t *app)
+{
+    const char *label = pnl_memory_get(app, "menu", "action");
+    size_t i;
+
+    for (i = 0; label != NULL && i < app->actions_len; i++) {
+        if (strcmp(app->actions[i].label, label) == 0)
+            return i;
+    }
+    return 0;
+}
+
+static void pnl_remember_action(pnl_app_t *app)
+{
+    if (app->selected < app->actions_len)
+        pnl_memory_set(app, "menu", "action", app->actions[app->selected].label);
+}
+
 int pnl_run_interactive(pnl_app_t *app)
 {
     const char *mouse = getenv("TUIKIT_MOUSE");
@@ -736,11 +754,12 @@ int pnl_run_interactive(pnl_app_t *app)
         return status;
     app->running = 1;
     app->quit = 0;
-    app->selected = 0;
+    pnl_memory_load(app);
+    app->selected = pnl_remembered_action(app);
     app->menu_top = 0;
     pnl_run_palette(app);
     app->motion = pnl_motion_detect(app);
-    app->select_glide.from = app->select_glide.to = 0.0;
+    app->select_glide.from = app->select_glide.to = (double)app->selected;
     app->transition_shift = 0;
     app->seen_len = 0;
     app->seen_ready = 0;
@@ -749,6 +768,9 @@ int pnl_run_interactive(pnl_app_t *app)
     app->screen.front_valid = 0;
     pnl_timers_restart(app);
     status = pnl_loop(app, 0);
+    pnl_remember_action(app);
+    pnl_views_drop(app);
+    pnl_memory_save(app);
     app->running = 0;
     app->motion = 0;
     app->frame_ms = 0;

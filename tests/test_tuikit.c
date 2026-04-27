@@ -142,6 +142,10 @@ static void test_build(void)
     CHECK(pnl_app_set_refresh(app, 500) == PNL_OK);
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Second", noop_action, NULL) == PNL_OK);
+    CHECK(pnl_app_set_memory(NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_set_memory(app, "") == PNL_ERR_ARG);
+    CHECK(pnl_app_set_memory(app, "tuikit-memory") == PNL_OK);
+    CHECK(pnl_app_set_memory(app, NULL) == PNL_OK);
     pnl_app_destroy(app);
 }
 
