@@ -30,6 +30,8 @@ up/down: move  enter: choose  ?: help  q: quit
   table you can sort and filter; each one degrades to plain stdin and stdout on the command line
 - tables of millions of rows read from a callback (`pnl_table_source`), sorted and filtered on a
   thread without blocking keys
+- optional memory between runs (`pnl_app_set_memory`): the last action, the last item picked,
+  input history and the filter and order of each table
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file

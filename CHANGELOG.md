@@ -4,6 +4,22 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.2.0 - 2026-04-27
+
+Memory: the panel picks up where you left off.
+
+- `pnl_app_set_memory(app, path)` turns it on; with `NULL` the file goes to
+  `$XDG_STATE_HOME/<tool>/memory` (`~/.local/state` when unset) or `%LOCALAPPDATA%\<tool>\memory`
+  on Windows. `TUIKIT_MEMORY=off` turns it off for one run
+- the menu opens on the action chosen last time
+- pick lists open on the item picked last time, per title
+- text inputs keep a history per prompt: up and down go through the last 20 answers and back
+  to the text you started with
+- tables keep their filter and sort order, per title
+- the file is plain text, written once when the panel closes, to a temporary file renamed over
+  the old one; a missing or unreadable file only means nothing is remembered
+- the basic and deploy examples remember
+
 ## 4.1.0 - 2026-04-27
 
 Millions: a table no longer has to fit in memory as strings, and it stays responsive while it
