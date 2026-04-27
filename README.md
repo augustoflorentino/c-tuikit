@@ -27,7 +27,9 @@ up/down: move  enter: choose  ?: help  q: quit
   (`pnl_app_with_terminal`) to print or start other programs
 - slow work runs on a thread with progress, a log and esc to cancel (`pnl_task_run`)
 - ready-made screens: confirmation, text input, filterable pick list, pager with search and a
-  sortable table; each one degrades to plain stdin and stdout on the command line
+  table you can sort and filter; each one degrades to plain stdin and stdout on the command line
+- tables of millions of rows read from a callback (`pnl_table_source`), sorted and filtered on a
+  thread without blocking keys
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file

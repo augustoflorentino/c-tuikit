@@ -4,6 +4,24 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.1.0 - 2026-04-27
+
+Millions: a table no longer has to fit in memory as strings, and it stays responsive while it
+sorts a million rows.
+
+- `pnl_table_source(app, title, headers, flags, columns, rows, cell_fn, release_fn, ctx)` reads
+  cells through a callback, only for the rows on screen and while sorting or filtering. The
+  callback may write the text into the buffer it is given, so cells can be generated on the
+  fly; `release_fn` runs when the table closes
+- `/` filters the rows of any table as you type; enter keeps the filter, esc clears it, and the
+  line under the header shows how many rows match
+- tables with more than 20000 rows sort and filter on a thread: the screen shows "sorting..."
+  and keeps taking keys, and a new key cancels the work in progress
+- the selection stays on the same row after a sort or a filter
+- column widths come from the first rows and grow as wider cells scroll into view
+- the sort marker sits next to the header, also on columns aligned to the right
+- the basic example has a table of a million generated files
+
 ## 4.0.0 - 2026-04-17
 
 Data sources: what the panel shows can come from anywhere, and only what changed is redrawn.
