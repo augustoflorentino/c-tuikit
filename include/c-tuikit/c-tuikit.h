@@ -43,6 +43,11 @@ extern "C" {
 #define PNL_MARK_WAIT 1
 #define PNL_MARK_FAIL 2
 
+#define PNL_LEVEL_DEBUG 0
+#define PNL_LEVEL_INFO 1
+#define PNL_LEVEL_WARN 2
+#define PNL_LEVEL_ERROR 3
+
 #define PNL_KEY_NONE 0
 #define PNL_KEY_UP 0x110000
 #define PNL_KEY_DOWN 0x110001
@@ -116,6 +121,7 @@ typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
 typedef struct pnl_layout pnl_layout_t;
 typedef struct pnl_value pnl_value_t;
+typedef struct pnl_log pnl_log_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
@@ -147,6 +153,10 @@ PNL_API int pnl_value_create(pnl_app_t *app, const char *label, pnl_value_t **ou
 PNL_API void pnl_value_destroy(pnl_value_t *value);
 PNL_API int pnl_value_set(pnl_value_t *value, int mark, const char *text);
 PNL_API int pnl_value_set_meter(pnl_value_t *value, int mark, double fraction);
+PNL_API int pnl_log_create(pnl_app_t *app, size_t capacity, pnl_log_t **out_log);
+PNL_API void pnl_log_destroy(pnl_log_t *logbook);
+PNL_API int pnl_log_write(pnl_log_t *logbook, int level, const char *text);
+PNL_API int pnl_log_open(pnl_app_t *app, pnl_log_t *logbook, const char *title);
 PNL_API int pnl_result(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_app_run(pnl_app_t *app, int argc, char **argv, int *out_exit_code);
 PNL_API int pnl_app_quit(pnl_app_t *app);

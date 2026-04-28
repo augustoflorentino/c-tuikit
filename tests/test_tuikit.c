@@ -143,6 +143,8 @@ static void test_build(void)
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Second", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_set_memory(NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_log_create(app, 0, NULL) == PNL_ERR_ARG);
+    pnl_log_destroy(NULL);
     CHECK(pnl_app_set_memory(app, "") == PNL_ERR_ARG);
     CHECK(pnl_app_set_memory(app, "tuikit-memory") == PNL_OK);
     CHECK(pnl_app_set_memory(app, NULL) == PNL_OK);
@@ -402,6 +404,7 @@ static void components_action(void *ctx, pnl_app_t *app)
     static const int flags[] = {0, PNL_COLUMN_RIGHT | PNL_COLUMN_OPTIONAL};
     static const char *const cells[] = {"a", "10", "b", NULL};
     int *answers = ctx;
+    pnl_log_t *events = NULL;
     char text[8] = "x";
     size_t index = 9;
     int ok = 1;
@@ -416,6 +419,15 @@ static void components_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_pick(app, "pick", items, 0, &index, &ok) == PNL_ERR_ARG);
     CHECK(pnl_table(app, "table", headers, NULL, 0, cells, 1) == PNL_ERR_ARG);
     CHECK(pnl_table_source(app, "rows", headers, flags, 2, 3, number_cell, count_release, NULL) == PNL_OK);
+    CHECK(pnl_log_create(app, 2, &events) == PNL_OK);
+    CHECK(pnl_log_write(events, PNL_LEVEL_INFO, "first") == PNL_OK);
+    CHECK(pnl_log_write(events, PNL_LEVEL_WARN, "second\nignored") == PNL_OK);
+    CHECK(pnl_log_write(events, PNL_LEVEL_ERROR, "third") == PNL_OK);
+    CHECK(pnl_log_write(events, 9, "bad") == PNL_ERR_ARG);
+    CHECK(pnl_log_write(events, PNL_LEVEL_INFO, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_log_open(app, events, "events") == PNL_OK);
+    CHECK(pnl_log_open(app, NULL, "events") == PNL_ERR_ARG);
+    pnl_log_destroy(events);
     CHECK(pnl_table_source(app, "rows", headers, flags, 2, 3, NULL, count_release, NULL) == PNL_ERR_ARG);
     CHECK(pnl_table_source(app, "rows", headers, flags, 0, 3, number_cell, count_release, NULL) == PNL_ERR_ARG);
     CHECK(pnl_input(app, "name", text, 0, &ok) == PNL_ERR_ARG);

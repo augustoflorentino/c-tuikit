@@ -211,6 +211,26 @@ static void show_log(void *ctx, pnl_app_t *app)
     pnl_pager(app, "log", text, len);
 }
 
+static void log_request(void *ctx, pnl_app_t *app)
+{
+    static const char *const paths[] = {"/", "/login", "/api/items", "/api/orders", "/health"};
+    static unsigned long count;
+    pnl_log_t *requests = ctx;
+    char line[96];
+    int level = count % 23 == 0 ? PNL_LEVEL_ERROR : count % 7 == 0 ? PNL_LEVEL_WARN : count % 3 == 0 ? PNL_LEVEL_DEBUG : PNL_LEVEL_INFO;
+
+    (void)app;
+    snprintf(line, sizeof(line), "GET %s %s in %lu ms", paths[count % 5], level == PNL_LEVEL_ERROR ? "500" : "200",
+             count * 37 % 400);
+    pnl_log_write(requests, level, line);
+    count++;
+}
+
+static void live_log(void *ctx, pnl_app_t *app)
+{
+    pnl_log_open(app, ctx, "requests");
+}
+
 static void processes(void *ctx, pnl_app_t *app)
 {
     static const char *const headers[] = {"pid", "name", "cpu %", "memory"};
@@ -270,7 +290,9 @@ int main(int argc, char **argv)
     int exit_code = 1;
     pnl_app_t *app = NULL;
     pnl_value_t *profile = NULL;
+    pnl_log_t *requests = NULL;
     int status;
+    int i;
 
     memset(&svc, 0, sizeof(svc));
     status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
@@ -278,6 +300,12 @@ int main(int argc, char **argv)
         status = pnl_value_create(app, "profile", &profile);
     if (status == PNL_OK)
         status = pnl_value_set(profile, PNL_MARK_OK, "development");
+    if (status == PNL_OK)
+        status = pnl_log_create(app, 5000, &requests);
+    for (i = 0; status == PNL_OK && i < 40; i++)
+        log_request(requests, app);
+    if (status == PNL_OK)
+        status = pnl_app_add_timer(app, 400, log_request, requests, NULL);
     if (status == PNL_OK)
         status = pnl_app_on_status(app, show_status, &svc);
     if (status == PNL_OK)
@@ -301,6 +329,8 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Show log", show_log, NULL);
     if (status == PNL_OK)
+        status = pnl_app_add_action(app, "Live log", live_log, requests);
+    if (status == PNL_OK)
         status = pnl_app_add_action(app, "Processes", processes, NULL);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Million files", million_files, NULL);
@@ -309,6 +339,7 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_run(app, argc, argv, &exit_code);
     pnl_value_destroy(profile);
+    pnl_log_destroy(requests);
     pnl_app_destroy(app);
     if (status != PNL_OK)
         fprintf(stderr, "error: %s\n", pnl_strerror(status));

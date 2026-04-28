@@ -377,6 +377,7 @@ PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
 PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);
 PNL_INTERNAL void pnl_cli_progress(const char *step, unsigned long long done, unsigned long long total);
 PNL_INTERNAL int pnl_cli_read_line(const char *prompt, char *text, size_t text_len);
+PNL_INTERNAL void pnl_json_string(const char *text);
 PNL_INTERNAL void pnl_cli_log(const pnl_app_t *app, const char *line);
 PNL_INTERNAL void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text);
 PNL_INTERNAL int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view);

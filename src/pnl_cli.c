@@ -42,7 +42,7 @@ static void pnl_command_of(const char *label, char *out)
     out[len] = '\0';
 }
 
-static void pnl_json_string(const char *text)
+void pnl_json_string(const char *text)
 {
     putchar('"');
     for (; *text != '\0'; text++) {
