@@ -4,6 +4,21 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.3.0 - 2026-04-27
+
+Live log: the screen to keep open while a service runs.
+
+- `pnl_log_create(app, capacity, &log)` keeps the last `capacity` lines; `pnl_log_write(log,
+  level, text)` adds one from any thread, with a level (`PNL_LEVEL_DEBUG`, `INFO`, `WARN`,
+  `ERROR`) and the time it arrived. A burst of lines wakes the panel once, not once per line
+- `pnl_log_open(app, log, title)` shows it and follows the end as lines arrive. Scrolling up
+  pauses it and counts the lines that came in meanwhile; end or `f` follows again
+- `v` raises the lowest level shown, from debug to error and around
+- `/` filters as you type and marks the match in each line
+- on the command line the same call prints the lines kept so far, or a JSON array with
+  `time`, `level` and `text`
+- the basic example logs fake requests on a timer under "Live log"
+
 ## 4.2.0 - 2026-04-27
 
 Memory: the panel picks up where you left off.

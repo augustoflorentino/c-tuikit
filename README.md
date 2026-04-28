@@ -32,6 +32,8 @@ up/down: move  enter: choose  ?: help  q: quit
   thread without blocking keys
 - optional memory between runs (`pnl_app_set_memory`): the last action, the last item picked,
   input history and the filter and order of each table
+- a live log fed from any thread (`pnl_log_*`): follows the end, pauses while you scroll, filters
+  by level and by text
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
