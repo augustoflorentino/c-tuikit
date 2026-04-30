@@ -72,6 +72,8 @@ static size_t pnl_keys_csi(const unsigned char *data, size_t data_len, int *out_
             pnl_keys_mouse(data, i, out_key, out_x, out_y);
         else if (i == 2 && data[i] == 'Z')
             *out_key = PNL_KEY_BACKTAB;
+        else if (i == 2 && (data[i] == 'I' || data[i] == 'O'))
+            *out_key = data[i] == 'I' ? PNL_KEY_FOCUS_IN : PNL_KEY_FOCUS_OUT;
         else if (i == 2)
             *out_key = pnl_keys_letter(data[i]);
         else if (data[i] == '~')

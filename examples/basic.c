@@ -145,7 +145,7 @@ static void copy_files(void *ctx, pnl_task_t *task)
             pnl_task_result(task, PNL_MARK_WAIT, "backup cancelled, partial copy kept");
             return;
         }
-        nap_ms(50);
+        nap_ms(150);
         snprintf(line, sizeof(line), "copied file-%02d.dat", i);
         pnl_task_log(task, line);
         pnl_task_progress(task, (unsigned long long)i, (unsigned long long)total);

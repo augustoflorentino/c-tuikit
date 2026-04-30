@@ -22,6 +22,8 @@
 #define PNL_ESCAPE_WAIT_MS 50
 #define PNL_KEY_SUSPEND 0x1a
 #define PNL_KEY_CTRL_C 3
+#define PNL_KEY_FOCUS_IN 0x110011
+#define PNL_KEY_FOCUS_OUT 0x110012
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
 #define PNL_FRAME_MS 33
@@ -99,6 +101,8 @@ struct pnl_term {
     int mouse;
     int mouse_x;
     int mouse_y;
+    int focus_known;
+    int focused;
     int wake_open;
     int wake_fd[2];
     void *wake_event;
@@ -377,6 +381,7 @@ PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
 PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);
 PNL_INTERNAL void pnl_cli_progress(const char *step, unsigned long long done, unsigned long long total);
 PNL_INTERNAL int pnl_cli_read_line(const char *prompt, char *text, size_t text_len);
+PNL_INTERNAL void pnl_task_notify(pnl_app_t *app, const char *title, long long started_ms, const char *outcome);
 PNL_INTERNAL void pnl_json_string(const char *text);
 PNL_INTERNAL void pnl_cli_log(const pnl_app_t *app, const char *line);
 PNL_INTERNAL void pnl_draw_mark(pnl_canvas_t *canvas, int y, int mark, const char *text);

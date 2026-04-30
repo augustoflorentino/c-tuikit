@@ -146,6 +146,7 @@ PNL_API int pnl_app_set_memory(pnl_app_t *app, const char *path);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text);
 PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);
+PNL_API int pnl_notify(pnl_app_t *app, const char *text);
 PNL_API int pnl_toast(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *label, double fraction);
 

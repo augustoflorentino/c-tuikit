@@ -93,6 +93,8 @@ static void test_keys(void)
     CHECK(decode("\x1bx", &used) == PNL_KEY_ESCAPE && used == 1);
     CHECK(decode("\x1b[1;5A", &used) == PNL_KEY_NONE && used == 6);
     CHECK(decode("\x1b[5~", &used) == PNL_KEY_PAGE_UP && used == 4);
+    CHECK(decode("\x1b[I", &used) > PNL_KEY_WHEEL_DOWN && used == 3);
+    CHECK(decode("\x1b[O", &used) > PNL_KEY_WHEEL_DOWN && used == 3);
     CHECK(decode("\x1b[6~", &used) == PNL_KEY_PAGE_DOWN && used == 4);
     CHECK(decode("\x1b[3~", &used) == PNL_KEY_DELETE && used == 4);
     CHECK(decode("\x1b[1~", &used) == PNL_KEY_HOME && used == 4);
@@ -144,6 +146,7 @@ static void test_build(void)
     CHECK(pnl_app_add_action(app, "Second", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_set_memory(NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_log_create(app, 0, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_notify(app, "not running") == PNL_ERR_ARG);
     pnl_log_destroy(NULL);
     CHECK(pnl_app_set_memory(app, "") == PNL_ERR_ARG);
     CHECK(pnl_app_set_memory(app, "tuikit-memory") == PNL_OK);
@@ -427,6 +430,8 @@ static void components_action(void *ctx, pnl_app_t *app)
     CHECK(pnl_log_write(events, PNL_LEVEL_INFO, NULL) == PNL_ERR_ARG);
     CHECK(pnl_log_open(app, events, "events") == PNL_OK);
     CHECK(pnl_log_open(app, NULL, "events") == PNL_ERR_ARG);
+    CHECK(pnl_notify(app, "done") == PNL_OK);
+    CHECK(pnl_notify(app, NULL) == PNL_ERR_ARG);
     pnl_log_destroy(events);
     CHECK(pnl_table_source(app, "rows", headers, flags, 2, 3, NULL, count_release, NULL) == PNL_ERR_ARG);
     CHECK(pnl_table_source(app, "rows", headers, flags, 0, 3, number_cell, count_release, NULL) == PNL_ERR_ARG);

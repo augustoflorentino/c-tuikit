@@ -578,6 +578,11 @@ static void pnl_dispatch_key(pnl_app_t *app, int key)
 {
     struct pnl_view top;
 
+    if (key == PNL_KEY_FOCUS_IN || key == PNL_KEY_FOCUS_OUT) {
+        app->term.focus_known = 1;
+        app->term.focused = key == PNL_KEY_FOCUS_IN;
+        return;
+    }
     app->dirty = 1;
     if (key == PNL_KEY_CTRL_C) {
         app->quit = 1;

@@ -15,9 +15,9 @@
 #define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
 #endif
 
-#define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l"
+#define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l\x1b[?1004h"
 #define PNL_TERM_MOUSE "\x1b[?1000h\x1b[?1006h"
-#define PNL_TERM_END "\x1b[?1006l\x1b[?1000l\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l"
+#define PNL_TERM_END "\x1b[?1004l\x1b[?1006l\x1b[?1000l\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l"
 #define PNL_TERM_RECORDS 32
 
 static DWORD pnl_term_saved_in;
@@ -148,6 +148,7 @@ int pnl_term_enter(struct pnl_term *term)
         return status;
     SetConsoleCtrlHandler(pnl_term_on_ctrl, TRUE);
     term->active = 1;
+    term->focus_known = 0;
     pnl_term_size(&pnl_term_last_width, &pnl_term_last_height);
     status = pnl_term_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
     if (status == PNL_OK && term->mouse)

@@ -12,9 +12,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l"
+#define PNL_TERM_START "\x1b[?1049h\x1b[?25l\x1b[?7l\x1b[?1004h"
 #define PNL_TERM_MOUSE "\x1b[?1000h\x1b[?1006h"
-#define PNL_TERM_END "\x1b[?1006l\x1b[?1000l\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l"
+#define PNL_TERM_END "\x1b[?1004l\x1b[?1006l\x1b[?1000l\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l"
 
 static const int pnl_term_signals[] = {SIGTERM, SIGHUP, SIGQUIT, SIGINT};
 #define PNL_TERM_SIGNALS (sizeof(pnl_term_signals) / sizeof(pnl_term_signals[0]))
@@ -121,6 +121,7 @@ int pnl_term_enter(struct pnl_term *term)
         return status;
     pnl_term_catch();
     term->active = 1;
+    term->focus_known = 0;
     status = pnl_term_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
     if (status == PNL_OK && term->mouse)
         status = pnl_term_write(PNL_TERM_MOUSE, sizeof(PNL_TERM_MOUSE) - 1);

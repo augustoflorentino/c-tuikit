@@ -28,6 +28,7 @@ struct pnl_task {
     int finished;
     int result_set;
     int result_mark;
+    char title[PNL_TASK_TEXT];
     char step[PNL_TASK_TEXT];
     char result[PNL_TASK_TEXT];
     char log[PNL_TASK_LOG][PNL_TASK_TEXT];
@@ -154,6 +155,13 @@ static void pnl_task_main(void *arg)
     pnl_unlock(&task->lock);
 }
 
+static void pnl_task_outcome(pnl_task_t *task)
+{
+    const char *outcome = task->result_set ? task->result : task->cancel ? "cancelled" : "finished";
+
+    pnl_task_notify(task->app, task->title, task->started_ms, outcome);
+}
+
 static void pnl_task_join(pnl_task_t *task)
 {
     if (task->joined)
@@ -162,6 +170,7 @@ static void pnl_task_join(pnl_task_t *task)
     task->joined = 1;
     task->app->tasks_running--;
     task->footer = PNL_FOOTER_DONE;
+    pnl_task_outcome(task);
     if (task->then_fn != NULL)
         task->then_fn(task->then_ctx, task->app);
 }
@@ -264,6 +273,7 @@ static void pnl_task_drop(pnl_app_t *app, void *ctx)
 static int pnl_task_cli_run(pnl_app_t *app, pnl_task_t *task)
 {
     task->fn(task->ctx, task);
+    pnl_task_outcome(task);
     if (task->then_fn != NULL)
         task->then_fn(task->then_ctx, app);
     if (pnl_term_stderr_is_tty())
@@ -317,6 +327,7 @@ int pnl_task_run(pnl_app_t *app, const char *title, pnl_work_fn work_fn, void *w
     task->fn = work_fn;
     task->ctx = work_ctx;
     task->started_ms = pnl_term_now_ms();
+    pnl_task_copy(task->title, title);
     task->footer = PNL_FOOTER_RUNNING;
     if (app->cli)
         return pnl_task_cli_run(app, task);
