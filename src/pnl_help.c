@@ -1,5 +1,6 @@
 #include "pnl_internal.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define PNL_HELP_MAX 4096
@@ -64,6 +65,24 @@ static void pnl_help_section(struct pnl_text *text, const char *title, const cha
     pnl_text_add(text, "\n", 1);
 }
 
+static void pnl_help_bindings(const pnl_app_t *app, struct pnl_text *text)
+{
+    char from[16];
+    char to[16];
+    char line[48];
+    size_t i;
+
+    if (app->bindings_len == 0)
+        return;
+    pnl_text_add(text, "your keys\n\n", 11);
+    for (i = 0; i < app->bindings_len; i++) {
+        pnl_key_label(app->bindings[i].from, from, sizeof(from));
+        pnl_key_label(app->bindings[i].to, to, sizeof(to));
+        snprintf(line, sizeof(line), "  %-*s%s\n", PNL_HELP_KEY_WIDTH, from, to);
+        pnl_text_add(text, line, strlen(line));
+    }
+}
+
 void pnl_help(pnl_app_t *app)
 {
     struct pnl_text text;
@@ -73,6 +92,7 @@ void pnl_help(pnl_app_t *app)
     text.data[0] = '\0';
     pnl_help_section(&text, "this screen", hints ? hints : pnl_menu_hints);
     pnl_help_section(&text, "everywhere", pnl_global_hints);
+    pnl_help_bindings(app, &text);
     pnl_pager(app, "help", text.data, text.len);
 }
 

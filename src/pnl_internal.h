@@ -162,6 +162,13 @@ struct pnl_glide {
     long long start_ms;
 };
 
+#define PNL_BINDINGS 64
+
+struct pnl_binding {
+    int from;
+    int to;
+};
+
 struct pnl_memo {
     char *key;
     char *value;
@@ -198,6 +205,7 @@ struct pnl_view {
     pnl_key_fn key_fn;
     pnl_drop_fn drop_fn;
     void *ctx;
+    const int *typing_ref;
     int dialog_width;
     int dialog_height;
     int origin_x;
@@ -253,6 +261,8 @@ struct pnl_app {
     int motion;
     int motion_flags;
     struct pnl_toast toasts[PNL_TOASTS];
+    struct pnl_binding bindings[PNL_BINDINGS];
+    size_t bindings_len;
     char *memory_path;
     struct pnl_memo *memos;
     size_t memos_len;
@@ -339,6 +349,10 @@ PNL_INTERNAL int pnl_theme_choose(struct pnl_theme *theme, const char *name);
 PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *out_rgb, long *out_reply_ms);
 PNL_INTERNAL long pnl_link_probe(struct pnl_term *term);
 
+PNL_INTERNAL void pnl_tool_name(char *out, size_t out_len, const char *title);
+PNL_INTERNAL void pnl_key_label(int key, char *out, size_t out_len);
+PNL_INTERNAL int pnl_keymap_apply(const pnl_app_t *app, int key);
+PNL_INTERNAL void pnl_keymap_load(pnl_app_t *app);
 PNL_INTERNAL const char *pnl_memory_get(const pnl_app_t *app, const char *kind, const char *name);
 PNL_INTERNAL void pnl_memory_set(pnl_app_t *app, const char *kind, const char *name, const char *value);
 PNL_INTERNAL void pnl_memory_load(pnl_app_t *app);

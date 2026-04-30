@@ -660,6 +660,7 @@ static int pnl_table_push(pnl_app_t *app, const char *title, struct pnl_table *t
 
     memset(&view, 0, sizeof(view));
     view.footer_ref = &table->footer;
+    view.typing_ref = &table->editing;
     view.draw_fn = pnl_table_draw;
     view.key_fn = pnl_table_key;
     view.drop_fn = pnl_table_drop;

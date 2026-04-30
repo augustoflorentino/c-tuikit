@@ -208,7 +208,7 @@ void pnl_memory_free(pnl_app_t *app)
     app->memory_path = NULL;
 }
 
-static void pnl_memory_name(char *out, size_t out_len, const char *title)
+void pnl_tool_name(char *out, size_t out_len, const char *title)
 {
     size_t i = 0;
 
@@ -228,7 +228,7 @@ static int pnl_memory_default(const pnl_app_t *app, char *path)
     const char *base;
     const char *home;
 
-    pnl_memory_name(name, sizeof(name), app->title);
+    pnl_tool_name(name, sizeof(name), app->title);
 #if defined(_WIN32)
     base = getenv("LOCALAPPDATA");
     home = NULL;

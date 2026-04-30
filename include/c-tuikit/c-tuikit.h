@@ -143,6 +143,7 @@ PNL_API int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *sta
 PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
 PNL_API int pnl_app_set_theme(pnl_app_t *app, const char *theme);
 PNL_API int pnl_app_set_memory(pnl_app_t *app, const char *path);
+PNL_API int pnl_app_bind(pnl_app_t *app, const char *key, const char *to);
 PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx);
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text);
 PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);

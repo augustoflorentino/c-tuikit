@@ -583,6 +583,9 @@ static void pnl_dispatch_key(pnl_app_t *app, int key)
         app->term.focused = key == PNL_KEY_FOCUS_IN;
         return;
     }
+    key = pnl_keymap_apply(app, key);
+    if (key == PNL_KEY_NONE)
+        return;
     app->dirty = 1;
     if (key == PNL_KEY_CTRL_C) {
         app->quit = 1;
@@ -760,6 +763,7 @@ int pnl_run_interactive(pnl_app_t *app)
     app->running = 1;
     app->quit = 0;
     pnl_memory_load(app);
+    pnl_keymap_load(app);
     app->selected = pnl_remembered_action(app);
     app->menu_top = 0;
     pnl_run_palette(app);

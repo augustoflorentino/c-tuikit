@@ -341,6 +341,7 @@ int pnl_log_open(pnl_app_t *app, pnl_log_t *logbook, const char *title)
     view->shown = pnl_mem_alloc(&app->mem, logbook->capacity * sizeof(*view->shown));
     memset(&screen, 0, sizeof(screen));
     screen.footer_ref = &view->footer;
+    screen.typing_ref = &view->editing;
     screen.draw_fn = pnl_log_draw;
     screen.key_fn = pnl_log_key;
     screen.drop_fn = pnl_log_drop;

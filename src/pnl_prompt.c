@@ -40,10 +40,14 @@ struct pnl_pick_view {
     int ok;
 };
 
+static int pnl_confirm_key(void *ctx, pnl_app_t *app, int key);
+
 static int pnl_prompt_ready(const pnl_app_t *app)
 {
     return app->running || app->cli;
 }
+
+static const int pnl_typing = 1;
 
 static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *footer, int width, int height,
                             pnl_draw_fn draw_fn, pnl_key_fn key_fn, void *ctx)
@@ -52,6 +56,7 @@ static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *foote
     int status;
 
     memset(&view, 0, sizeof(view));
+    view.typing_ref = key_fn == pnl_confirm_key ? NULL : &pnl_typing;
     view.dialog_width = width < 24 ? 24 : width;
     view.dialog_height = height;
     view.footer = footer;

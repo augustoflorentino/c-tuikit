@@ -145,6 +145,15 @@ static void test_build(void)
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Second", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_set_memory(NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_bind(app, "ctrl-n", "down") == PNL_OK);
+    CHECK(pnl_app_bind(app, "ctrl-n", "pgdn") == PNL_OK);
+    CHECK(pnl_app_bind(app, "x", "q") == PNL_OK);
+    CHECK(pnl_app_bind(app, "q", "none") == PNL_OK);
+    CHECK(pnl_app_bind(app, "none", "q") == PNL_ERR_ARG);
+    CHECK(pnl_app_bind(app, "ctrl-c", "q") == PNL_ERR_ARG);
+    CHECK(pnl_app_bind(app, "hyper-x", "q") == PNL_ERR_ARG);
+    CHECK(pnl_app_bind(app, "x", "") == PNL_ERR_ARG);
+    CHECK(pnl_app_bind(NULL, "x", "q") == PNL_ERR_ARG);
     CHECK(pnl_log_create(app, 0, NULL) == PNL_ERR_ARG);
     CHECK(pnl_notify(app, "not running") == PNL_ERR_ARG);
     pnl_log_destroy(NULL);
