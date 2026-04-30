@@ -4,6 +4,20 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.4.0 - 2026-04-30
+
+Let me know: start something long, switch to another window, and hear about it when it ends.
+
+- the panel asks the terminal to report focus. A task that ran for 5 seconds or more and ends
+  while the terminal is in the background rings the bell and sends a desktop notification
+  (OSC 9, understood by iTerm2, WezTerm, kitty, foot, Ghostty and Windows Terminal) with the
+  task title and its result
+- on the command line, a long command does the same on stderr when it is a terminal
+- `pnl_notify(app, text)` sends one for anything else; it stays quiet while the terminal has the
+  focus
+- `TUIKIT_NOTIFY=bell` keeps only the bell, `TUIKIT_NOTIFY=off` turns both off
+- the backup in the basic example takes six seconds now, long enough to try it
+
 ## 4.3.0 - 2026-04-27
 
 Live log: the screen to keep open while a service runs.
