@@ -206,7 +206,7 @@ static size_t pnl_table_find(const struct pnl_table *table, size_t row)
 static void pnl_table_apply(struct pnl_table *table)
 {
     size_t *swap = table->order;
-    int kept = table->selected < table->order_len;
+    int kept = table->selected > 0 && table->selected < table->order_len;
     size_t row = kept ? table->order[table->selected] : 0;
 
     table->order = table->work;
@@ -256,7 +256,8 @@ static void pnl_table_start(struct pnl_table *table)
     if (!pnl_table_buffers(table))
         return;
     table->job = table->want;
-    if (table->rows > PNL_TABLE_SYNC_ROWS && pnl_thread_start(&table->thread, pnl_table_worker, table) == PNL_OK) {
+    if (table->rows > PNL_TABLE_SYNC_ROWS && pnl_term_wake_open(&table->app->term) == PNL_OK &&
+        pnl_thread_start(&table->thread, pnl_table_worker, table) == PNL_OK) {
         table->busy = 1;
         return;
     }
