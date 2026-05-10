@@ -4,6 +4,23 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.5.0 - 2026-05-10
+
+Your keys: whoever uses the tool decides which key does what.
+
+- a plain text file maps keys to other keys, one `key = key` per line, `#` for comments:
+  `~/.config/tuikit/keys` for every tool built with c-tuikit and `~/.config/<tool>/keys` for one of
+  them (`$XDG_CONFIG_HOME` when set, `%APPDATA%` on Windows). `ctrl-n = down`, `x = q`,
+  `q = none` to turn a key off
+- names: `up`, `down`, `left`, `right`, `enter`, `esc`, `pgup`, `pgdn`, `home`, `end`,
+  `backspace`, `delete`, `tab`, `backtab`, `space`, `ctrl-a` to `ctrl-z`, `none` and any single
+  character
+- `pnl_app_bind(app, key, to)` sets the same from code, as defaults the files can override
+- while you type in a filter or an input, letters and digits keep their meaning; only control
+  keys and named keys are mapped there
+- `?` lists the mapped keys under "your keys"
+- ctrl-c always quits and cannot be mapped
+
 ## 4.4.0 - 2026-04-30
 
 Let me know: start something long, switch to another window, and hear about it when it ends.

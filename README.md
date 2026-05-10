@@ -36,6 +36,8 @@ up/down: move  enter: choose  ?: help  q: quit
   by level and by text
 - a bell and a desktop notification when a long task ends while you are in another window
   (`pnl_notify`; `TUIKIT_NOTIFY=bell` or `off`)
+- keys the user can remap in `~/.config/tuikit/keys` or per tool (`ctrl-n = down`, `q = none`),
+  or from code with `pnl_app_bind`
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
