@@ -4,6 +4,32 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.0.0 - 2026-05-11
+
+Headless: a panel runs without a terminal, so a tool can be tested the way it is used.
+
+- `pnl_test_create(app, width, height, &test)` runs the panel on a virtual screen with a virtual
+  clock, in a thread of its own; `pnl_test_destroy` quits it
+- `pnl_test_keys(test, "down enter \"text\" esc")` types a script: key names as in the keys
+  file, quoted text typed letter by letter. Every key waits until the screen settles and no task
+  is running, so the next one never races the last
+- `pnl_test_wait(test, ms)` moves the virtual clock: timers, toasts and animations advance by
+  exactly that much, and the same script always gives the same screen
+- `pnl_test_screen(test)` returns the screen as text, one line per row
+- `pnl_test_expect(test, path)` compares the screen with a snapshot file: a missing one is
+  written, a different screen is saved next to it as `path.new` and the call returns the new
+  `PNL_ERR_MISMATCH`; `TUIKIT_SNAPSHOTS=update` rewrites them
+- under test the panel skips what depends on the machine: terminal queries, the mouse, the
+  remembered choices and the keys files
+- inside, drawing and input now go through one layer that leads either to the terminal or to
+  the virtual screen; the next releases build on it
+
+### Breaking
+
+- `pnl_app_create(title, allocator, &app)` takes a `pnl_allocator_t` with `alloc_fn`, `free_fn`
+  and `ctx` instead of three arguments; most code passed `NULL, NULL, NULL` and now passes `NULL`
+- the shared library is now `libtuikit.so.5`
+
 ## 4.6.0 - 2026-05-11
 
 Two new examples, each a small tool you might actually keep.
