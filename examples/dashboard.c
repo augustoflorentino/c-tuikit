@@ -203,7 +203,7 @@ int main(int argc, char **argv)
     int status;
 
     memset(&dash, 0, sizeof(dash));
-    status = pnl_app_create("services", NULL, NULL, NULL, &app);
+    status = pnl_app_create("services", NULL, &app);
     if (status == PNL_OK)
         status = pnl_app_on_status(app, show_status, &dash);
     if (status == PNL_OK)

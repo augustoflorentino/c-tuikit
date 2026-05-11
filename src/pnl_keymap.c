@@ -22,7 +22,7 @@ static const struct pnl_key_name pnl_key_names[] = {
     {"none", PNL_KEY_NONE},
 };
 
-static int pnl_key_parse(const char *name, int *out_key)
+int pnl_key_parse(const char *name, int *out_key)
 {
     size_t i;
 

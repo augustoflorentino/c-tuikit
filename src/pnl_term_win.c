@@ -78,7 +78,7 @@ int pnl_term_stdin_is_tty(void)
     return pnl_term_is_console(STD_INPUT_HANDLE);
 }
 
-int pnl_term_write(const char *data, size_t data_len)
+int pnl_os_write(const char *data, size_t data_len)
 {
     while (data_len > 0) {
         DWORD chunk = data_len > 0x10000 ? 0x10000 : (DWORD)data_len;
@@ -137,7 +137,7 @@ static int pnl_term_make_raw(void)
     return PNL_OK;
 }
 
-int pnl_term_enter(struct pnl_term *term)
+int pnl_os_enter(struct pnl_term *term)
 {
     int status;
 
@@ -149,16 +149,16 @@ int pnl_term_enter(struct pnl_term *term)
     SetConsoleCtrlHandler(pnl_term_on_ctrl, TRUE);
     term->active = 1;
     term->focus_known = 0;
-    pnl_term_size(&pnl_term_last_width, &pnl_term_last_height);
-    status = pnl_term_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
+    pnl_os_size(&pnl_term_last_width, &pnl_term_last_height);
+    status = pnl_os_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
     if (status == PNL_OK && term->mouse)
-        status = pnl_term_write(PNL_TERM_MOUSE, sizeof(PNL_TERM_MOUSE) - 1);
+        status = pnl_os_write(PNL_TERM_MOUSE, sizeof(PNL_TERM_MOUSE) - 1);
     if (status != PNL_OK)
-        pnl_term_leave(term);
+        pnl_os_leave(term);
     return status;
 }
 
-void pnl_term_leave(struct pnl_term *term)
+void pnl_os_leave(struct pnl_term *term)
 {
     if (!term->active)
         return;
@@ -169,12 +169,12 @@ void pnl_term_leave(struct pnl_term *term)
     term->surrogate = 0;
 }
 
-void pnl_term_suspend(struct pnl_term *term)
+void pnl_os_suspend(struct pnl_term *term)
 {
     (void)term;
 }
 
-void pnl_term_size(int *out_width, int *out_height)
+void pnl_os_size(int *out_width, int *out_height)
 {
     CONSOLE_SCREEN_BUFFER_INFO info;
 
@@ -187,12 +187,12 @@ void pnl_term_size(int *out_width, int *out_height)
     *out_height = info.srWindow.Bottom - info.srWindow.Top + 1;
 }
 
-int pnl_term_resized(void)
+int pnl_os_resized(void)
 {
     int width;
     int height;
 
-    pnl_term_size(&width, &height);
+    pnl_os_size(&width, &height);
     if (width != pnl_term_last_width || height != pnl_term_last_height) {
         pnl_term_last_width = width;
         pnl_term_last_height = height;
@@ -275,7 +275,7 @@ static int pnl_term_drain(struct pnl_term *term)
 int pnl_term_fill(struct pnl_term *term, int timeout_ms)
 {
     DWORD wait = timeout_ms < 0 ? INFINITE : (DWORD)timeout_ms;
-    long long deadline = pnl_term_now_ms() + (timeout_ms < 0 ? 0 : timeout_ms);
+    long long deadline = pnl_os_now_ms() + (timeout_ms < 0 ? 0 : timeout_ms);
     size_t before = term->input_len;
 
     for (;;) {
@@ -288,7 +288,7 @@ int pnl_term_fill(struct pnl_term *term, int timeout_ms)
         if (term->input_len > before || timeout_ms == 0)
             return term->input_len > before;
         if (timeout_ms > 0) {
-            long long left = deadline - pnl_term_now_ms();
+            long long left = deadline - pnl_os_now_ms();
 
             if (left <= 0)
                 return 0;
@@ -297,7 +297,7 @@ int pnl_term_fill(struct pnl_term *term, int timeout_ms)
     }
 }
 
-int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
+int pnl_os_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
 {
     size_t used;
 
@@ -336,13 +336,13 @@ void pnl_term_wake_close(struct pnl_term *term)
     term->wake_open = 0;
 }
 
-void pnl_term_wake(struct pnl_term *term)
+void pnl_os_wake(struct pnl_term *term)
 {
     if (term->wake_open)
         SetEvent((HANDLE)term->wake_event);
 }
 
-int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
+int pnl_os_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len, int timeout_ms,
                   unsigned char *out_ready)
 {
     (void)watches;
@@ -366,7 +366,12 @@ int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t
     return pnl_term_fill(term, timeout_ms) < 0 ? -1 : term->input_len > 0;
 }
 
-long long pnl_term_now_ms(void)
+void pnl_nap_ms(int ms)
+{
+    Sleep((DWORD)ms);
+}
+
+long long pnl_os_now_ms(void)
 {
     return (long long)GetTickCount64();
 }

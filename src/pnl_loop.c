@@ -724,7 +724,7 @@ static void pnl_run_palette(pnl_app_t *app)
     const char *contrast = getenv("TUIKIT_CONTRAST");
     int depth = pnl_color_detect();
     long background = -1;
-    int known = pnl_background_detect(&app->term, depth, &background, &app->reply_ms);
+    int known = !pnl_virtual_active() && pnl_background_detect(&app->term, depth, &background, &app->reply_ms);
 
     if (chosen != NULL && chosen[0] != '\0')
         pnl_theme_choose(&theme, chosen);
@@ -755,19 +755,21 @@ int pnl_run_interactive(pnl_app_t *app)
     const char *mouse = getenv("TUIKIT_MOUSE");
     int status;
 
-    app->term.mouse = mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0);
+    app->term.mouse = !pnl_virtual_active() && (mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0));
     status = pnl_term_enter(&app->term);
 
     if (status != PNL_OK)
         return status;
     app->running = 1;
     app->quit = 0;
-    pnl_memory_load(app);
-    pnl_keymap_load(app);
+    if (!pnl_virtual_active()) {
+        pnl_memory_load(app);
+        pnl_keymap_load(app);
+    }
     app->selected = pnl_remembered_action(app);
     app->menu_top = 0;
     pnl_run_palette(app);
-    app->motion = pnl_motion_detect(app);
+    app->motion = pnl_virtual_active() ? 0 : pnl_motion_detect(app);
     app->select_glide.from = app->select_glide.to = (double)app->selected;
     app->transition_shift = 0;
     app->seen_len = 0;
@@ -779,7 +781,8 @@ int pnl_run_interactive(pnl_app_t *app)
     status = pnl_loop(app, 0);
     pnl_remember_action(app);
     pnl_views_drop(app);
-    pnl_memory_save(app);
+    if (!pnl_virtual_active())
+        pnl_memory_save(app);
     app->running = 0;
     app->motion = 0;
     app->frame_ms = 0;

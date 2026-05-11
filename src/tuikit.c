@@ -60,18 +60,19 @@ int pnl_mem_grow(const struct pnl_mem *mem, void **items, size_t *cap, size_t ne
     return PNL_OK;
 }
 
-int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
-                   pnl_app_t **out_app)
+int pnl_app_create(const char *title, const pnl_allocator_t *allocator, pnl_app_t **out_app)
 {
     struct pnl_mem mem;
     pnl_app_t *app;
 
-    if (out_app == NULL || title == NULL || (alloc_fn == NULL) != (free_fn == NULL))
+    if (out_app != NULL)
+        *out_app = NULL;
+    if (out_app == NULL || title == NULL ||
+        (allocator != NULL && (allocator->alloc_fn == NULL || allocator->free_fn == NULL)))
         return PNL_ERR_ARG;
-    *out_app = NULL;
-    mem.alloc_fn = alloc_fn ? alloc_fn : pnl_default_alloc;
-    mem.free_fn = free_fn ? free_fn : pnl_default_free;
-    mem.ctx = alloc_ctx;
+    mem.alloc_fn = allocator != NULL ? allocator->alloc_fn : pnl_default_alloc;
+    mem.free_fn = allocator != NULL ? allocator->free_fn : pnl_default_free;
+    mem.ctx = allocator != NULL ? allocator->ctx : NULL;
     app = pnl_mem_alloc(&mem, sizeof(*app));
     if (app == NULL)
         return PNL_ERR_NOMEM;
@@ -243,6 +244,8 @@ const char *pnl_strerror(int status)
         return "not found";
     case PNL_ERR_UNSUPPORTED:
         return "not supported on this platform";
+    case PNL_ERR_MISMATCH:
+        return "screen differs from the snapshot";
     default:
         return "unknown status";
     }

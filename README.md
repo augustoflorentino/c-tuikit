@@ -103,7 +103,7 @@ static void start(void *ctx, pnl_app_t *app)
 }
 
 pnl_app_t *app = NULL;
-pnl_app_create("service", NULL, NULL, NULL, &app);
+pnl_app_create("service", NULL, &app);
 pnl_app_on_status(app, show_status, NULL);
 pnl_app_set_refresh(app, 1000);
 pnl_app_add_action(app, "Start", start, NULL);
@@ -126,12 +126,32 @@ See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
 
+## Testing a tool
+
+A panel runs without a terminal too. `pnl_test_create` starts it on a virtual screen with a
+virtual clock; `pnl_test_keys` types a script of keys and waits until the screen settles, and
+`pnl_test_expect` compares the screen with a snapshot file:
+
+```c
+pnl_test_t *test = NULL;
+pnl_test_create(app, 60, 20, &test);
+pnl_test_keys(test, "down enter \"release-1.2\" enter");
+pnl_test_wait(test, 2000);
+if (pnl_test_expect(test, "tests/snapshots/release.txt") != PNL_OK)
+    return 1;
+pnl_test_destroy(test);
+```
+
+A missing snapshot is written on the first run; a different screen is saved next to it as
+`.new` and the call returns `PNL_ERR_MISMATCH`. `TUIKIT_SNAPSHOTS=update` rewrites them all.
+Timers and animations follow the virtual clock, so the same script gives the same screen.
+
 Conventions:
 
 - every function that can fail returns `PNL_OK` or an error code; `pnl_strerror` describes it
 - what `pnl_x_create` returns is released only by `pnl_x_destroy`, which accepts `NULL`
 - functions never take ownership of their arguments; returned pointers belong to the library
-- pass your own allocator to `pnl_app_create`, or `NULL` for `malloc`/`free`
+- pass a `pnl_allocator_t` to `pnl_app_create`, or `NULL` for `malloc`/`free`
 
 ## Versioning
 

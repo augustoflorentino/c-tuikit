@@ -38,6 +38,7 @@ extern "C" {
 #define PNL_ERR_IO 4
 #define PNL_ERR_NOT_FOUND 5
 #define PNL_ERR_UNSUPPORTED 6
+#define PNL_ERR_MISMATCH 7
 
 #define PNL_MARK_OK 0
 #define PNL_MARK_WAIT 1
@@ -122,9 +123,17 @@ typedef struct pnl_task pnl_task_t;
 typedef struct pnl_layout pnl_layout_t;
 typedef struct pnl_value pnl_value_t;
 typedef struct pnl_log pnl_log_t;
+typedef struct pnl_test pnl_test_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
+
+typedef struct pnl_allocator {
+    pnl_alloc_fn alloc_fn;
+    pnl_free_fn free_fn;
+    void *ctx;
+} pnl_allocator_t;
+
 typedef void (*pnl_status_fn)(void *ctx, pnl_app_t *app);
 typedef void (*pnl_action_fn)(void *ctx, pnl_app_t *app);
 typedef void (*pnl_timer_fn)(void *ctx, pnl_app_t *app);
@@ -136,8 +145,7 @@ typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
 typedef const char *(*pnl_cell_fn)(void *ctx, size_t row, size_t column, char *buf, size_t buf_len);
 typedef void (*pnl_release_fn)(void *ctx);
 
-PNL_API int pnl_app_create(const char *title, pnl_alloc_fn alloc_fn, pnl_free_fn free_fn, void *alloc_ctx,
-                           pnl_app_t **out_app);
+PNL_API int pnl_app_create(const char *title, const pnl_allocator_t *allocator, pnl_app_t **out_app);
 PNL_API void pnl_app_destroy(pnl_app_t *app);
 PNL_API int pnl_app_on_status(pnl_app_t *app, pnl_status_fn status_fn, void *status_ctx);
 PNL_API int pnl_app_set_refresh(pnl_app_t *app, int refresh_ms);
@@ -148,6 +156,12 @@ PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn 
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text);
 PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);
 PNL_API int pnl_notify(pnl_app_t *app, const char *text);
+PNL_API int pnl_test_create(pnl_app_t *app, int width, int height, pnl_test_t **out_test);
+PNL_API void pnl_test_destroy(pnl_test_t *test);
+PNL_API int pnl_test_keys(pnl_test_t *test, const char *keys);
+PNL_API int pnl_test_wait(pnl_test_t *test, int ms);
+PNL_API const char *pnl_test_screen(const pnl_test_t *test);
+PNL_API int pnl_test_expect(pnl_test_t *test, const char *path);
 PNL_API int pnl_toast(pnl_app_t *app, int mark, const char *text);
 PNL_API int pnl_status_meter(pnl_app_t *app, int mark, const char *label, double fraction);
 

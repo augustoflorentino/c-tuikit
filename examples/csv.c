@@ -160,7 +160,7 @@ int main(int argc, char **argv)
         return 1;
     }
     argv[1] = argv[0];
-    status = pnl_app_create("csv", NULL, NULL, NULL, &app);
+    status = pnl_app_create("csv", NULL, &app);
     if (status == PNL_OK)
         status = pnl_app_on_status(app, show_status, &sheet);
     if (status == PNL_OK)

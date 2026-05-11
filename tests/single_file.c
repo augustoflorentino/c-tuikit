@@ -13,7 +13,7 @@ int main(void)
     int key = PNL_KEY_NONE;
     int status;
 
-    status = pnl_app_create("demo", NULL, NULL, NULL, &app);
+    status = pnl_app_create("demo", NULL, &app);
     if (status == PNL_OK)
         status = pnl_app_on_status(app, NULL, NULL);
     if (status == PNL_OK)

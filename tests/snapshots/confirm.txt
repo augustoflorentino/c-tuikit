@@ -1,0 +1,12 @@
+screens
+
+  ok  clock  2 ticks
+      ╭─ confirm ────────────────╮
+    1 │ really?                  │
+  > 2 │                          │
+    q │  yes    no               │
+      ╰──────────────────────────╯
+
+
+
+y/n  left/right: choose  enter: answer

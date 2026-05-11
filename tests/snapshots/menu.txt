@@ -1,0 +1,12 @@
+screens
+
+  ok  clock  0 ticks
+
+  > 1 Start
+    2 Ask
+    q Quit
+
+
+
+
+up/down: move  enter: choose  ?: help

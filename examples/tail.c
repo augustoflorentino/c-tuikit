@@ -128,7 +128,7 @@ int main(int argc, char **argv)
         return 1;
     }
     argv[1] = argv[0];
-    status = pnl_app_create("tail", NULL, NULL, NULL, &app);
+    status = pnl_app_create("tail", NULL, &app);
     if (status == PNL_OK)
         status = setup(app, &follow);
     if (status == PNL_OK)

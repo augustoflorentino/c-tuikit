@@ -136,7 +136,7 @@ static void test_build(void)
 {
     pnl_app_t *app = NULL;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_on_status(app, noop_status, NULL) == PNL_OK);
     CHECK(pnl_app_set_refresh(app, 500) == PNL_OK);
     CHECK(pnl_app_set_refresh(app, 250) == PNL_OK);
@@ -167,7 +167,7 @@ static void test_outside_callbacks(void)
 {
     pnl_app_t *app = NULL;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_status_line(app, PNL_MARK_OK, NULL, "x") == PNL_ERR_ARG);
     CHECK(pnl_result(app, PNL_MARK_OK, "x") == PNL_ERR_ARG);
     pnl_app_destroy(app);
@@ -177,7 +177,7 @@ static void test_no_terminal(void)
 {
     pnl_app_t *app = NULL;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_add_action(app, "First", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_run(app, 0, NULL, NULL) == PNL_OK);
     pnl_app_destroy(app);
@@ -190,7 +190,7 @@ static void test_loop_parts(void)
     int second = 0;
     int calls = 0;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_add_timer(app, 100, noop_timer, NULL, &first) == PNL_OK);
     CHECK(pnl_app_add_timer(app, 200, NULL, NULL, &second) == PNL_OK);
     CHECK(first != second);
@@ -241,7 +241,7 @@ static void test_motion(void)
     pnl_app_t *app = NULL;
     long long now;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_motion(app) == 0);
     now = pnl_app_frame_ms(app);
     CHECK(now > 0);
@@ -267,8 +267,8 @@ static void test_layout(void)
     int tabs = -1;
     int panel = -1;
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
-    CHECK(pnl_app_create("other", NULL, NULL, NULL, &other) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("other", NULL, &other) == PNL_OK);
     CHECK(pnl_layout_create(app, 7, &layout) == PNL_ERR_ARG && layout == NULL);
     CHECK(pnl_layout_create(NULL, PNL_SPLIT_ROWS, &layout) == PNL_ERR_ARG);
     CHECK(pnl_layout_create(app, PNL_SPLIT_ROWS, NULL) == PNL_ERR_ARG);
@@ -309,7 +309,7 @@ static void test_colors(void)
     pnl_app_t *app = NULL;
 
     CHECK(depth == 0 || depth == 16 || depth == 256 || depth == 16777216);
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_theme(app, "mono") == PNL_OK);
     CHECK(pnl_app_set_theme(app, "contrast") == PNL_OK);
     CHECK(pnl_app_set_theme(app, "nope") == PNL_ERR_NOT_FOUND);
@@ -469,7 +469,7 @@ static void test_cli(void)
     CHECK(freopen("/dev/null", "r", stdin) != NULL);
 #endif
 
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_on_status(app, wait_status, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Do Nothing!", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Fail", fail_action, NULL) == PNL_OK);
@@ -497,9 +497,11 @@ static void test_bad_args(void)
 {
     pnl_app_t *app = NULL;
 
-    CHECK(pnl_app_create("demo", failing_alloc, NULL, NULL, &app) == PNL_ERR_ARG);
-    CHECK(pnl_app_create(NULL, NULL, NULL, NULL, &app) == PNL_ERR_ARG);
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, NULL) == PNL_ERR_ARG);
+    pnl_allocator_t half = {failing_alloc, NULL, NULL};
+
+    CHECK(pnl_app_create("demo", &half, &app) == PNL_ERR_ARG);
+    CHECK(pnl_app_create(NULL, NULL, &app) == PNL_ERR_ARG);
+    CHECK(pnl_app_create("demo", NULL, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_on_status(NULL, noop_status, NULL) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(NULL, "x", noop_action, NULL) == PNL_ERR_ARG);
     CHECK(pnl_status_line(NULL, PNL_MARK_OK, NULL, "x") == PNL_ERR_ARG);
@@ -526,7 +528,7 @@ static void test_bad_args(void)
         CHECK(pnl_confirm(NULL, "x", &yes) == PNL_ERR_ARG);
     }
     CHECK(pnl_pager(NULL, "x", "y", 1) == PNL_ERR_ARG);
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_app_set_refresh(app, -1) == PNL_ERR_ARG);
     CHECK(pnl_app_set_refresh(NULL, 100) == PNL_ERR_ARG);
     CHECK(pnl_app_add_action(app, NULL, noop_action, NULL) == PNL_ERR_ARG);
@@ -546,7 +548,12 @@ static int run_with_failure(failing_alloc_t *fa)
     int status;
     int i;
 
-    status = pnl_app_create("demo", failing_alloc, failing_free, fa, &app);
+    pnl_allocator_t allocator;
+
+    allocator.alloc_fn = failing_alloc;
+    allocator.free_fn = failing_free;
+    allocator.ctx = fa;
+    status = pnl_app_create("demo", &allocator, &app);
     for (i = 0; i < 20 && status == PNL_OK; i++)
         status = pnl_app_add_action(app, "an action label", noop_action, NULL);
     for (i = 0; i < 20 && status == PNL_OK; i++)
@@ -587,7 +594,7 @@ static void test_values(void)
 
     memset(long_text, 'x', sizeof(long_text) - 1);
     long_text[sizeof(long_text) - 1] = '\0';
-    CHECK(pnl_app_create("demo", NULL, NULL, NULL, &app) == PNL_OK);
+    CHECK(pnl_app_create("demo", NULL, &app) == PNL_OK);
     CHECK(pnl_value_create(app, NULL, &first) == PNL_ERR_ARG && first == NULL);
     CHECK(pnl_value_create(NULL, "x", &first) == PNL_ERR_ARG);
     CHECK(pnl_value_create(app, "x", NULL) == PNL_ERR_ARG);
@@ -609,6 +616,69 @@ static void test_values(void)
     pnl_app_destroy(app);
 }
 
+#ifndef PNL_SNAPSHOTS
+#define PNL_SNAPSHOTS "tests/snapshots"
+#endif
+
+static int ticks;
+
+static void tick_status(void *ctx, pnl_app_t *app)
+{
+    char text[32];
+
+    (void)ctx;
+    snprintf(text, sizeof(text), "%d ticks", ticks);
+    pnl_status_line(app, PNL_MARK_OK, "clock", text);
+}
+
+static void tick(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    (void)app;
+    ticks++;
+}
+
+static void ask_action(void *ctx, pnl_app_t *app)
+{
+    int yes = 0;
+
+    (void)ctx;
+    if (pnl_confirm(app, "really?", &yes) == PNL_OK)
+        pnl_result(app, yes ? PNL_MARK_OK : PNL_MARK_FAIL, yes ? "confirmed" : "declined");
+}
+
+static void test_screens(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    pnl_test_t *other = NULL;
+
+    CHECK(pnl_app_create("screens", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_on_status(app, tick_status, NULL) == PNL_OK);
+    CHECK(pnl_app_add_timer(app, 1000, tick, NULL, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Start", noop_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Ask", ask_action, NULL) == PNL_OK);
+    CHECK(pnl_test_create(app, 5, 5, &test) == PNL_ERR_ARG);
+    CHECK(pnl_test_create(app, 40, 12, &test) == PNL_OK);
+    CHECK(pnl_test_create(app, 40, 12, &other) == PNL_ERR_ARG && other == NULL);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/menu.txt") == PNL_OK);
+    CHECK(pnl_test_wait(test, 1000) == PNL_OK && ticks == 1);
+    CHECK(pnl_test_wait(test, 1000) == PNL_OK && ticks == 2);
+    CHECK(strstr(pnl_test_screen(test), "2 ticks") != NULL);
+    CHECK(pnl_test_keys(test, "down enter") == PNL_OK);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/confirm.txt") == PNL_OK);
+    CHECK(pnl_test_keys(test, "y") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "confirmed") != NULL);
+    CHECK(pnl_test_keys(test, "esc : \"sta\" enter") == PNL_OK);
+    CHECK(pnl_test_keys(test, "hyper-x") == PNL_ERR_ARG);
+    CHECK(pnl_test_keys(test, "esc q") == PNL_OK);
+    CHECK(pnl_test_keys(test, "down") == PNL_OK);
+    CHECK(pnl_test_expect(NULL, "x") == PNL_ERR_ARG);
+    pnl_test_destroy(test);
+    pnl_test_destroy(NULL);
+    pnl_app_destroy(app);
+}
+
 int main(void)
 {
     test_keys();
@@ -624,5 +694,6 @@ int main(void)
     test_canvas_and_width();
     test_bad_args();
     test_alloc_failure();
+    test_screens();
     return 0;
 }

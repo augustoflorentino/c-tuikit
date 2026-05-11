@@ -331,6 +331,19 @@ PNL_INTERNAL int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *o
 PNL_INTERNAL int pnl_term_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len,
                                int timeout_ms, unsigned char *out_ready);
 PNL_INTERNAL long long pnl_term_now_ms(void);
+PNL_INTERNAL int pnl_os_enter(struct pnl_term *term);
+PNL_INTERNAL void pnl_os_leave(struct pnl_term *term);
+PNL_INTERNAL void pnl_os_suspend(struct pnl_term *term);
+PNL_INTERNAL int pnl_os_resized(void);
+PNL_INTERNAL void pnl_os_size(int *out_width, int *out_height);
+PNL_INTERNAL int pnl_os_write(const char *data, size_t data_len);
+PNL_INTERNAL void pnl_os_wake(struct pnl_term *term);
+PNL_INTERNAL int pnl_os_read_key(struct pnl_term *term, int timeout_ms, int *out_key);
+PNL_INTERNAL int pnl_os_wait(struct pnl_term *term, const struct pnl_watch *watches, size_t watches_len,
+                             int timeout_ms, unsigned char *out_ready);
+PNL_INTERNAL long long pnl_os_now_ms(void);
+PNL_INTERNAL int pnl_virtual_active(void);
+PNL_INTERNAL void pnl_nap_ms(int ms);
 
 PNL_INTERNAL int pnl_thread_start(struct pnl_thread *thread, void (*fn)(void *arg), void *arg);
 PNL_INTERNAL void pnl_thread_join(struct pnl_thread *thread);
@@ -350,6 +363,7 @@ PNL_INTERNAL int pnl_background_detect(struct pnl_term *term, int depth, long *o
 PNL_INTERNAL long pnl_link_probe(struct pnl_term *term);
 
 PNL_INTERNAL void pnl_tool_name(char *out, size_t out_len, const char *title);
+PNL_INTERNAL int pnl_key_parse(const char *name, int *out_key);
 PNL_INTERNAL void pnl_key_label(int key, char *out, size_t out_len);
 PNL_INTERNAL int pnl_keymap_apply(const pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_keymap_load(pnl_app_t *app);

@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 
     memset(&dep, 0, sizeof(dep));
     dep.next_version = 4;
-    status = pnl_app_create("deploy", NULL, NULL, NULL, &app);
+    status = pnl_app_create("deploy", NULL, &app);
     if (status == PNL_OK)
         status = pnl_app_on_status(app, show_status, &dep);
     if (status == PNL_OK)

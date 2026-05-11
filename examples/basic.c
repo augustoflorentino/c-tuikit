@@ -295,7 +295,7 @@ int main(int argc, char **argv)
     int i;
 
     memset(&svc, 0, sizeof(svc));
-    status = pnl_app_create("service - demo", NULL, NULL, NULL, &app);
+    status = pnl_app_create("service - demo", NULL, &app);
     if (status == PNL_OK)
         status = pnl_value_create(app, "profile", &profile);
     if (status == PNL_OK)
