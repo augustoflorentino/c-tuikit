@@ -121,7 +121,9 @@ line, so the same function serves both.
 
 See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be, and
-[`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs. The
+[`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs,
+[`examples/tail.c`](examples/tail.c), which follows a log file, and
+[`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
 
 Conventions:

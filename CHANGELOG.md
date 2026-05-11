@@ -4,6 +4,21 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.6.0 - 2026-05-11
+
+Two new examples, each a small tool you might actually keep.
+
+- `examples/tail.c`: `tuikit_tail app.log` follows a file into a live log, guesses the level of
+  each line from words like "error" or "warn", and counts the errors in the status;
+  `tuikit_tail app.log lines --json` prints what it read
+- `examples/csv.c`: `tuikit_csv data.csv` opens a CSV file of any size as a table that reads
+  its cells straight from the file, with quoted fields; a million rows sort in a few seconds
+  without blocking the screen
+- fixed: a large table in a tool without values or logs never showed the result of its sort
+  or filter, because nothing woke the panel when the thread finished
+- after a sort or a filter, a table still on its first row goes back to the top instead of
+  following that row
+
 ## 4.5.0 - 2026-05-10
 
 Your keys: whoever uses the tool decides which key does what.
