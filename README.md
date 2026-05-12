@@ -144,7 +144,11 @@ pnl_test_destroy(test);
 
 A missing snapshot is written on the first run; a different screen is saved next to it as
 `.new` and the call returns `PNL_ERR_MISMATCH`. `TUIKIT_SNAPSHOTS=update` rewrites them all.
-Timers and animations follow the virtual clock, so the same script gives the same screen.
+Timers and toasts follow the virtual clock, so the same script gives the same screen.
+
+`TUIKIT_RECORD=demo.cast tool` records a session as an asciicast file, ready for
+`asciinema play` or for turning into a GIF; `pnl_app_record(app, path)` does the same from code,
+and under test it records the scripted session with the virtual clock.
 
 Conventions:
 

@@ -264,6 +264,7 @@ struct pnl_app {
     struct pnl_binding bindings[PNL_BINDINGS];
     size_t bindings_len;
     char *memory_path;
+    char *record_path;
     struct pnl_memo *memos;
     size_t memos_len;
     size_t memos_cap;
@@ -343,6 +344,9 @@ PNL_INTERNAL int pnl_os_wait(struct pnl_term *term, const struct pnl_watch *watc
                              int timeout_ms, unsigned char *out_ready);
 PNL_INTERNAL long long pnl_os_now_ms(void);
 PNL_INTERNAL int pnl_virtual_active(void);
+PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
+PNL_INTERNAL void pnl_record_output(const char *data, size_t data_len, int width, int height);
+PNL_INTERNAL void pnl_record_close(void);
 PNL_INTERNAL void pnl_nap_ms(int ms);
 
 PNL_INTERNAL int pnl_thread_start(struct pnl_thread *thread, void (*fn)(void *arg), void *arg);

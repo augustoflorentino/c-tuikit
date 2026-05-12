@@ -647,6 +647,22 @@ static void ask_action(void *ctx, pnl_app_t *app)
         pnl_result(app, yes ? PNL_MARK_OK : PNL_MARK_FAIL, yes ? "confirmed" : "declined");
 }
 
+static void check_cast(const char *path)
+{
+    FILE *file = fopen(path, "rb");
+    char line[4096];
+    int events = 0;
+
+    CHECK(file != NULL);
+    CHECK(fgets(line, sizeof(line), file) != NULL);
+    CHECK(strcmp(line, "{\"version\": 2, \"width\": 40, \"height\": 12, \"title\": \"screens\"}\n") == 0);
+    while (fgets(line, sizeof(line), file) != NULL)
+        events += line[0] == '[';
+    fclose(file);
+    remove(path);
+    CHECK(events > 3);
+}
+
 static void test_screens(void)
 {
     pnl_app_t *app = NULL;
@@ -658,6 +674,8 @@ static void test_screens(void)
     CHECK(pnl_app_add_timer(app, 1000, tick, NULL, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Start", noop_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Ask", ask_action, NULL) == PNL_OK);
+    CHECK(pnl_app_record(app, "") == PNL_ERR_ARG);
+    CHECK(pnl_app_record(app, "tuikit_test.cast") == PNL_OK);
     CHECK(pnl_test_create(app, 5, 5, &test) == PNL_ERR_ARG);
     CHECK(pnl_test_create(app, 40, 12, &test) == PNL_OK);
     CHECK(pnl_test_create(app, 40, 12, &other) == PNL_ERR_ARG && other == NULL);
@@ -677,6 +695,7 @@ static void test_screens(void)
     pnl_test_destroy(test);
     pnl_test_destroy(NULL);
     pnl_app_destroy(app);
+    check_cast("tuikit_test.cast");
 }
 
 int main(void)

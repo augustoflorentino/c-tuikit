@@ -239,6 +239,8 @@ int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
         status = pnl_out(screen, mem, "\x1b[0m", 4);
     if (status == PNL_OK && screen->out_len > 0)
         status = pnl_term_write(screen->out, screen->out_len);
+    if (status == PNL_OK && screen->out_len > 0)
+        pnl_record_output(screen->out, screen->out_len, screen->width, screen->height);
     if (status != PNL_OK) {
         screen->front_valid = 0;
         return status;

@@ -156,6 +156,7 @@ PNL_API int pnl_app_add_action(pnl_app_t *app, const char *label, pnl_action_fn 
 PNL_API int pnl_status_line(pnl_app_t *app, int mark, const char *label, const char *text);
 PNL_API int pnl_mouse_position(const pnl_app_t *app, int *out_x, int *out_y);
 PNL_API int pnl_notify(pnl_app_t *app, const char *text);
+PNL_API int pnl_app_record(pnl_app_t *app, const char *path);
 PNL_API int pnl_test_create(pnl_app_t *app, int width, int height, pnl_test_t **out_test);
 PNL_API void pnl_test_destroy(pnl_test_t *test);
 PNL_API int pnl_test_keys(pnl_test_t *test, const char *keys);

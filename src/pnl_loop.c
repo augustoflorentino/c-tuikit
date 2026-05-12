@@ -755,7 +755,8 @@ int pnl_run_interactive(pnl_app_t *app)
     const char *mouse = getenv("TUIKIT_MOUSE");
     int status;
 
-    app->term.mouse = !pnl_virtual_active() && (mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0));
+    app->term.mouse =
+        !pnl_virtual_active() && (mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0));
     status = pnl_term_enter(&app->term);
 
     if (status != PNL_OK)
@@ -778,7 +779,9 @@ int pnl_run_interactive(pnl_app_t *app)
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);
+    pnl_record_open(app);
     status = pnl_loop(app, 0);
+    pnl_record_close();
     pnl_remember_action(app);
     pnl_views_drop(app);
     if (!pnl_virtual_active())
