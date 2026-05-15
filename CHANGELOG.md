@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.3.0 - 2026-05-15
+
+Clickable links: an address on the screen opens with a click, even when it does not fit.
+
+- any `http://` or `https://` address drawn by the panel, in a status line, a result, a log, a
+  table cell or a pager, becomes an OSC 8 link; terminals that know OSC 8 open it with a click
+  (often ctrl-click), the others show plain text
+- the link points to the whole address from the text, not to what fits on screen, so a long
+  address cut by a narrow column still opens the right page; a period, comma or parenthesis
+  right after the address is left out of it
+- `pnl_canvas_link(canvas, x, y, style, text, url)` draws any text as a link to `url`
+- `TUIKIT_LINKS=off` draws them as plain text; linear mode prints the address itself
+
 ## 5.2.0 - 2026-05-15
 
 For everyone: the panel for those who listen to it, who need strong colors or who never touch a
