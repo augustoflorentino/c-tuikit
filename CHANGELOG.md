@@ -4,6 +4,22 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.2.0 - 2026-05-15
+
+For everyone: the panel for those who listen to it, who need strong colors or who never touch a
+mouse.
+
+- `TUIKIT_LINEAR=on` draws the panel as plain lines instead of a screen: no alternate screen,
+  no cursor jumps, no colors, no box lines. Only what changed is printed, so a screen reader
+  reads the new selection, the new value or the next line of a log, and not the whole screen
+  again. Moving the selection prints just the selected line; a dialog prints only what is inside
+  its box; lines that scroll are not repeated; bars become their percentages
+- in linear mode animations, the mouse and terminal queries are off
+- `TUIKIT_CONTRAST=high`, already there, is now documented: every color, muted text included,
+  is pushed to a strong contrast with the background
+- every action, list, table, tab and dialog can be reached from the keyboard alone; the mouse
+  stays optional
+
 ## 5.1.0 - 2026-05-15
 
 Record: a session becomes a file anyone can replay.
