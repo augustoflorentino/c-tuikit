@@ -4,6 +4,20 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.1.0 - 2026-05-15
+
+Record: a session becomes a file anyone can replay.
+
+- `TUIKIT_RECORD=demo.cast tool` records what the panel draws as an asciicast v2 file, which
+  `asciinema play` replays in a terminal and tools like `agg` turn into a GIF; no change to the
+  tool is needed
+- `pnl_app_record(app, path)` sets the file from code, `NULL` to stop; the variable is used
+  when the tool sets nothing
+- only the screen is recorded, never what is typed; a resize appears in the file as a resize
+  event
+- under `pnl_test_create` the recording follows the virtual clock and leaves out the date, so
+  a test script produces the same file every run: a demo that never goes stale
+
 ## 5.0.0 - 2026-05-11
 
 Headless: a panel runs without a terminal, so a tool can be tested the way it is used.
