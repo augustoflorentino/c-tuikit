@@ -183,6 +183,18 @@ int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *t
     return end - canvas->x;
 }
 
+int pnl_canvas_link(pnl_canvas_t *canvas, int x, int y, int style, const char *text, const char *url)
+{
+    int end;
+
+    if (canvas == NULL || text == NULL || url == NULL || x < 0 || y < 0 || x >= canvas->width ||
+        y >= canvas->height)
+        return x;
+    end = pnl_screen_link(canvas->screen, canvas->x + x, canvas->y + y, canvas->width - x, (uint32_t)style, text,
+                          url[0] != '\0' ? url : NULL);
+    return end - canvas->x;
+}
+
 int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text)
 {
     int end;

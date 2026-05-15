@@ -54,6 +54,9 @@ up/down: move  enter: choose  ?: help  q: quit
   lists use them) and short notifications in the corner that go away on their own (`pnl_toast`)
 - the mouse works too: click an action, a row, a table header, a panel or a tab; the wheel
   scrolls. `TUIKIT_MOUSE=off` leaves the mouse to the terminal
+- web addresses anywhere on screen become clickable links (OSC 8), pointing to the whole address
+  even when the screen cuts it short; `pnl_canvas_link` links any text, `TUIKIT_LINKS=off` turns
+  them off
 - for everyone: `TUIKIT_LINEAR=on` turns the panel into plain lines a screen reader can follow,
   `TUIKIT_CONTRAST=high` pushes every color to a strong contrast, and every action works from the
   keyboard alone

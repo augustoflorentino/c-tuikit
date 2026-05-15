@@ -51,6 +51,48 @@ void pnl_screen_clear(struct pnl_screen *screen)
         screen->back[i].cp = PNL_BLANK;
         screen->back[i].style = 0;
     }
+    screen->links_len = 0;
+    screen->link_pool_len = 0;
+    screen->links_hash = 5381;
+}
+
+static uint32_t pnl_link_add(struct pnl_screen *screen, const char *url, size_t url_len)
+{
+    int i;
+
+    if (screen->links_off || url_len == 0)
+        return 0;
+    for (i = 0; i < screen->links_len; i++) {
+        const char *known = screen->link_pool + screen->link_at[i];
+
+        if (strncmp(known, url, url_len) == 0 && known[url_len] == '\0')
+            return (uint32_t)(i + 1) << 24;
+    }
+    if (screen->links_len == PNL_LINKS || screen->link_pool_len + url_len + 1 > PNL_LINK_POOL)
+        return 0;
+    screen->link_at[screen->links_len++] = (unsigned short)screen->link_pool_len;
+    memcpy(screen->link_pool + screen->link_pool_len, url, url_len);
+    screen->link_pool_len += url_len;
+    screen->link_pool[screen->link_pool_len++] = '\0';
+    for (i = 0; i < (int)url_len; i++)
+        screen->links_hash = screen->links_hash * 33u + (unsigned char)url[i];
+    screen->links_hash = screen->links_hash * 33u + (unsigned long)screen->links_len;
+    return (uint32_t)screen->links_len << 24;
+}
+
+static size_t pnl_url_length(const char *text, size_t len)
+{
+    size_t end;
+
+    if (!(len > 8 && strncmp(text, "https://", 8) == 0) && !(len > 7 && strncmp(text, "http://", 7) == 0))
+        return 0;
+    for (end = 0; end < len && (unsigned char)text[end] > 0x20 && text[end] != 0x7f && text[end] != '"' &&
+                  text[end] != '<' && text[end] != '>';
+         end++)
+        ;
+    while (end > 0 && (strchr)(".,;:!?)]'", text[end - 1]) != NULL)
+        end--;
+    return end;
 }
 
 static struct pnl_cell *pnl_screen_at(struct pnl_screen *screen, int x, int y)
@@ -70,19 +112,31 @@ static void pnl_screen_put(struct pnl_screen *screen, int x, int y, uint32_t cp,
     cell->style = style;
 }
 
-int pnl_screen_text(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text)
+int pnl_screen_link(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text,
+                    const char *url)
 {
     size_t len = strlen(text);
     size_t pos = 0;
+    size_t link_end = 0;
+    uint32_t link = 0;
     int end;
 
     if (y < 0 || y >= screen->height || x < 0 || x >= screen->width)
         return 0;
+    if (url != NULL) {
+        link = pnl_link_add(screen, url, strlen(url));
+        link_end = len;
+    }
     end = max >= 0 && x + max < screen->width ? x + max : screen->width;
     while (pos < len && x < end) {
         uint32_t cp;
         int w;
 
+        if (pos >= link_end) {
+            link_end = url == NULL && (text[pos] == 'h') ? pnl_url_length(text + pos, len - pos) : 0;
+            link = link_end > 0 ? pnl_link_add(screen, text + pos, link_end) : 0;
+            link_end += pos;
+        }
         pos += pnl_utf8_next(text + pos, len - pos, &cp);
         w = pnl_cp_width(cp);
         if (w == 0)
@@ -93,12 +147,17 @@ int pnl_screen_text(struct pnl_screen *screen, int x, int y, int max, uint32_t s
         }
         if (x + w > end)
             break;
-        pnl_screen_put(screen, x, y, cp, style);
+        pnl_screen_put(screen, x, y, cp, (style & 0xffffffu) | link);
         if (w == 2)
-            pnl_screen_put(screen, x + 1, y, PNL_CONTINUATION, style);
+            pnl_screen_put(screen, x + 1, y, PNL_CONTINUATION, (style & 0xffffffu) | link);
         x += w;
     }
     return x;
+}
+
+int pnl_screen_text(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text)
+{
+    return pnl_screen_link(screen, x, y, max, style, text, NULL);
 }
 
 void pnl_screen_fill(struct pnl_screen *screen, int x, int y, int width, uint32_t style)
@@ -180,7 +239,22 @@ struct pnl_pen {
     int y;
     uint32_t style;
     int style_known;
+    uint32_t link;
 };
+
+static int pnl_out_link(struct pnl_screen *screen, const struct pnl_mem *mem, struct pnl_pen *pen, uint32_t link)
+{
+    const char *url = link > 0 ? screen->link_pool + screen->link_at[link - 1] : "";
+    int status;
+
+    pen->link = link;
+    status = pnl_out(screen, mem, "\x1b]8;;", 5);
+    if (status == PNL_OK)
+        status = pnl_out(screen, mem, url, strlen(url));
+    if (status == PNL_OK)
+        status = pnl_out(screen, mem, "\x1b\\", 2);
+    return status;
+}
 
 static int pnl_render_cell(struct pnl_screen *screen, const struct pnl_mem *mem, struct pnl_pen *pen, int x, int y)
 {
@@ -193,6 +267,8 @@ static int pnl_render_cell(struct pnl_screen *screen, const struct pnl_mem *mem,
 
         status = pnl_out(screen, mem, buf, (size_t)len);
     }
+    if (status == PNL_OK && pen->link != PNL_STYLE_LINK(cell->style))
+        status = pnl_out_link(screen, mem, pen, PNL_STYLE_LINK(cell->style));
     if (status == PNL_OK && (!pen->style_known || pen->style != cell->style))
         status = pnl_out_style(screen, mem, cell->style);
     if (status == PNL_OK)
@@ -308,18 +384,23 @@ static int pnl_linear_render(struct pnl_screen *screen, const struct pnl_mem *me
 
 int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
 {
-    struct pnl_pen pen = {-1, -1, 0, 0};
+    struct pnl_pen pen = {-1, -1, 0, 0, 0};
     size_t count = (size_t)screen->width * (size_t)screen->height;
     int status = PNL_OK;
     int y;
 
     screen->out_len = 0;
+    if (screen->links_hash != screen->links_drawn)
+        screen->front_valid = 0;
+    screen->links_drawn = screen->links_hash;
     if (screen->linear)
         status = pnl_linear_render(screen, mem);
     else if (!screen->front_valid)
         status = pnl_out(screen, mem, "\x1b[0m\x1b[2J", 8);
     for (y = 0; y < screen->height && status == PNL_OK && !screen->linear; y++)
         status = pnl_render_row(screen, mem, &pen, y);
+    if (status == PNL_OK && pen.link > 0)
+        status = pnl_out_link(screen, mem, &pen, 0);
     if (status == PNL_OK && pen.style_known)
         status = pnl_out(screen, mem, "\x1b[0m", 4);
     if (status == PNL_OK && screen->out_len > 0)

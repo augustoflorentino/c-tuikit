@@ -49,6 +49,9 @@
 #define PNL_STYLE_ATTRS(style) ((uint32_t)(style) & 0xffu)
 #define PNL_STYLE_FG(style) (((uint32_t)(style) >> 8) & 0xffu)
 #define PNL_STYLE_BG(style) (((uint32_t)(style) >> 16) & 0xffu)
+#define PNL_STYLE_LINK(style) (((uint32_t)(style) >> 24) & 0xffu)
+#define PNL_LINKS 255
+#define PNL_LINK_POOL 8192
 
 struct pnl_mem {
     pnl_alloc_fn alloc_fn;
@@ -87,6 +90,13 @@ struct pnl_screen {
     int pulse;
     int spinning;
     int linear;
+    int links_off;
+    int links_len;
+    size_t link_pool_len;
+    unsigned long links_hash;
+    unsigned long links_drawn;
+    unsigned short link_at[PNL_LINKS];
+    char link_pool[PNL_LINK_POOL];
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;
@@ -312,6 +322,8 @@ PNL_INTERNAL int pnl_screen_resize(struct pnl_screen *screen, const struct pnl_m
 PNL_INTERNAL void pnl_screen_free(struct pnl_screen *screen, const struct pnl_mem *mem);
 PNL_INTERNAL void pnl_screen_clear(struct pnl_screen *screen);
 PNL_INTERNAL int pnl_screen_text(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text);
+PNL_INTERNAL int pnl_screen_link(struct pnl_screen *screen, int x, int y, int max, uint32_t style, const char *text,
+                                 const char *url);
 PNL_INTERNAL void pnl_screen_fill(struct pnl_screen *screen, int x, int y, int width, uint32_t style);
 PNL_INTERNAL int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem);
 

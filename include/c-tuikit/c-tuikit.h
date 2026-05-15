@@ -223,6 +223,7 @@ PNL_API int pnl_canvas_focused(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_height(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const char *text);
+PNL_API int pnl_canvas_link(pnl_canvas_t *canvas, int x, int y, int style, const char *text, const char *url);
 PNL_API void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int style);
 PNL_API int pnl_color_depth(void);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);

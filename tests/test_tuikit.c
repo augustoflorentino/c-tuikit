@@ -698,6 +698,52 @@ static void test_screens(void)
     check_cast("tuikit_test.cast");
 }
 
+static void link_status(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_status_line(app, PNL_MARK_OK, "docs", "see https://x.test/a, then");
+}
+
+static void link_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    (void)ctx;
+    (void)app;
+    CHECK(pnl_canvas_link(canvas, 0, 0, 0, "manual", "https://x.test/manual") == 6);
+    CHECK(pnl_canvas_link(canvas, 0, 1, 0, "x", NULL) == 0);
+}
+
+static void open_links(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_view_push(app, "links", link_draw, NULL, NULL);
+}
+
+static void test_links(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    FILE *file;
+    char data[16384];
+    size_t len;
+
+    CHECK(pnl_app_create("links", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_on_status(app, link_status, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Open", open_links, NULL) == PNL_OK);
+    CHECK(pnl_app_record(app, "tuikit_links.cast") == PNL_OK);
+    CHECK(pnl_test_create(app, 40, 10, &test) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    pnl_test_destroy(test);
+    pnl_app_destroy(app);
+    file = fopen("tuikit_links.cast", "rb");
+    CHECK(file != NULL);
+    len = fread(data, 1, sizeof(data) - 1, file);
+    data[len] = '\0';
+    fclose(file);
+    remove("tuikit_links.cast");
+    CHECK(strstr(data, "]8;;https://x.test/a\\u001b") != NULL);
+    CHECK(strstr(data, "]8;;https://x.test/manual\\u001b") != NULL);
+}
+
 int main(void)
 {
     test_keys();
@@ -714,5 +760,6 @@ int main(void)
     test_bad_args();
     test_alloc_failure();
     test_screens();
+    test_links();
     return 0;
 }

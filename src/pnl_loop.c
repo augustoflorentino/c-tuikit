@@ -754,10 +754,12 @@ int pnl_run_interactive(pnl_app_t *app)
 {
     const char *mouse = getenv("TUIKIT_MOUSE");
     const char *linear = getenv("TUIKIT_LINEAR");
+    const char *links = getenv("TUIKIT_LINKS");
     int status;
 
     app->term.linear = linear != NULL && linear[0] != '\0' && strcmp(linear, "off") != 0 && strcmp(linear, "0") != 0;
     app->screen.linear = app->term.linear && !pnl_virtual_active();
+    app->screen.links_off = links != NULL && (strcmp(links, "off") == 0 || strcmp(links, "0") == 0);
     app->term.mouse = !pnl_virtual_active() && !app->term.linear &&
                       (mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0));
     status = pnl_term_enter(&app->term);
