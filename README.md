@@ -163,6 +163,9 @@ Conventions:
 - functions never take ownership of their arguments; returned pointers belong to the library
 - pass a `pnl_allocator_t` to `pnl_app_create`, or `NULL` for `malloc`/`free`
 
+`bench/run.sh` measures drawing, rendering, logs, values, a table of a million rows and the
+memory each part takes.
+
 ## Versioning
 
 Semantic Versioning. Compatible releases bump the minor version; incompatible ones bump the
