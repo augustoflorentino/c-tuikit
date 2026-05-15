@@ -86,6 +86,7 @@ struct pnl_screen {
     int spin;
     int pulse;
     int spinning;
+    int linear;
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;
@@ -99,6 +100,7 @@ struct pnl_term {
     unsigned char input[PNL_INPUT_MAX];
     size_t input_len;
     int mouse;
+    int linear;
     int mouse_x;
     int mouse_y;
     int focus_known;

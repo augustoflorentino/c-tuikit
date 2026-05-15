@@ -25,13 +25,15 @@ static volatile sig_atomic_t pnl_term_winch;
 static struct sigaction pnl_term_old[PNL_TERM_SIGNALS];
 static struct sigaction pnl_term_old_winch;
 
+static int pnl_term_plain;
+
 static void pnl_term_restore(void)
 {
     if (!pnl_term_raw)
         return;
     pnl_term_raw = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &pnl_term_saved);
-    if (write(STDOUT_FILENO, PNL_TERM_END, sizeof(PNL_TERM_END) - 1) < 0)
+    if (!pnl_term_plain && write(STDOUT_FILENO, PNL_TERM_END, sizeof(PNL_TERM_END) - 1) < 0)
         return;
 }
 
@@ -122,8 +124,9 @@ int pnl_os_enter(struct pnl_term *term)
     pnl_term_catch();
     term->active = 1;
     term->focus_known = 0;
-    status = pnl_os_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
-    if (status == PNL_OK && term->mouse)
+    pnl_term_plain = term->linear;
+    status = term->linear ? PNL_OK : pnl_os_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
+    if (status == PNL_OK && term->mouse && !term->linear)
         status = pnl_os_write(PNL_TERM_MOUSE, sizeof(PNL_TERM_MOUSE) - 1);
     if (status != PNL_OK)
         pnl_os_leave(term);

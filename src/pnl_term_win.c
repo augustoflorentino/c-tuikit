@@ -92,13 +92,16 @@ int pnl_os_write(const char *data, size_t data_len)
     return PNL_OK;
 }
 
+static int pnl_term_plain;
+
 static void pnl_term_restore(void)
 {
     DWORD written;
 
     if (InterlockedExchange(&pnl_term_raw, 0) == 0)
         return;
-    WriteFile(pnl_term_out(), PNL_TERM_END, sizeof(PNL_TERM_END) - 1, &written, NULL);
+    if (!pnl_term_plain)
+        WriteFile(pnl_term_out(), PNL_TERM_END, sizeof(PNL_TERM_END) - 1, &written, NULL);
     SetConsoleMode(pnl_term_in(), pnl_term_saved_in);
     SetConsoleMode(pnl_term_out(), pnl_term_saved_out);
     SetConsoleCP(pnl_term_saved_cp_in);
@@ -150,8 +153,9 @@ int pnl_os_enter(struct pnl_term *term)
     term->active = 1;
     term->focus_known = 0;
     pnl_os_size(&pnl_term_last_width, &pnl_term_last_height);
-    status = pnl_os_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
-    if (status == PNL_OK && term->mouse)
+    pnl_term_plain = term->linear;
+    status = term->linear ? PNL_OK : pnl_os_write(PNL_TERM_START, sizeof(PNL_TERM_START) - 1);
+    if (status == PNL_OK && term->mouse && !term->linear)
         status = pnl_os_write(PNL_TERM_MOUSE, sizeof(PNL_TERM_MOUSE) - 1);
     if (status != PNL_OK)
         pnl_os_leave(term);

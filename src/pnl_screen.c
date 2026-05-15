@@ -223,6 +223,89 @@ static int pnl_render_row(struct pnl_screen *screen, const struct pnl_mem *mem, 
     return status;
 }
 
+static int pnl_linear_same(const struct pnl_screen *screen, int y, int from)
+{
+    const struct pnl_cell *old = screen->front + (size_t)from * (size_t)screen->width;
+    const struct pnl_cell *now = screen->back + (size_t)y * (size_t)screen->width;
+    int x;
+
+    for (x = 0; x < screen->width; x++) {
+        if (old[x].cp != now[x].cp && !(from == y && old[x].cp == '>' && now[x].cp == ' '))
+            return 0;
+    }
+    return 1;
+}
+
+static int pnl_linear_seen(const struct pnl_screen *screen, int y)
+{
+    int from;
+
+    for (from = 0; from < screen->height; from++) {
+        if (pnl_linear_same(screen, y, from))
+            return 1;
+    }
+    return 0;
+}
+
+static int pnl_linear_box(uint32_t cp)
+{
+    return cp >= 0x2500 && cp <= 0x257f;
+}
+
+static int pnl_linear_skip(uint32_t cp)
+{
+    return cp == PNL_CONTINUATION || (cp >= 0x2500 && cp <= 0x259f);
+}
+
+static int pnl_linear_row(struct pnl_screen *screen, const struct pnl_mem *mem, int y)
+{
+    const struct pnl_cell *row = screen->back + (size_t)y * (size_t)screen->width;
+    int status = PNL_OK;
+    int spaces = 0;
+    int written = 0;
+    int start = 0;
+    int end = screen->width;
+    int x;
+
+    while (start < screen->width && !pnl_linear_box(row[start].cp))
+        start++;
+    while (end > start + 1 && !pnl_linear_box(row[end - 1].cp))
+        end--;
+    if (end <= start + 1) {
+        start = 0;
+        end = screen->width;
+    }
+    for (x = start; x < end && status == PNL_OK; x++) {
+        uint32_t cp = pnl_linear_skip(row[x].cp) ? ' ' : row[x].cp;
+
+        if (cp == ' ') {
+            spaces++;
+            continue;
+        }
+        if (written && spaces > 0)
+            status = pnl_out(screen, mem, "  ", spaces > 1 ? 2 : 1);
+        if (status == PNL_OK)
+            status = pnl_out_cp(screen, mem, cp);
+        spaces = 0;
+        written = 1;
+    }
+    if (status == PNL_OK && written)
+        status = pnl_out(screen, mem, "\r\n", 2);
+    return status;
+}
+
+static int pnl_linear_render(struct pnl_screen *screen, const struct pnl_mem *mem)
+{
+    int status = PNL_OK;
+    int y;
+
+    for (y = 0; y < screen->height && status == PNL_OK; y++) {
+        if (!screen->front_valid || !pnl_linear_seen(screen, y))
+            status = pnl_linear_row(screen, mem, y);
+    }
+    return status;
+}
+
 int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
 {
     struct pnl_pen pen = {-1, -1, 0, 0};
@@ -231,9 +314,11 @@ int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
     int y;
 
     screen->out_len = 0;
-    if (!screen->front_valid)
+    if (screen->linear)
+        status = pnl_linear_render(screen, mem);
+    else if (!screen->front_valid)
         status = pnl_out(screen, mem, "\x1b[0m\x1b[2J", 8);
-    for (y = 0; y < screen->height && status == PNL_OK; y++)
+    for (y = 0; y < screen->height && status == PNL_OK && !screen->linear; y++)
         status = pnl_render_row(screen, mem, &pen, y);
     if (status == PNL_OK && pen.style_known)
         status = pnl_out(screen, mem, "\x1b[0m", 4);

@@ -54,6 +54,9 @@ up/down: move  enter: choose  ?: help  q: quit
   lists use them) and short notifications in the corner that go away on their own (`pnl_toast`)
 - the mouse works too: click an action, a row, a table header, a panel or a tab; the wheel
   scrolls. `TUIKIT_MOUSE=off` leaves the mouse to the terminal
+- for everyone: `TUIKIT_LINEAR=on` turns the panel into plain lines a screen reader can follow,
+  `TUIKIT_CONTRAST=high` pushes every color to a strong contrast, and every action works from the
+  keyboard alone
 - no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install
