@@ -4,6 +4,21 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.4.0 - 2026-05-18
+
+Measured: before making anything faster or smaller, a way to know.
+
+- `bench/run.sh` builds `bench/bench.c` with optimizations and prints how long things take and
+  how much memory they hold: drawing a 200x60 screen, rendering it whole and with one changed
+  row (also in linear mode), writing log lines, setting values, opening, sorting and filtering a
+  table of a million rows, and the bytes an app, an action, a value and a log take
+- the table numbers come from a real panel running under `pnl_test_create`, so they include
+  everything a user would wait for
+- on the machine it was written on: a full 200x60 frame takes about 0.3 ms and 13 KB, a frame
+  with one changed row 24 us and 21 bytes; a log line 34 ns; a million rows sort in about 2 s
+  and filter in 0.2 s; an empty app takes 10 KB and an empty log of 1000 lines 264 KB, the
+  starting point for the next release
+
 ## 5.3.0 - 2026-05-15
 
 Clickable links: an address on the screen opens with a click, even when it does not fit.
