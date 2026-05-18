@@ -11,6 +11,7 @@ struct pnl_value {
     char *label;
     int mark;
     double meter;
+    int pending;
     char text[PNL_VALUE_TEXT];
 };
 
@@ -72,19 +73,25 @@ void pnl_value_destroy(pnl_value_t *value)
 static void pnl_value_store(pnl_value_t *value, int mark, double meter, const char *text)
 {
     size_t len = strlen(text);
+    int wake;
 
     if (len >= PNL_VALUE_TEXT) {
         len = PNL_VALUE_TEXT - 1;
         while (len > 0 && ((unsigned char)text[len] & 0xc0) == 0x80)
             len--;
     }
+
     pnl_lock(&value->lock);
+    wake = !value->pending && (value->mark != mark || value->meter != meter || strncmp(value->text, text, len) != 0 ||
+                               value->text[len] != '\0');
+    value->pending = value->pending || wake;
     value->mark = mark;
     value->meter = meter;
     memcpy(value->text, text, len);
     value->text[len] = '\0';
     pnl_unlock(&value->lock);
-    pnl_term_wake(&value->app->term);
+    if (wake)
+        pnl_term_wake(&value->app->term);
 }
 
 int pnl_value_set(pnl_value_t *value, int mark, const char *text)
@@ -115,6 +122,7 @@ void pnl_values_lines(pnl_app_t *app)
         int mark;
 
         pnl_lock(&value->lock);
+        value->pending = 0;
         mark = value->mark;
         meter = value->meter;
         memcpy(text, value->text, sizeof(text));

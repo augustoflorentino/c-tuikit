@@ -95,8 +95,8 @@ struct pnl_screen {
     size_t link_pool_len;
     unsigned long links_hash;
     unsigned long links_drawn;
-    unsigned short link_at[PNL_LINKS];
-    char link_pool[PNL_LINK_POOL];
+    unsigned short *link_at;
+    char *link_pool;
     struct pnl_cell *back;
     struct pnl_cell *front;
     char *out;

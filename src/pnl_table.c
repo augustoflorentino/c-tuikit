@@ -30,11 +30,11 @@ struct pnl_table {
     pnl_cell_fn cell_fn;
     pnl_release_fn release_fn;
     void *ctx;
-    size_t *order;
+    uint32_t *order;
     size_t order_len;
-    size_t *work;
+    uint32_t *work;
     size_t work_len;
-    size_t *scratch;
+    uint32_t *scratch;
     int *widths;
     int *flags;
     unsigned char *hidden;
@@ -170,7 +170,7 @@ static int pnl_table_filter(struct pnl_table *table)
         if (pnl_table_cancelled(table, i))
             return 0;
         if (table->job.filter[0] == '\0' || pnl_table_matches(table, i))
-            table->work[table->work_len++] = i;
+            table->work[table->work_len++] = (uint32_t)i;
     }
     return 1;
 }
@@ -205,7 +205,7 @@ static size_t pnl_table_find(const struct pnl_table *table, size_t row)
 
 static void pnl_table_apply(struct pnl_table *table)
 {
-    size_t *swap = table->order;
+    uint32_t *swap = table->order;
     int kept = table->selected > 0 && table->selected < table->order_len;
     size_t row = kept ? table->order[table->selected] : 0;
 
@@ -221,6 +221,8 @@ static void pnl_table_finish(struct pnl_table *table)
     int cancelled;
 
     pnl_thread_join(&table->thread);
+    pnl_mem_free(&table->app->mem, table->scratch);
+    table->scratch = NULL;
     table->busy = 0;
     cancelled = table->cancel;
     table->cancel = 0;
@@ -262,6 +264,8 @@ static void pnl_table_start(struct pnl_table *table)
         return;
     }
     pnl_table_compute(table);
+    pnl_mem_free(&table->app->mem, table->scratch);
+    table->scratch = NULL;
     pnl_table_apply(table);
 }
 
@@ -632,7 +636,7 @@ static int pnl_table_prepare(struct pnl_table *table, const char *const *headers
     }
     memset(table->hidden, 0, columns);
     for (i = 0; i < table->rows; i++)
-        table->order[i] = i;
+        table->order[i] = (uint32_t)i;
     table->order_len = table->rows;
     for (i = 0; i < table->rows && i < PNL_TABLE_MEASURE_ROWS; i++)
         pnl_table_widen(table, i);
@@ -686,7 +690,8 @@ static int pnl_table_valid(const pnl_app_t *app, const char *title, const char *
                            size_t rows)
 {
     return app != NULL && title != NULL && headers != NULL && columns > 0 &&
-           rows <= ((size_t)-1) / sizeof(char *) / (columns + 1) - 1 && (app->running || app->cli);
+           rows <= ((size_t)-1) / sizeof(char *) / (columns + 1) - 1 && rows <= 0xffffffffu &&
+           (app->running || app->cli);
 }
 
 int pnl_table(pnl_app_t *app, const char *title, const char *const *headers, const int *column_flags,

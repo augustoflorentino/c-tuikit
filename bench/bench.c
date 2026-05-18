@@ -189,11 +189,14 @@ static double settle(pnl_test_t *test, const char *busy)
 
 static void bench_table(void)
 {
+    struct counter counter = {0, 0, 0};
+    pnl_allocator_t allocator = {count_alloc, count_free, NULL};
     pnl_app_t *app = NULL;
     pnl_test_t *test = NULL;
     double start;
 
-    pnl_app_create("bench", NULL, &app);
+    allocator.ctx = &counter;
+    pnl_app_create("bench", &allocator, &app);
     pnl_app_add_action(app, "Rows", open_table, NULL);
     pnl_test_create(app, 120, 40, &test);
     start = now_us();
@@ -205,6 +208,8 @@ static void bench_table(void)
     start = now_us();
     pnl_test_keys(test, "/ \"12\" enter");
     report("table filter 1M rows", now_us() - start + settle(test, "filtering"), 1, "", 0, NULL);
+    printf("%-30s %10.1f MB, %.1f MB at peak\n", "table of 1M rows", (double)counter.bytes / 1e6,
+           (double)counter.peak / 1e6);
     pnl_test_destroy(test);
     pnl_app_destroy(app);
 }

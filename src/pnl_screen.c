@@ -14,6 +14,12 @@ int pnl_screen_resize(struct pnl_screen *screen, const struct pnl_mem *mem, int 
 
     if (width <= 0 || height <= 0)
         return PNL_ERR_ARG;
+    if (screen->link_pool == NULL) {
+        screen->link_pool = pnl_mem_alloc(mem, PNL_LINK_POOL + PNL_LINKS * sizeof(*screen->link_at));
+        if (screen->link_pool == NULL)
+            return PNL_ERR_NOMEM;
+        screen->link_at = (unsigned short *)(void *)(screen->link_pool + PNL_LINK_POOL);
+    }
     if (width == screen->width && height == screen->height)
         return PNL_OK;
     back = pnl_mem_alloc(mem, count * sizeof(*back));
@@ -39,6 +45,7 @@ void pnl_screen_free(struct pnl_screen *screen, const struct pnl_mem *mem)
     pnl_mem_free(mem, screen->back);
     pnl_mem_free(mem, screen->front);
     pnl_mem_free(mem, screen->out);
+    pnl_mem_free(mem, screen->link_pool);
     memset(screen, 0, sizeof(*screen));
 }
 
@@ -60,7 +67,7 @@ static uint32_t pnl_link_add(struct pnl_screen *screen, const char *url, size_t 
 {
     int i;
 
-    if (screen->links_off || url_len == 0)
+    if (screen->links_off || url_len == 0 || screen->link_pool == NULL)
         return 0;
     for (i = 0; i < screen->links_len; i++) {
         const char *known = screen->link_pool + screen->link_at[i];

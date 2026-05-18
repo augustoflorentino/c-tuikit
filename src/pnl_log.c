@@ -5,6 +5,7 @@
 #include <time.h>
 
 #define PNL_LOG_TEXT 240
+#define PNL_LOG_AVERAGE 128
 #define PNL_LOG_FILTER_MAX 128
 #define PNL_LOG_FOOTER "up/down: scroll  end: follow  v: level  /: filter  q: back"
 #define PNL_LOG_FILTER_FOOTER "type to filter  enter: keep  esc: clear"
@@ -12,8 +13,8 @@
 struct pnl_log_entry {
     unsigned long long seq;
     time_t when;
-    int level;
-    char text[PNL_LOG_TEXT];
+    unsigned int start;
+    unsigned char level;
 };
 
 struct pnl_log {
@@ -21,6 +22,10 @@ struct pnl_log {
     struct pnl_lock lock;
     struct pnl_log_entry *entries;
     size_t capacity;
+    char *text;
+    size_t text_size;
+    size_t head;
+    unsigned long long first_seq;
     unsigned long long next_seq;
     int pending;
 };
@@ -49,7 +54,8 @@ int pnl_log_create(pnl_app_t *app, size_t capacity, pnl_log_t **out_log)
 
     if (out_log != NULL)
         *out_log = NULL;
-    if (app == NULL || capacity == 0 || capacity > ((size_t)-1) / sizeof(struct pnl_log_entry) || out_log == NULL)
+    if (app == NULL || capacity == 0 || capacity > ((size_t)-1) / 2 / sizeof(struct pnl_log_entry) ||
+        capacity > ((unsigned int)-1 - PNL_LOG_TEXT) / PNL_LOG_AVERAGE || out_log == NULL)
         return PNL_ERR_ARG;
     status = pnl_term_wake_open(&app->term);
     if (status != PNL_OK)
@@ -60,10 +66,13 @@ int pnl_log_create(pnl_app_t *app, size_t capacity, pnl_log_t **out_log)
     memset(logbook, 0, sizeof(*logbook));
     logbook->app = app;
     logbook->capacity = capacity;
+    logbook->text_size = capacity * PNL_LOG_AVERAGE + PNL_LOG_TEXT;
     logbook->entries = pnl_mem_alloc(&app->mem, capacity * sizeof(*logbook->entries));
-    status = logbook->entries == NULL ? PNL_ERR_NOMEM : pnl_lock_init(&logbook->lock);
+    logbook->text = pnl_mem_alloc(&app->mem, logbook->text_size);
+    status = logbook->entries == NULL || logbook->text == NULL ? PNL_ERR_NOMEM : pnl_lock_init(&logbook->lock);
     if (status != PNL_OK) {
         pnl_mem_free(&app->mem, logbook->entries);
+        pnl_mem_free(&app->mem, logbook->text);
         pnl_mem_free(&app->mem, logbook);
         return status;
     }
@@ -77,18 +86,50 @@ void pnl_log_destroy(pnl_log_t *logbook)
         return;
     pnl_lock_destroy(&logbook->lock);
     pnl_mem_free(&logbook->app->mem, logbook->entries);
+    pnl_mem_free(&logbook->app->mem, logbook->text);
     pnl_mem_free(&logbook->app->mem, logbook);
 }
 
-static void pnl_log_store(struct pnl_log_entry *entry, const char *text)
+static const char *pnl_log_text(const pnl_log_t *logbook, const struct pnl_log_entry *entry)
+{
+    return logbook->text + entry->start;
+}
+
+static size_t pnl_log_length(const char *text)
 {
     size_t len = 0;
 
-    for (; text[len] != '\0' && text[len] != '\n' && len + 1 < PNL_LOG_TEXT; len++)
-        entry->text[len] = text[len] == '\t' ? ' ' : text[len];
+    while (text[len] != '\0' && text[len] != '\n' && len + 1 < PNL_LOG_TEXT)
+        len++;
     while (len > 0 && text[len] != '\0' && text[len] != '\n' && ((unsigned char)text[len] & 0xc0) == 0x80)
         len--;
-    entry->text[len] = '\0';
+    return len;
+}
+
+static void pnl_log_evict(pnl_log_t *logbook, size_t reach)
+{
+    while (logbook->first_seq < logbook->next_seq) {
+        const struct pnl_log_entry *oldest = &logbook->entries[logbook->first_seq % logbook->capacity];
+        size_t ahead = (oldest->start + logbook->text_size - logbook->head) % logbook->text_size;
+
+        if (logbook->next_seq - logbook->first_seq < logbook->capacity && ahead >= reach)
+            return;
+        logbook->first_seq++;
+    }
+}
+
+static void pnl_log_store(pnl_log_t *logbook, struct pnl_log_entry *entry, const char *text)
+{
+    size_t len = pnl_log_length(text);
+    size_t start = logbook->head + len + 1 > logbook->text_size ? 0 : logbook->head;
+    size_t i;
+
+    pnl_log_evict(logbook, start == 0 ? logbook->text_size - logbook->head + len + 1 : len + 1);
+    for (i = 0; i < len; i++)
+        logbook->text[start + i] = text[i] == '\t' ? ' ' : text[i];
+    logbook->text[start + len] = '\0';
+    entry->start = (unsigned int)start;
+    logbook->head = (start + len + 1) % logbook->text_size;
 }
 
 int pnl_log_write(pnl_log_t *logbook, int level, const char *text)
@@ -99,11 +140,12 @@ int pnl_log_write(pnl_log_t *logbook, int level, const char *text)
     if (logbook == NULL || text == NULL || level < PNL_LEVEL_DEBUG || level > PNL_LEVEL_ERROR)
         return PNL_ERR_ARG;
     pnl_lock(&logbook->lock);
+    pnl_log_evict(logbook, 0);
     entry = &logbook->entries[logbook->next_seq % logbook->capacity];
+    pnl_log_store(logbook, entry, text);
     entry->seq = logbook->next_seq++;
     entry->when = time(NULL);
-    entry->level = level;
-    pnl_log_store(entry, text);
+    entry->level = (unsigned char)level;
     wake = !logbook->pending;
     logbook->pending = 1;
     pnl_unlock(&logbook->lock);
@@ -114,12 +156,12 @@ int pnl_log_write(pnl_log_t *logbook, int level, const char *text)
 
 static unsigned long long pnl_log_first(const pnl_log_t *logbook)
 {
-    return logbook->next_seq > logbook->capacity ? logbook->next_seq - logbook->capacity : 0;
+    return logbook->first_seq;
 }
 
 static int pnl_log_matches(const struct pnl_log_view *view, const struct pnl_log_entry *entry)
 {
-    return entry->level >= view->level && pnl_text_contains(entry->text, view->filter);
+    return entry->level >= view->level && pnl_text_contains(pnl_log_text(view->logbook, entry), view->filter);
 }
 
 static void pnl_log_collect(struct pnl_log_view *view)
@@ -157,8 +199,10 @@ static void pnl_log_clock(char *out, size_t out_len, time_t when)
     snprintf(out, out_len, "%02d:%02d:%02d", parts.tm_hour, parts.tm_min, parts.tm_sec);
 }
 
-static void pnl_log_draw_entry(pnl_canvas_t *canvas, const struct pnl_log_entry *entry, int y, const char *filter)
+static void pnl_log_draw_entry(pnl_canvas_t *canvas, const pnl_log_t *logbook, const struct pnl_log_entry *entry,
+                               int y, const char *filter)
 {
+    const char *text = pnl_log_text(logbook, entry);
     char clock[16];
     const char *hit = NULL;
     const char *at;
@@ -166,14 +210,14 @@ static void pnl_log_draw_entry(pnl_canvas_t *canvas, const struct pnl_log_entry 
     pnl_log_clock(clock, sizeof(clock), entry->when);
     pnl_canvas_text(canvas, 1, y, PNL_FG(PNL_ROLE_MUTED), clock);
     pnl_canvas_text(canvas, 11, y, PNL_FG(pnl_level_roles[entry->level]), pnl_level_names[entry->level]);
-    pnl_canvas_text(canvas, 18, y, entry->level == PNL_LEVEL_DEBUG ? PNL_FG(PNL_ROLE_MUTED) : 0, entry->text);
-    for (at = entry->text; filter[0] != '\0' && *at != '\0' && hit == NULL; at++)
+    pnl_canvas_text(canvas, 18, y, entry->level == PNL_LEVEL_DEBUG ? PNL_FG(PNL_ROLE_MUTED) : 0, text);
+    for (at = text; filter[0] != '\0' && *at != '\0' && hit == NULL; at++)
         hit = pnl_text_contains_at(at, filter) ? at : NULL;
     if (hit != NULL) {
         char before[PNL_LOG_TEXT];
         char match[PNL_LOG_FILTER_MAX];
 
-        snprintf(before, sizeof(before), "%.*s", (int)(hit - entry->text), entry->text);
+        snprintf(before, sizeof(before), "%.*s", (int)(hit - text), text);
         snprintf(match, sizeof(match), "%.*s", (int)strlen(filter), hit);
         pnl_canvas_text(canvas, 18 + pnl_text_width(before), y, PNL_REVERSE, match);
     }
@@ -217,7 +261,7 @@ static void pnl_log_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     start = rows > 0 && end > (size_t)rows ? end - (size_t)rows : 0;
     pnl_log_draw_state(view, canvas, end);
     for (i = start; i < end; i++)
-        pnl_log_draw_entry(canvas, &logbook->entries[view->shown[i]], 2 + (int)(i - start), view->filter);
+        pnl_log_draw_entry(canvas, logbook, &logbook->entries[view->shown[i]], 2 + (int)(i - start), view->filter);
     if (view->shown_len == 0)
         pnl_canvas_text(canvas, 1, 2, PNL_FG(PNL_ROLE_MUTED), logbook->next_seq == 0 ? "nothing yet" : "no match");
     pnl_unlock(&logbook->lock);
@@ -304,12 +348,12 @@ static void pnl_log_cli(pnl_log_t *logbook)
 
         pnl_log_clock(clock, sizeof(clock), entry->when);
         if (!app->cli_json) {
-            printf("%s  %-5s  %s\n", clock, pnl_level_names[entry->level], entry->text);
+            printf("%s  %-5s  %s\n", clock, pnl_level_names[entry->level], pnl_log_text(logbook, entry));
             continue;
         }
         printf("%s{\"time\":\"%s\",\"level\":\"%s\",\"text\":", seq > pnl_log_first(logbook) ? "," : "", clock,
                pnl_level_names[entry->level]);
-        pnl_json_string(entry->text);
+        pnl_json_string(pnl_log_text(logbook, entry));
         putchar('}');
     }
     if (app->cli_json)
