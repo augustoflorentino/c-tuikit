@@ -4,6 +4,23 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.5.0 - 2026-05-18
+
+Lighter: the same panel holding less, measured with the bench from 5.4.
+
+- an app takes 1.9 KB instead of 10.6 KB: the table of links is allocated with the screen when
+  the panel opens, not with every app
+- a log keeps its text in one shared ring instead of 240 bytes reserved for every line: a log of
+  1000 lines takes 152 KB instead of 264 KB. It keeps up to `capacity` lines, fewer only when they
+  average more than 128 bytes; the oldest go first, as before
+- a table keeps its row order in 32-bit indexes and frees the sorting buffer when the sort ends:
+  a table of a million rows holds 8 MB instead of 24 MB, 12 MB while sorting. Tables are limited
+  to 4294967295 rows
+- `pnl_value_set` with a value already waiting to be drawn, or with the same text, no longer
+  wakes the panel again: 15 ns instead of 830 ns per call, so a value set in a tight loop costs
+  next to nothing
+- the bench reports the memory of a table of a million rows
+
 ## 5.4.0 - 2026-05-18
 
 Measured: before making anything faster or smaller, a way to know.
