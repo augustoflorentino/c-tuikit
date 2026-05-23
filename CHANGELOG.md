@@ -4,6 +4,28 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.7.0 - 2026-05-23
+
+Inspector: one key shows what the program is doing inside, while it does it.
+
+- f12 opens the inspector over any screen, and f12 or q closes it. It refreshes four times a
+  second and shows:
+  - frames: how many were drawn, the last, average and worst time to draw and render one, the
+    bytes sent, and a sparkline of the last 60
+  - screens: the stack from the menu to the top, dialogs marked
+  - parts: actions, status lines, values, timers, watches, running tasks, toasts and mapped keys
+  - motion: whether animations are on, whether a spinner turns, whether something is animating
+  - terminal: size, colors, background, mouse, focus, links on screen and how fast the terminal
+    answered
+  - events: the last 16 keys, timer runs, wakes from other threads, ready watches and resizes,
+    with how long ago each happened
+- `f12` is a key name in the keys file and in `pnl_test_keys`, so the inspector can be moved to
+  another key (`ctrl-t = f12`) or opened in a test
+- `TUIKIT_INSPECT=off` turns it off; it costs nothing until the panel runs and about 1.5 KB
+  after
+- key names in help and in the inspector show any key, including non-ASCII letters, instead of
+  a broken character
+
 ## 5.6.0 - 2026-05-23
 
 Cleanup: what the 5.x releases left behind, with no change in behavior.
