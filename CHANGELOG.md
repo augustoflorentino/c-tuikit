@@ -4,6 +4,18 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.6.0 - 2026-05-23
+
+Cleanup: what the 5.x releases left behind, with no change in behavior.
+
+- one UTF-8 encoder instead of four (screen, virtual screen, line editor and Windows input)
+- one reading of `off` and `0` for every `TUIKIT_*` switch: `TUIKIT_MOUSE`, `TUIKIT_MOTION`,
+  `TUIKIT_LINKS`, `TUIKIT_LINEAR`, `TUIKIT_NOTIFY` and `TUIKIT_MEMORY` now accept the same words
+- the renderer has two plain paths, cell diff and linear, instead of one loop with both mixed in;
+  a frame that fails to reach the terminal is no longer written to the recording
+- a correction to the 5.0 notes: under `pnl_test_create` animations are off, so a screen never
+  depends on timing; timers and toasts follow the virtual clock
+
 ## 5.5.0 - 2026-05-18
 
 Lighter: the same panel holding less, measured with the bench from 5.4.
