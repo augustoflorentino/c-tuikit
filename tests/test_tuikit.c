@@ -744,6 +744,43 @@ static void test_links(void)
     CHECK(strstr(data, "]8;;https://x.test/manual\\u001b") != NULL);
 }
 
+static void chart_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    static const double rising[] = {0.0, 12.5, 25.0, 50.0, 75.0, 100.0};
+    static const double wave[] = {0.0, 100.0, 50.0, 0.0, 25.0, 75.0, 100.0};
+    static const double pair[] = {10.0, 90.0};
+    static const char *const names[] = {"in", "out"};
+
+    (void)ctx;
+    (void)app;
+    pnl_canvas_chart(canvas, 0, 0, 6, 2, rising, 6, 100.0, 0);
+    pnl_canvas_columns(canvas, 8, 0, 8, 3, pair, names, 2, 100.0, PNL_METER_LEVEL);
+    pnl_canvas_plot(canvas, 18, 0, 4, 2, wave, 7, 0.0, 100.0, 0);
+    pnl_canvas_bar(canvas, 0, 4, 10, 0.5, PNL_METER_PERCENT);
+    pnl_canvas_plot(canvas, 0, 5, 4, 1000, wave, 7, 0.0, 100.0, 0);
+    pnl_canvas_chart(canvas, 0, 5, 4, 2, rising, 6, 0.0, 0);
+}
+
+static void open_charts(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    pnl_view_push(app, "charts", chart_draw, NULL, NULL);
+}
+
+static void test_charts(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+
+    CHECK(pnl_app_create("charts", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Open", open_charts, NULL) == PNL_OK);
+    CHECK(pnl_test_create(app, 30, 10, &test) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/charts.txt") == PNL_OK);
+    pnl_test_destroy(test);
+    pnl_app_destroy(app);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -788,5 +825,6 @@ int main(void)
     test_screens();
     test_links();
     test_inspector();
+    test_charts();
     return 0;
 }

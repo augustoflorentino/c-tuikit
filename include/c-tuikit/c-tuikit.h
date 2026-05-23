@@ -116,6 +116,7 @@ extern "C" {
 
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1
+#define PNL_METER_PERCENT 2
 
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
@@ -229,6 +230,12 @@ PNL_API int pnl_color_depth(void);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
 PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,
                                   size_t values_len, double max, int flags);
+PNL_API void pnl_canvas_chart(pnl_canvas_t *canvas, int x, int y, int width, int height, const double *values,
+                              size_t values_len, double max, int flags);
+PNL_API void pnl_canvas_columns(pnl_canvas_t *canvas, int x, int y, int width, int height, const double *values,
+                                const char *const *labels, size_t count, double max, int flags);
+PNL_API void pnl_canvas_plot(pnl_canvas_t *canvas, int x, int y, int width, int height, const double *values,
+                             size_t values_len, double min, double max, int flags);
 PNL_API int pnl_text_width(const char *text);
 PNL_API size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key);
 PNL_API const char *pnl_strerror(int status);

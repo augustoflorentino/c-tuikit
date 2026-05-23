@@ -84,26 +84,45 @@ static void tick(void *ctx, pnl_app_t *app)
     svc->load_len = svc->load_len < HISTORY ? svc->load_len + 1 : HISTORY;
 }
 
+static void draw_load(struct service *svc, pnl_canvas_t *canvas, const double *ordered, int width)
+{
+    static const char *const names[] = {"cpu0", "cpu1", "cpu2", "cpu3"};
+    double trend[HISTORY * 2];
+    double cores[4];
+    size_t i;
+
+    pnl_canvas_text(canvas, 2, 4, PNL_FG(PNL_ROLE_MUTED), "load");
+    pnl_canvas_sparkline(canvas, 8, 4, width - 6, ordered, svc->load_len, 100.0, PNL_METER_LEVEL);
+    pnl_canvas_text(canvas, 2, 6, PNL_FG(PNL_ROLE_MUTED), "now");
+    pnl_canvas_bar(canvas, 8, 6, 30, svc->load_len ? ordered[svc->load_len - 1] / 100.0 : 0.0,
+                   PNL_METER_LEVEL | PNL_METER_PERCENT);
+    pnl_canvas_text(canvas, 2, 8, PNL_FG(PNL_ROLE_MUTED), "chart");
+    pnl_canvas_chart(canvas, 8, 8, width / 2 - 8, 5, ordered, svc->load_len, 100.0, PNL_METER_LEVEL);
+    for (i = 0; i < 4; i++)
+        cores[i] = (double)((svc->ticks * (int)(i * 13 + 7)) % 100);
+    pnl_canvas_columns(canvas, width / 2 + 4, 8, 24, 6, cores, names, 4, 100.0, PNL_METER_LEVEL);
+    for (i = 0; i + 1 < svc->load_len * 2 && i < HISTORY * 2; i++)
+        trend[i] = (ordered[i / 2] + ordered[(i + 1) / 2]) / 2.0;
+    pnl_canvas_text(canvas, 2, 15, PNL_FG(PNL_ROLE_MUTED), "trend");
+    pnl_canvas_plot(canvas, 8, 15, width - 6, 4, trend, i, 0.0, 100.0, PNL_METER_LEVEL);
+}
+
 static void draw_live(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct service *svc = ctx;
     char line[64];
     int width = pnl_canvas_width(canvas) - 4;
     int filled = width > 0 ? svc->ticks % (width + 1) : 0;
-
-    (void)app;
     double ordered[HISTORY];
     size_t i;
 
+    (void)app;
     snprintf(line, sizeof(line), "%d ticks of 100 ms", svc->ticks);
     pnl_canvas_text(canvas, 2, 0, 0, line);
     pnl_canvas_fill(canvas, 2, 2, filled, 1, PNL_BG(PNL_ROLE_ACCENT));
     for (i = 0; i < svc->load_len; i++)
         ordered[i] = svc->load[(svc->ticks - (int)svc->load_len + (int)i) % HISTORY];
-    pnl_canvas_text(canvas, 2, 4, PNL_FG(PNL_ROLE_MUTED), "load");
-    pnl_canvas_sparkline(canvas, 8, 4, width - 6, ordered, svc->load_len, 100.0, PNL_METER_LEVEL);
-    pnl_canvas_text(canvas, 2, 6, PNL_FG(PNL_ROLE_MUTED), "now");
-    pnl_canvas_bar(canvas, 8, 6, 30, svc->load_len ? ordered[svc->load_len - 1] / 100.0 : 0.0, PNL_METER_LEVEL);
+    draw_load(svc, canvas, ordered, width);
 }
 
 static int live_key(void *ctx, pnl_app_t *app, int key)

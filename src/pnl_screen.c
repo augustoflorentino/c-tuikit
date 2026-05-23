@@ -317,7 +317,7 @@ static int pnl_linear_box(uint32_t cp)
 
 static int pnl_linear_skip(uint32_t cp)
 {
-    return cp == PNL_CONTINUATION || (cp >= 0x2500 && cp <= 0x259f);
+    return cp == PNL_CONTINUATION || (cp >= 0x2500 && cp <= 0x259f) || (cp >= 0x2800 && cp <= 0x28ff);
 }
 
 static int pnl_linear_row(struct pnl_screen *screen, const struct pnl_mem *mem, int y)

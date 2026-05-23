@@ -58,6 +58,7 @@
 #define PNL_STYLE_LINK(style) (((uint32_t)(style) >> 24) & 0xffu)
 #define PNL_LINKS 255
 #define PNL_LINK_POOL 8192
+#define PNL_PLOT_ROWS 256
 
 struct pnl_mem {
     pnl_alloc_fn alloc_fn;

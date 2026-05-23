@@ -42,7 +42,9 @@ up/down: move  enter: choose  ?: help  q: quit
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
   (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`)
-- bars, sparklines and status meters that shift from green to red as the value rises
+- charts for the canvas: bars (with the percentage inside if you like), sparklines, column
+  charts several rows tall, labeled columns side by side and line plots drawn with braille dots;
+  each one can shift from green to red as the value rises
 - a frame clock for small time-based animations: spinners, smooth bars, a fading highlight on
   values that change; optional sliding selection, screen transitions, pulse and typewriter
   (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
