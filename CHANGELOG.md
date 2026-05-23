@@ -4,6 +4,22 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.8.0 - 2026-05-23
+
+Charts: the canvas learns to draw more than one line of data.
+
+- `pnl_canvas_chart` draws a column chart several rows tall, one column per value, with eighths
+  of a row for a smooth top; the newest values stay when there are more than fit
+- `pnl_canvas_columns` draws a few labeled columns side by side, as wide as the space allows,
+  for comparing things at a glance (cores, disks, queues)
+- `pnl_canvas_plot` draws a line through the values with braille dots, two points per column and
+  four per row, joining each point to the next so steep changes stay a line
+- `PNL_METER_PERCENT` writes the percentage in the middle of a bar, inverted where the bar is
+  filled
+- `PNL_METER_LEVEL` works on all of them: chart columns shift from green to red as they rise
+- the linear mode leaves braille out, as it does with boxes and blocks
+- the live screen of `examples/basic.c` shows every one of them
+
 ## 5.7.0 - 2026-05-23
 
 Inspector: one key shows what the program is doing inside, while it does it.
