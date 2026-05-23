@@ -310,6 +310,14 @@ void pnl_nap_ms(int ms)
     poll(NULL, 0, ms);
 }
 
+long long pnl_clock_us(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
 long long pnl_os_now_ms(void)
 {
     struct timespec ts;

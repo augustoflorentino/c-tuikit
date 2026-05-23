@@ -57,6 +57,10 @@ up/down: move  enter: choose  ?: help  q: quit
 - web addresses anywhere on screen become clickable links (OSC 8), pointing to the whole address
   even when the screen cuts it short; `pnl_canvas_link` links any text, `TUIKIT_LINKS=off` turns
   them off
+- f12 opens the inspector, an X-ray of the running program: frame times with a sparkline, the
+  stack of screens, how many actions, values, timers, watches and tasks are alive, the state of
+  animations and of the terminal, and the last events (keys, timers, wakes, watches, resizes);
+  `TUIKIT_INSPECT=off` turns it off
 - for everyone: `TUIKIT_LINEAR=on` turns the panel into plain lines a screen reader can follow,
   `TUIKIT_CONTRAST=high` pushes every color to a strong contrast, and every action works from the
   keyboard alone

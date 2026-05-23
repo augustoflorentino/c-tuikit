@@ -18,6 +18,8 @@ static int pnl_keys_tilde(const unsigned char *data, size_t end)
     static const int codes[] = {PNL_KEY_NONE, PNL_KEY_HOME, PNL_KEY_NONE, PNL_KEY_DELETE, PNL_KEY_END,
                                 PNL_KEY_PAGE_UP, PNL_KEY_PAGE_DOWN, PNL_KEY_HOME, PNL_KEY_END};
 
+    if (end == 4 && data[2] == '2' && data[3] == '4')
+        return PNL_KEY_INSPECT;
     if (end != 3 || data[2] < '1' || data[2] > '8')
         return PNL_KEY_NONE;
     return codes[data[2] - '0'];

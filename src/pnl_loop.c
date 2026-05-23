@@ -332,6 +332,7 @@ void pnl_timers_run(pnl_app_t *app)
         if (timer->due_ms <= now)
             timer->due_ms = now + timer->interval_ms;
         app->dirty = 1;
+        pnl_inspect_event(app, PNL_EVENT_TIMER, timer->id);
         if (fn != NULL)
             fn(ctx, app);
     }
@@ -493,6 +494,7 @@ static int pnl_draw(pnl_app_t *app)
     const struct pnl_view *top = app->views_len ? &app->views[app->views_len - 1] : NULL;
     const char *footer = PNL_MENU_FOOTER;
     struct pnl_canvas canvas;
+    long long started = pnl_clock_us();
     int width;
     int height;
     int status;
@@ -522,7 +524,9 @@ static int pnl_draw(pnl_app_t *app)
     app->anim_frame = 0;
     if (app->screen.spinning)
         pnl_app_animate(app, PNL_SPIN_MS);
-    return pnl_screen_render(&app->screen, &app->mem);
+    status = pnl_screen_render(&app->screen, &app->mem);
+    pnl_inspect_frame(app, pnl_clock_us() - started, app->screen.out_len);
+    return status;
 }
 
 int pnl_is_mouse_key(int key)
@@ -586,7 +590,12 @@ static void pnl_dispatch_key(pnl_app_t *app, int key)
     key = pnl_keymap_apply(app, key);
     if (key == PNL_KEY_NONE)
         return;
+    pnl_inspect_event(app, PNL_EVENT_KEY, key);
     app->dirty = 1;
+    if (key == PNL_KEY_INSPECT) {
+        pnl_inspect_toggle(app);
+        return;
+    }
     if (key == PNL_KEY_CTRL_C) {
         app->quit = 1;
         return;
@@ -643,6 +652,7 @@ static void pnl_dispatch_watches(pnl_app_t *app, const unsigned char *ready)
         if (!ready[i])
             continue;
         app->dirty = 1;
+        pnl_inspect_event(app, PNL_EVENT_WATCH, watches[i].fd);
         watches[i].fn(watches[i].ctx, app, watches[i].fd);
     }
 }
@@ -655,8 +665,10 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
     while (status == PNL_OK && !app->quit && app->views_len >= min_views) {
         int input;
 
-        if (pnl_term_resized())
+        if (pnl_term_resized()) {
             app->screen.front_valid = 0;
+            pnl_inspect_event(app, PNL_EVENT_RESIZE, 0);
+        }
         if (app->dirty || !app->screen.front_valid)
             status = pnl_draw(app);
         if (status != PNL_OK)
@@ -668,6 +680,7 @@ int pnl_loop(pnl_app_t *app, size_t min_views)
         if (app->term.woken) {
             app->term.woken = 0;
             app->dirty = 1;
+            pnl_inspect_event(app, PNL_EVENT_WAKE, 0);
         }
         if (input > 0)
             status = pnl_read_keys(app);
@@ -781,6 +794,7 @@ int pnl_run_interactive(pnl_app_t *app)
     app->dirty = 1;
     app->screen.front_valid = 0;
     pnl_timers_restart(app);
+    pnl_inspect_start(app);
     pnl_record_open(app);
     status = pnl_loop(app, 0);
     pnl_record_close();

@@ -110,6 +110,7 @@ void pnl_app_destroy(pnl_app_t *app)
     pnl_menu_clear_lines(app);
     pnl_memory_free(app);
     pnl_mem_free(&app->mem, app->record_path);
+    pnl_inspect_free(app);
     pnl_mem_free(&app->mem, app->actions);
     pnl_mem_free(&app->mem, app->lines);
     pnl_mem_free(&app->mem, app->seen);

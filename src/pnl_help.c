@@ -9,7 +9,7 @@
 static const char pnl_menu_hints[] = "up/down: move  enter: run the selected action  1-9: run that action  "
                                      "letter: jump to the next action starting with it  q: quit";
 static const char pnl_global_hints[] = "?: this help  :: run any action by name  ctrl-c: quit  "
-                                       "ctrl-z: suspend";
+                                       "ctrl-z: suspend  f12: inspector";
 
 struct pnl_text {
     char data[PNL_HELP_MAX];

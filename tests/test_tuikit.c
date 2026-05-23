@@ -744,6 +744,32 @@ static void test_links(void)
     CHECK(strstr(data, "]8;;https://x.test/manual\\u001b") != NULL);
 }
 
+static void test_inspector(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+
+    CHECK(pnl_app_create("inspect", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Ask", ask_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_timer(app, 1000, tick, NULL, NULL) == PNL_OK);
+    CHECK(pnl_test_create(app, 100, 24, &test) == PNL_OK);
+    CHECK(pnl_test_wait(test, 1000) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter f12") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "drawn") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "menu > confirm (dialog)") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "1 actions") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "1 timers") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "key f12") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "key enter") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "timer 1") != NULL);
+    CHECK(pnl_test_keys(test, "f12") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "really?") != NULL);
+    CHECK(pnl_test_keys(test, "f12 q") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "really?") != NULL);
+    pnl_test_destroy(test);
+    pnl_app_destroy(app);
+}
+
 int main(void)
 {
     test_keys();
@@ -761,5 +787,6 @@ int main(void)
     test_alloc_failure();
     test_screens();
     test_links();
+    test_inspector();
     return 0;
 }

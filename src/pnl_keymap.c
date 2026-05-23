@@ -19,7 +19,7 @@ static const struct pnl_key_name pnl_key_names[] = {
     {"pgdn", PNL_KEY_PAGE_DOWN},  {"pagedown", PNL_KEY_PAGE_DOWN}, {"home", PNL_KEY_HOME},
     {"end", PNL_KEY_END},         {"backspace", PNL_KEY_BACKSPACE}, {"delete", PNL_KEY_DELETE},
     {"tab", PNL_KEY_TAB},         {"backtab", PNL_KEY_BACKTAB},   {"space", ' '},
-    {"none", PNL_KEY_NONE},
+    {"f12", PNL_KEY_INSPECT},     {"none", PNL_KEY_NONE},
 };
 
 int pnl_key_parse(const char *name, int *out_key)
@@ -55,6 +55,10 @@ void pnl_key_label(int key, char *out, size_t out_len)
     }
     if (key >= 1 && key <= 26)
         snprintf(out, out_len, "ctrl-%c", 'a' + key - 1);
+    else if (key >= 0x110000)
+        snprintf(out, out_len, "0x%x", (unsigned int)key);
+    else if (key >= 0x80)
+        out[pnl_utf8_put((uint32_t)key, out)] = '\0';
     else
         snprintf(out, out_len, "%c", key);
 }

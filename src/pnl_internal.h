@@ -24,6 +24,12 @@
 #define PNL_KEY_CTRL_C 3
 #define PNL_KEY_FOCUS_IN 0x110011
 #define PNL_KEY_FOCUS_OUT 0x110012
+#define PNL_KEY_INSPECT 0x110013
+#define PNL_EVENT_KEY 0
+#define PNL_EVENT_WAKE 1
+#define PNL_EVENT_TIMER 2
+#define PNL_EVENT_WATCH 3
+#define PNL_EVENT_RESIZE 4
 #define PNL_STATUS_TIMER_NONE 0
 #define PNL_TASK_TICK_MS 50
 #define PNL_FRAME_MS 33
@@ -238,6 +244,8 @@ struct pnl_toast {
     char text[PNL_TOAST_TEXT];
 };
 
+struct pnl_inspect;
+
 struct pnl_app {
     struct pnl_mem mem;
     char *title;
@@ -277,6 +285,7 @@ struct pnl_app {
     size_t bindings_len;
     char *memory_path;
     char *record_path;
+    struct pnl_inspect *inspect;
     struct pnl_memo *memos;
     size_t memos_len;
     size_t memos_cap;
@@ -360,6 +369,12 @@ PNL_INTERNAL int pnl_os_wait(struct pnl_term *term, const struct pnl_watch *watc
 PNL_INTERNAL long long pnl_os_now_ms(void);
 PNL_INTERNAL int pnl_virtual_active(void);
 PNL_INTERNAL int pnl_env_off(const char *name);
+PNL_INTERNAL long long pnl_clock_us(void);
+PNL_INTERNAL void pnl_inspect_start(pnl_app_t *app);
+PNL_INTERNAL void pnl_inspect_free(pnl_app_t *app);
+PNL_INTERNAL void pnl_inspect_frame(pnl_app_t *app, long long took_us, size_t bytes);
+PNL_INTERNAL void pnl_inspect_event(pnl_app_t *app, int kind, int arg);
+PNL_INTERNAL void pnl_inspect_toggle(pnl_app_t *app);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
 PNL_INTERNAL void pnl_record_output(const char *data, size_t data_len, int width, int height);
 PNL_INTERNAL void pnl_record_close(void);

@@ -351,6 +351,17 @@ void pnl_nap_ms(int ms)
     Sleep((DWORD)ms);
 }
 
+long long pnl_clock_us(void)
+{
+    LARGE_INTEGER count;
+    LARGE_INTEGER rate;
+
+    QueryPerformanceCounter(&count);
+    QueryPerformanceFrequency(&rate);
+    return (long long)(count.QuadPart / rate.QuadPart * 1000000 +
+                       count.QuadPart % rate.QuadPart * 1000000 / rate.QuadPart);
+}
+
 long long pnl_os_now_ms(void)
 {
     return (long long)GetTickCount64();
