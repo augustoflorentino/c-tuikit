@@ -315,6 +315,7 @@ PNL_INTERNAL void pnl_mem_free(const struct pnl_mem *mem, void *ptr);
 PNL_INTERNAL char *pnl_mem_copy(const struct pnl_mem *mem, const char *text);
 PNL_INTERNAL int pnl_mem_grow(const struct pnl_mem *mem, void **items, size_t *cap, size_t needed, size_t item_size);
 
+PNL_INTERNAL size_t pnl_utf8_put(uint32_t cp, char *out);
 PNL_INTERNAL size_t pnl_utf8_next(const char *text, size_t text_len, uint32_t *out_cp);
 PNL_INTERNAL int pnl_cp_width(uint32_t cp);
 
@@ -358,6 +359,7 @@ PNL_INTERNAL int pnl_os_wait(struct pnl_term *term, const struct pnl_watch *watc
                              int timeout_ms, unsigned char *out_ready);
 PNL_INTERNAL long long pnl_os_now_ms(void);
 PNL_INTERNAL int pnl_virtual_active(void);
+PNL_INTERNAL int pnl_env_off(const char *name);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
 PNL_INTERNAL void pnl_record_output(const char *data, size_t data_len, int width, int height);
 PNL_INTERNAL void pnl_record_close(void);

@@ -60,6 +60,13 @@ int pnl_mem_grow(const struct pnl_mem *mem, void **items, size_t *cap, size_t ne
     return PNL_OK;
 }
 
+int pnl_env_off(const char *name)
+{
+    const char *value = getenv(name);
+
+    return value != NULL && (strcmp(value, "off") == 0 || strcmp(value, "0") == 0);
+}
+
 int pnl_app_create(const char *title, const pnl_allocator_t *allocator, pnl_app_t **out_app)
 {
     struct pnl_mem mem;

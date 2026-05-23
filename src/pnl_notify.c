@@ -13,7 +13,7 @@ static int pnl_notify_mode(void)
 
     if (setting == NULL || setting[0] == '\0')
         return 2;
-    if (strcmp(setting, "off") == 0 || strcmp(setting, "0") == 0)
+    if (pnl_env_off("TUIKIT_NOTIFY"))
         return 0;
     return strcmp(setting, "bell") == 0 ? 1 : 2;
 }

@@ -212,28 +212,8 @@ static int pnl_out_style(struct pnl_screen *screen, const struct pnl_mem *mem, u
 static int pnl_out_cp(struct pnl_screen *screen, const struct pnl_mem *mem, uint32_t cp)
 {
     char buf[4];
-    size_t len;
 
-    if (cp < 0x80) {
-        buf[0] = (char)cp;
-        len = 1;
-    } else if (cp < 0x800) {
-        buf[0] = (char)(0xc0 | (cp >> 6));
-        buf[1] = (char)(0x80 | (cp & 0x3f));
-        len = 2;
-    } else if (cp < 0x10000) {
-        buf[0] = (char)(0xe0 | (cp >> 12));
-        buf[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
-        buf[2] = (char)(0x80 | (cp & 0x3f));
-        len = 3;
-    } else {
-        buf[0] = (char)(0xf0 | (cp >> 18));
-        buf[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
-        buf[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
-        buf[3] = (char)(0x80 | (cp & 0x3f));
-        len = 4;
-    }
-    return pnl_out(screen, mem, buf, len);
+    return pnl_out(screen, mem, buf, pnl_utf8_put(cp, buf));
 }
 
 static int pnl_cell_same(const struct pnl_cell *a, const struct pnl_cell *b)
@@ -389,35 +369,41 @@ static int pnl_linear_render(struct pnl_screen *screen, const struct pnl_mem *me
     return status;
 }
 
-int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
+static int pnl_diff_render(struct pnl_screen *screen, const struct pnl_mem *mem)
 {
     struct pnl_pen pen = {-1, -1, 0, 0, 0};
-    size_t count = (size_t)screen->width * (size_t)screen->height;
     int status = PNL_OK;
     int y;
 
-    screen->out_len = 0;
-    if (screen->links_hash != screen->links_drawn)
-        screen->front_valid = 0;
-    screen->links_drawn = screen->links_hash;
-    if (screen->linear)
-        status = pnl_linear_render(screen, mem);
-    else if (!screen->front_valid)
+    if (!screen->front_valid)
         status = pnl_out(screen, mem, "\x1b[0m\x1b[2J", 8);
-    for (y = 0; y < screen->height && status == PNL_OK && !screen->linear; y++)
+    for (y = 0; y < screen->height && status == PNL_OK; y++)
         status = pnl_render_row(screen, mem, &pen, y);
     if (status == PNL_OK && pen.link > 0)
         status = pnl_out_link(screen, mem, &pen, 0);
     if (status == PNL_OK && pen.style_known)
         status = pnl_out(screen, mem, "\x1b[0m", 4);
+    return status;
+}
+
+int pnl_screen_render(struct pnl_screen *screen, const struct pnl_mem *mem)
+{
+    size_t count = (size_t)screen->width * (size_t)screen->height;
+    int status;
+
+    screen->out_len = 0;
+    if (screen->links_hash != screen->links_drawn)
+        screen->front_valid = 0;
+    screen->links_drawn = screen->links_hash;
+    status = screen->linear ? pnl_linear_render(screen, mem) : pnl_diff_render(screen, mem);
     if (status == PNL_OK && screen->out_len > 0)
         status = pnl_term_write(screen->out, screen->out_len);
-    if (status == PNL_OK && screen->out_len > 0)
-        pnl_record_output(screen->out, screen->out_len, screen->width, screen->height);
     if (status != PNL_OK) {
         screen->front_valid = 0;
         return status;
     }
+    if (screen->out_len > 0)
+        pnl_record_output(screen->out, screen->out_len, screen->width, screen->height);
     memcpy(screen->front, screen->back, count * sizeof(*screen->front));
     screen->front_valid = 1;
     return PNL_OK;

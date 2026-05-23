@@ -710,7 +710,7 @@ static int pnl_motion_detect(pnl_app_t *app)
 
     if (motion != NULL && strcmp(motion, "all") == 0)
         app->motion_flags = PNL_MOTION_ALL;
-    if (motion != NULL && (strcmp(motion, "off") == 0 || strcmp(motion, "0") == 0))
+    if (pnl_env_off("TUIKIT_MOTION"))
         return 0;
     if (motion != NULL && (strcmp(motion, "on") == 0 || strcmp(motion, "all") == 0))
         return 1;
@@ -752,16 +752,13 @@ static void pnl_remember_action(pnl_app_t *app)
 
 int pnl_run_interactive(pnl_app_t *app)
 {
-    const char *mouse = getenv("TUIKIT_MOUSE");
     const char *linear = getenv("TUIKIT_LINEAR");
-    const char *links = getenv("TUIKIT_LINKS");
     int status;
 
-    app->term.linear = linear != NULL && linear[0] != '\0' && strcmp(linear, "off") != 0 && strcmp(linear, "0") != 0;
+    app->term.linear = linear != NULL && linear[0] != '\0' && !pnl_env_off("TUIKIT_LINEAR");
     app->screen.linear = app->term.linear && !pnl_virtual_active();
-    app->screen.links_off = links != NULL && (strcmp(links, "off") == 0 || strcmp(links, "0") == 0);
-    app->term.mouse = !pnl_virtual_active() && !app->term.linear &&
-                      (mouse == NULL || (strcmp(mouse, "off") != 0 && strcmp(mouse, "0") != 0));
+    app->screen.links_off = pnl_env_off("TUIKIT_LINKS");
+    app->term.mouse = !pnl_virtual_active() && !app->term.linear && !pnl_env_off("TUIKIT_MOUSE");
     status = pnl_term_enter(&app->term);
 
     if (status != PNL_OK)

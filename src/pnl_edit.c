@@ -36,34 +36,10 @@ static void pnl_edit_cut(struct pnl_edit *edit, size_t from, size_t to)
     edit->cursor = from;
 }
 
-static size_t pnl_edit_encode(int cp, char *out)
-{
-    if (cp < 0x80) {
-        out[0] = (char)cp;
-        return 1;
-    }
-    if (cp < 0x800) {
-        out[0] = (char)(0xc0 | (cp >> 6));
-        out[1] = (char)(0x80 | (cp & 0x3f));
-        return 2;
-    }
-    if (cp < 0x10000) {
-        out[0] = (char)(0xe0 | (cp >> 12));
-        out[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
-        out[2] = (char)(0x80 | (cp & 0x3f));
-        return 3;
-    }
-    out[0] = (char)(0xf0 | (cp >> 18));
-    out[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
-    out[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
-    out[3] = (char)(0x80 | (cp & 0x3f));
-    return 4;
-}
-
 static int pnl_edit_insert(struct pnl_edit *edit, int cp)
 {
     char bytes[4];
-    size_t n = pnl_edit_encode(cp, bytes);
+    size_t n = pnl_utf8_put((uint32_t)cp, bytes);
 
     if (edit->len + n >= edit->cap)
         return 1;

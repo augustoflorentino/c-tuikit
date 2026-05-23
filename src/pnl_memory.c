@@ -252,13 +252,12 @@ static int pnl_memory_default(const pnl_app_t *app, char *path)
 int pnl_app_set_memory(pnl_app_t *app, const char *path)
 {
     char fallback[PNL_MEMORY_PATH_MAX];
-    const char *setting = getenv("TUIKIT_MEMORY");
     char *copy;
 
     if (app == NULL || (path != NULL && (path[0] == '\0' || strlen(path) + 5 >= PNL_MEMORY_PATH_MAX)))
         return PNL_ERR_ARG;
     pnl_memory_free(app);
-    if (setting != NULL && (strcmp(setting, "off") == 0 || strcmp(setting, "0") == 0))
+    if (pnl_env_off("TUIKIT_MEMORY"))
         return PNL_OK;
     if (path == NULL && !pnl_memory_default(app, fallback))
         return PNL_OK;

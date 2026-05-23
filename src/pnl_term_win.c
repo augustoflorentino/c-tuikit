@@ -206,33 +206,9 @@ int pnl_os_resized(void)
     return InterlockedExchange(&pnl_term_winch, 0) != 0;
 }
 
-static size_t pnl_term_encode(unsigned int cp, unsigned char *out)
-{
-    if (cp < 0x80) {
-        out[0] = (unsigned char)cp;
-        return 1;
-    }
-    if (cp < 0x800) {
-        out[0] = (unsigned char)(0xc0 | (cp >> 6));
-        out[1] = (unsigned char)(0x80 | (cp & 0x3f));
-        return 2;
-    }
-    if (cp < 0x10000) {
-        out[0] = (unsigned char)(0xe0 | (cp >> 12));
-        out[1] = (unsigned char)(0x80 | ((cp >> 6) & 0x3f));
-        out[2] = (unsigned char)(0x80 | (cp & 0x3f));
-        return 3;
-    }
-    out[0] = (unsigned char)(0xf0 | (cp >> 18));
-    out[1] = (unsigned char)(0x80 | ((cp >> 12) & 0x3f));
-    out[2] = (unsigned char)(0x80 | ((cp >> 6) & 0x3f));
-    out[3] = (unsigned char)(0x80 | (cp & 0x3f));
-    return 4;
-}
-
 static void pnl_term_take_unit(struct pnl_term *term, unsigned int unit)
 {
-    unsigned char bytes[4];
+    char bytes[4];
     unsigned int cp = unit;
     size_t len;
 
@@ -246,7 +222,7 @@ static void pnl_term_take_unit(struct pnl_term *term, unsigned int unit)
         cp = 0x10000 + ((term->surrogate - 0xd800) << 10) + (unit - 0xdc00);
     }
     term->surrogate = 0;
-    len = pnl_term_encode(cp, bytes);
+    len = pnl_utf8_put(cp, bytes);
     if (term->input_len + len > PNL_INPUT_MAX)
         return;
     memcpy(term->input + term->input_len, bytes, len);

@@ -118,30 +118,6 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     return PNL_OK;
 }
 
-static size_t pnl_virtual_utf8(uint32_t cp, char *out)
-{
-    if (cp < 0x80) {
-        out[0] = (char)cp;
-        return 1;
-    }
-    if (cp < 0x800) {
-        out[0] = (char)(0xc0 | (cp >> 6));
-        out[1] = (char)(0x80 | (cp & 0x3f));
-        return 2;
-    }
-    if (cp < 0x10000) {
-        out[0] = (char)(0xe0 | (cp >> 12));
-        out[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
-        out[2] = (char)(0x80 | (cp & 0x3f));
-        return 3;
-    }
-    out[0] = (char)(0xf0 | (cp >> 18));
-    out[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
-    out[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
-    out[3] = (char)(0x80 | (cp & 0x3f));
-    return 4;
-}
-
 static void pnl_virtual_snapshot(pnl_test_t *test, const struct pnl_screen *screen)
 {
     const struct pnl_cell *cells = screen->front_valid ? screen->front : screen->back;
@@ -156,7 +132,7 @@ static void pnl_virtual_snapshot(pnl_test_t *test, const struct pnl_screen *scre
             uint32_t cp = cells[(size_t)y * (size_t)screen->width + (size_t)x].cp;
 
             if (cp != 0)
-                len += pnl_virtual_utf8(cp, test->text + len);
+                len += pnl_utf8_put(cp, test->text + len);
             if (cp != 0 && cp != ' ')
                 row = len;
         }
@@ -247,8 +223,6 @@ static void pnl_test_main(void *arg)
 
 static int pnl_test_push(pnl_test_t *test, int key)
 {
-    int status;
-
     pnl_lock(&test->lock);
     if (test->finished) {
         pnl_unlock(&test->lock);
@@ -257,8 +231,7 @@ static int pnl_test_push(pnl_test_t *test, int key)
     test->keys[test->keys_len++] = key;
     test->idle = 0;
     pnl_unlock(&test->lock);
-    status = pnl_test_settle(test);
-    return status;
+    return pnl_test_settle(test);
 }
 
 static void pnl_test_free(pnl_test_t *test)
