@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.9.0 - 2026-05-30
+
+Entrances: things on screen arrive and leave instead of popping in and out.
+
+- `PNL_MOTION_ENTER` is a new motion, part of `TUIKIT_MOTION=all`:
+  - a dialog grows from the middle as it opens, as an empty frame, and shows its content once
+    it is full size; when it closes, its frame shrinks away over what is under it
+  - a notification slides back out to the right before it goes, the way it came in
+  - when the panel opens, the menu items arrive one after the other from the right; after the
+    eighth they come together, so a long menu is not slower
+- keys are never held back: a dialog takes keys while it grows
+- `examples/basic.c` turns on sliding, transitions and entrances, so the tour shows them
+
 ## 5.8.0 - 2026-05-23
 
 Charts: the canvas learns to draw more than one line of data.
