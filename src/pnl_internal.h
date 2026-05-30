@@ -35,7 +35,12 @@
 #define PNL_FRAME_MS 33
 #define PNL_SPIN_MS 80
 #define PNL_GLIDE_MS 140
-#define PNL_MOTION_ALL (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER)
+#define PNL_MOTION_ALL                                                                                          \
+    (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER | PNL_MOTION_ENTER)
+#define PNL_ENTER_MS 150
+#define PNL_EXIT_MS 120
+#define PNL_CASCADE_STEP_MS 30
+#define PNL_CASCADE_STEPS 8
 #define PNL_PULSE_MS 1200
 #define PNL_PULSE_DEPTH 7
 #define PNL_TYPE_CHAR_MS 12
@@ -233,6 +238,15 @@ struct pnl_view {
     int box_y;
     int box_width;
     int box_height;
+    long long shown_ms;
+};
+
+struct pnl_ghost {
+    long long ms;
+    int x;
+    int y;
+    int width;
+    int height;
 };
 
 #define PNL_CELL_MAX 256
@@ -302,6 +316,8 @@ struct pnl_app {
     long reply_ms;
     struct pnl_glide select_glide;
     long long transition_ms;
+    long long cascade_ms;
+    struct pnl_ghost ghost;
     int transition_shift;
     int anim_frame;
     long long frame_ms;
@@ -424,6 +440,8 @@ PNL_INTERNAL int pnl_is_mouse_key(int key);
 PNL_INTERNAL long long pnl_toasts_next_ms(const pnl_app_t *app);
 PNL_INTERNAL void pnl_toasts_expire(pnl_app_t *app);
 PNL_INTERNAL void pnl_toasts_draw(pnl_app_t *app);
+PNL_INTERNAL void pnl_ghost_draw(pnl_app_t *app);
+PNL_INTERNAL double pnl_ease_out(double t);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);

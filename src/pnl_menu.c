@@ -192,6 +192,20 @@ static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t in
     pnl_canvas_text(canvas, 6, y, style, label);
 }
 
+static void pnl_cascade_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t index)
+{
+    struct pnl_canvas row = *canvas;
+    size_t step = index - app->menu_top < PNL_CASCADE_STEPS ? index - app->menu_top : PNL_CASCADE_STEPS;
+    double t = 1.0;
+
+    if (pnl_motion_on(app, PNL_MOTION_ENTER))
+        t = pnl_app_tween(app, app->cascade_ms + (long long)step * PNL_CASCADE_STEP_MS, PNL_ENTER_MS);
+    if (t <= 0.0)
+        return;
+    row.x += (int)((1.0 - pnl_ease_out(t)) * 8 + 0.5);
+    pnl_draw_item(app, &row, y, index);
+}
+
 static void pnl_menu_scroll(pnl_app_t *app, size_t rows)
 {
     if (rows == 0)
@@ -230,7 +244,7 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     first = y;
     app->menu_y = canvas->y + first;
     for (i = app->menu_top; i <= app->actions_len && y < pnl_canvas_height(canvas); i++)
-        pnl_draw_item(app, canvas, y++, i);
+        pnl_cascade_item(app, canvas, y++, i);
     app->menu_end = canvas->y + y;
     pnl_glide_to(app, &app->select_glide, (double)app->selected, PNL_MOTION_SLIDE);
     marker = first + (int)(pnl_glide_at(app, &app->select_glide, PNL_MOTION_SLIDE) + 0.5) - (int)app->menu_top;

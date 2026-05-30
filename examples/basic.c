@@ -332,6 +332,8 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_set_memory(app, NULL);
     if (status == PNL_OK)
+        status = pnl_app_enable_motion(app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_ENTER);
+    if (status == PNL_OK)
         status = pnl_app_add_action(app, "Start", start, &svc);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Stop", stop, &svc);

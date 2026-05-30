@@ -50,6 +50,32 @@ static int pnl_clamp_size(int want, int room)
     return want < 1 ? 1 : want > room ? room : want;
 }
 
+static void pnl_box_scaled(struct pnl_screen *screen, int x, int y, int width, int height, double scale, int style)
+{
+    int w = (int)(width * scale + 0.5);
+    int h = (int)(height * scale + 0.5);
+
+    w = w < 5 ? 5 : w;
+    h = h < 3 ? 3 : h;
+    pnl_box(screen, x + (width - w) / 2, y + (height - h) / 2, w, h, style, NULL);
+}
+
+void pnl_ghost_draw(pnl_app_t *app)
+{
+    struct pnl_ghost *ghost = &app->ghost;
+    double t;
+
+    if (ghost->ms == 0)
+        return;
+    t = pnl_app_tween(app, ghost->ms, PNL_EXIT_MS);
+    if (t >= 1.0 || !pnl_motion_on(app, PNL_MOTION_ENTER)) {
+        ghost->ms = 0;
+        return;
+    }
+    pnl_box_scaled(&app->screen, ghost->x, ghost->y, ghost->width, ghost->height, 1.0 - 0.6 * pnl_ease_out(t),
+                   PNL_FG(PNL_ROLE_MUTED));
+}
+
 void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *view, int focused)
 {
     struct pnl_canvas inner;
@@ -57,10 +83,20 @@ void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *
     int height = pnl_clamp_size(view->dialog_height + 2, area->height);
     int x = area->x + (area->width - width) / 2;
     int y = area->y + (area->height - height) / 2;
+    int style = PNL_FG(focused ? PNL_ROLE_ACCENT : PNL_ROLE_MUTED);
+    double t = pnl_motion_on(app, PNL_MOTION_ENTER) ? pnl_app_tween(app, view->shown_ms, PNL_ENTER_MS) : 1.0;
 
     if (width < 5 || height < 3)
         return;
-    pnl_box(area->screen, x, y, width, height, PNL_FG(focused ? PNL_ROLE_ACCENT : PNL_ROLE_MUTED), view->title);
+    view->box_x = x;
+    view->box_y = y;
+    view->box_width = width;
+    view->box_height = height;
+    if (t < 1.0) {
+        pnl_box_scaled(area->screen, x, y, width, height, 0.4 + 0.6 * pnl_ease_out(t), style);
+        return;
+    }
+    pnl_box(area->screen, x, y, width, height, style, view->title);
     inner.screen = area->screen;
     inner.focused = focused;
     inner.x = x + 2;
@@ -69,10 +105,6 @@ void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *
     inner.height = height - 2;
     view->origin_x = inner.x;
     view->origin_y = inner.y;
-    view->box_x = x;
-    view->box_y = y;
-    view->box_width = width;
-    view->box_height = height;
     view->draw_fn(view->ctx, app, &inner);
 }
 
@@ -101,7 +133,14 @@ int pnl_toast(pnl_app_t *app, int mark, const char *text)
 
 long long pnl_toasts_next_ms(const pnl_app_t *app)
 {
-    return app->toasts_len > 0 ? app->toasts[0].shown_ms + PNL_TOAST_MS : -1;
+    long long gone;
+
+    if (app->toasts_len == 0)
+        return -1;
+    gone = app->toasts[0].shown_ms + PNL_TOAST_MS;
+    if (pnl_motion_on(app, PNL_MOTION_ENTER) && gone - PNL_EXIT_MS > pnl_term_now_ms())
+        return gone - PNL_EXIT_MS;
+    return gone;
 }
 
 void pnl_toasts_expire(pnl_app_t *app)
@@ -111,6 +150,9 @@ void pnl_toasts_expire(pnl_app_t *app)
 
     while (gone < app->toasts_len && app->toasts[gone].shown_ms + PNL_TOAST_MS <= now)
         gone++;
+    if (gone < app->toasts_len && pnl_motion_on(app, PNL_MOTION_ENTER) &&
+        app->toasts[gone].shown_ms + PNL_TOAST_MS - PNL_EXIT_MS <= now)
+        pnl_app_animate(app, PNL_EXIT_MS);
     if (gone == 0)
         return;
     memmove(app->toasts, app->toasts + gone, (app->toasts_len - gone) * sizeof(app->toasts[0]));
@@ -125,8 +167,13 @@ static void pnl_toast_draw(pnl_app_t *app, const struct pnl_toast *toast, int y)
     int style = PNL_BG(PNL_ROLE_SURFACE);
     double t = pnl_motion_on(app, PNL_MOTION_TRANSITION) ? pnl_app_tween(app, toast->shown_ms, PNL_TOAST_SLIDE_MS)
                                                          : 1.0;
+    long long left = toast->shown_ms + PNL_TOAST_MS - pnl_app_frame_ms(app);
     int x;
 
+    if (pnl_motion_on(app, PNL_MOTION_ENTER) && left < PNL_EXIT_MS)
+        t = left <= 0 ? 0.0 : t * pnl_ease_out((double)left / PNL_EXIT_MS);
+    if (t <= 0.0)
+        return;
     if (width > screen->width - 2)
         width = screen->width - 2;
     x = screen->width - 1 - (int)(t * width + 0.5);

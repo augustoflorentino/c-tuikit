@@ -46,8 +46,9 @@ up/down: move  enter: choose  ?: help  q: quit
   charts several rows tall, labeled columns side by side and line plots drawn with braille dots;
   each one can shift from green to red as the value rises
 - a frame clock for small time-based animations: spinners, smooth bars, a fading highlight on
-  values that change; optional sliding selection, screen transitions, pulse and typewriter
-  (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
+  values that change; optional sliding selection, screen transitions, pulse, typewriter and
+  entrances (`PNL_MOTION_ENTER`: dialogs grow in and shrink away, notifications slide out, menu
+  items arrive one after the other) (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
   or on their own over a slow SSH link
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the

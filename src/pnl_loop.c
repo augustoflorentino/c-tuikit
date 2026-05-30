@@ -54,7 +54,8 @@ int pnl_view_push_internal(pnl_app_t *app, const struct pnl_view *view)
 
     if (status != PNL_OK)
         return status;
-    app->views[app->views_len++] = *view;
+    app->views[app->views_len] = *view;
+    app->views[app->views_len++].shown_ms = pnl_term_now_ms();
     if (view->dialog_width == 0)
         pnl_transition_start(app, 3);
     app->dirty = 1;
@@ -117,6 +118,14 @@ int pnl_view_pop(pnl_app_t *app)
     if (app->views_len == 0)
         return PNL_ERR_NOT_FOUND;
     view = app->views[--app->views_len];
+    if (view.dialog_width > 0 && pnl_motion_on(app, PNL_MOTION_ENTER) && view.box_width > 0) {
+        app->ghost.ms = pnl_term_now_ms();
+        app->ghost.x = view.box_x;
+        app->ghost.y = view.box_y;
+        app->ghost.width = view.box_width;
+        app->ghost.height = view.box_height;
+        pnl_app_animate(app, PNL_EXIT_MS);
+    }
     pnl_mem_free(&app->mem, view.title);
     pnl_mem_free(&app->mem, view.hints);
     if (view.drop_fn != NULL)
@@ -274,6 +283,11 @@ int pnl_app_animate(pnl_app_t *app, int duration_ms)
     if (until > app->animate_until_ms)
         app->animate_until_ms = until;
     return PNL_OK;
+}
+
+double pnl_ease_out(double t)
+{
+    return 1.0 - (1.0 - t) * (1.0 - t);
 }
 
 double pnl_app_tween(pnl_app_t *app, long long start_ms, int duration_ms)
@@ -484,6 +498,7 @@ static void pnl_draw_views(pnl_app_t *app, pnl_canvas_t *canvas)
         app->views[base - 1].draw_fn(app->views[base - 1].ctx, app, canvas);
     else
         pnl_menu_draw(app, canvas);
+    pnl_ghost_draw(app);
     for (i = base; i < app->views_len; i++)
         pnl_dialog_draw(app, canvas, &app->views[i], i + 1 == app->views_len);
 }
@@ -777,6 +792,7 @@ int pnl_run_interactive(pnl_app_t *app)
     if (status != PNL_OK)
         return status;
     app->running = 1;
+    app->cascade_ms = pnl_term_now_ms();
     app->quit = 0;
     if (!pnl_virtual_active()) {
         pnl_memory_load(app);
