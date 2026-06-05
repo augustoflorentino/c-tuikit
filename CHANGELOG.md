@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.10.0 - 2026-06-05
+
+Feedback: the panel answers what you do with a small movement.
+
+- `PNL_MOTION_FEEDBACK` is a new motion, part of `TUIKIT_MOTION=all`:
+  - a dialog shakes from side to side when it gets a key it does not take: a letter other than
+    y or n in a confirmation, enter in a pick list with nothing left after the filter
+  - the action you choose flashes in the menu and fades back
+  - a light runs along the bar of a task while it works, so a slow task still looks alive
+- `pnl_view_shake` shakes the screen on top, or its dialog, from your own key handler; with
+  the motion off it does nothing
+- `examples/basic.c` turns feedback on
+
 ## 5.9.0 - 2026-05-30
 
 Entrances: things on screen arrive and leave instead of popping in and out.
