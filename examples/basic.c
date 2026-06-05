@@ -36,6 +36,7 @@ struct service {
 static void show_status(void *ctx, pnl_app_t *app)
 {
     struct service *svc = ctx;
+    long now = (long)time(NULL) % 997;
     char line[64];
 
     pnl_status_line(app, PNL_MARK_OK, "config", "file found");
@@ -46,6 +47,8 @@ static void show_status(void *ctx, pnl_app_t *app)
     snprintf(line, sizeof(line), "running for %lds", (long)time(NULL) - svc->started);
     pnl_status_line(app, PNL_MARK_OK, "service", line);
     pnl_status_meter(app, PNL_MARK_OK, "memory", (double)((time(NULL) - svc->started) % 60) / 60.0);
+    snprintf(line, sizeof(line), "%ld requests per second", 120 + now * now * 31 % 880);
+    pnl_status_line(app, PNL_MARK_OK, "traffic", line);
 }
 
 static void start(void *ctx, pnl_app_t *app)
@@ -333,7 +336,7 @@ int main(int argc, char **argv)
         status = pnl_app_set_memory(app, NULL);
     if (status == PNL_OK)
         status = pnl_app_enable_motion(app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_ENTER |
-                                                     PNL_MOTION_FEEDBACK);
+                                                     PNL_MOTION_FEEDBACK | PNL_MOTION_COUNT);
     if (status == PNL_OK)
         status = pnl_app_add_action(app, "Start", start, &svc);
     if (status == PNL_OK)

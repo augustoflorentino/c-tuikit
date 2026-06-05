@@ -49,7 +49,9 @@ up/down: move  enter: choose  ?: help  q: quit
   values that change; optional sliding selection, screen transitions, pulse, typewriter and
   entrances (`PNL_MOTION_ENTER`: dialogs grow in and shrink away, notifications slide out, menu
   items arrive one after the other) and feedback (`PNL_MOTION_FEEDBACK`: a dialog shakes at a
-  key it does not take, the chosen action flashes, a light runs along progress bars)
+  key it does not take, the chosen action flashes, a light runs along progress bars) and live
+  numbers (`PNL_MOTION_COUNT`: a number in a status line counts up or down to its new value, a
+  meter glides to its new level)
   (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
   or on their own over a slow SSH link
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the

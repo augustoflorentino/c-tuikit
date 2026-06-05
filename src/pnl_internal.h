@@ -37,12 +37,13 @@
 #define PNL_GLIDE_MS 140
 #define PNL_MOTION_ALL                                                                                          \
     (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER | PNL_MOTION_ENTER | \
-     PNL_MOTION_FEEDBACK)
+     PNL_MOTION_FEEDBACK | PNL_MOTION_COUNT)
 #define PNL_ENTER_MS 150
 #define PNL_EXIT_MS 120
 #define PNL_CASCADE_STEP_MS 30
 #define PNL_CASCADE_STEPS 8
 #define PNL_SHAKE_MS 240
+#define PNL_COUNT_MS 450
 #define PNL_SHIMMER_MS 1200
 #define PNL_PULSE_MS 1200
 #define PNL_PULSE_DEPTH 7
@@ -205,6 +206,13 @@ struct pnl_seen {
     unsigned long id;
     unsigned long hash;
     long long changed_ms;
+    long long count_ms;
+    unsigned long count_prefix;
+    double count_from;
+    double count_to;
+    long long meter_ms;
+    double meter_from;
+    double meter_to;
 };
 
 struct pnl_timer {

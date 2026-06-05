@@ -257,7 +257,7 @@ static void test_motion(void)
     CHECK(pnl_app_motion(NULL) == 0);
     CHECK(pnl_app_frame_ms(NULL) == 0);
     CHECK(pnl_app_enable_motion(app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER |
-                                         PNL_MOTION_ENTER | PNL_MOTION_FEEDBACK) == PNL_OK);
+                                         PNL_MOTION_ENTER | PNL_MOTION_FEEDBACK | PNL_MOTION_COUNT) == PNL_OK);
     CHECK(pnl_app_enable_motion(app, 0x4000) == PNL_ERR_ARG);
     CHECK(pnl_app_enable_motion(NULL, PNL_MOTION_SLIDE) == PNL_ERR_ARG);
     pnl_app_destroy(app);

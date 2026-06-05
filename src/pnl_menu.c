@@ -1,6 +1,7 @@
 #include "pnl_internal.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PNL_QUIT_LABEL "Quit"
@@ -133,6 +134,88 @@ static const struct pnl_seen *pnl_seen_find(const pnl_app_t *app, unsigned long 
     return NULL;
 }
 
+static const char *pnl_number_at(const char *text, double *number)
+{
+    const char *at = text;
+    char *end;
+
+    while (*at != '\0' && !(*at >= '0' && *at <= '9'))
+        at++;
+    if (*at == '\0')
+        return NULL;
+    if (at > text && at[-1] == '-')
+        at--;
+    *number = strtod(at, &end);
+    return end > at ? at : NULL;
+}
+
+static double pnl_count_shown(pnl_app_t *app, const struct pnl_seen *seen)
+{
+    double t = seen->count_ms != 0 ? pnl_ease_out(pnl_app_tween(app, seen->count_ms, PNL_COUNT_MS)) : 1.0;
+
+    return seen->count_from + (seen->count_to - seen->count_from) * t;
+}
+
+static double pnl_meter_shown(pnl_app_t *app, const struct pnl_seen *seen)
+{
+    double t = seen->meter_ms != 0 ? pnl_ease_out(pnl_app_tween(app, seen->meter_ms, PNL_COUNT_MS)) : 1.0;
+
+    return seen->meter_from + (seen->meter_to - seen->meter_from) * t;
+}
+
+static unsigned long pnl_prefix_hash(const char *text, const char *end)
+{
+    unsigned long hash = 5381UL + (unsigned long)(end - text);
+
+    for (; text < end; text++)
+        hash = hash * 33UL + (unsigned char)*text;
+    return hash | 1UL;
+}
+
+static void pnl_track_count(pnl_app_t *app, struct pnl_seen *next, const struct pnl_seen *old, const char *text)
+{
+    double number = 0.0;
+    const char *at = pnl_number_at(text, &number);
+
+    next->count_to = number;
+    next->count_from = number;
+    next->count_ms = 0;
+    next->count_prefix = at != NULL ? pnl_prefix_hash(text, at) : 0;
+    if (at == NULL || old == NULL || old->count_prefix != next->count_prefix)
+        return;
+    next->count_from = pnl_count_shown(app, old);
+    next->count_ms = pnl_app_frame_ms(app);
+}
+
+static void pnl_track_meter(pnl_app_t *app, struct pnl_seen *next, const struct pnl_seen *old, double meter)
+{
+    next->meter_to = meter;
+    next->meter_from = meter;
+    next->meter_ms = 0;
+    if (old == NULL || old->meter_to == meter || meter < 0.0 || old->meter_to < 0.0)
+        return;
+    next->meter_from = pnl_meter_shown(app, old);
+    next->meter_ms = pnl_app_frame_ms(app);
+}
+
+static void pnl_track_motion(pnl_app_t *app, struct pnl_seen *next, const struct pnl_seen *old,
+                             const struct pnl_line *line)
+{
+    if (old != NULL && old->hash == next->hash) {
+        next->count_ms = old->count_ms;
+        next->count_prefix = old->count_prefix;
+        next->count_from = old->count_from;
+        next->count_to = old->count_to;
+    } else {
+        pnl_track_count(app, next, old, line->text);
+    }
+    pnl_track_meter(app, next, old, line->meter);
+    if (old != NULL && old->meter_to == line->meter) {
+        next->meter_ms = old->meter_ms;
+        next->meter_from = old->meter_from;
+    }
+}
+
 static void pnl_menu_track(pnl_app_t *app)
 {
     long long now = pnl_app_frame_ms(app);
@@ -154,6 +237,7 @@ static void pnl_menu_track(pnl_app_t *app)
             next->changed_ms = app->seen_ready ? now : 0;
         else
             next->changed_ms = old->hash != next->hash ? now : old->changed_ms;
+        pnl_track_motion(app, next, old, &app->lines[i]);
     }
     swap = app->seen;
     cap = app->seen_cap;
@@ -221,6 +305,37 @@ static void pnl_menu_scroll(pnl_app_t *app, size_t rows)
         app->menu_top = app->actions_len + 1 > rows ? app->actions_len + 1 - rows : 0;
 }
 
+static void pnl_count_text(pnl_app_t *app, const struct pnl_seen *seen, const char *text, char *out, size_t out_len)
+{
+    double number;
+    const char *at = pnl_number_at(text, &number);
+    char *end;
+    const char *dot;
+    int decimals = 0;
+
+    strtod(at, &end);
+    dot = (memchr)(at, '.', (size_t)(end - at));
+    if (dot != NULL)
+        decimals = (int)(end - dot - 1);
+    snprintf(out, out_len, "%.*s%.*f%s", (int)(at - text), text, decimals, pnl_count_shown(app, seen), end);
+}
+
+static struct pnl_line pnl_shown_line(pnl_app_t *app, size_t i, char *text, size_t text_len)
+{
+    struct pnl_line line = app->lines[i];
+    const struct pnl_seen *seen = i < app->seen_len ? &app->seen[i] : NULL;
+
+    if (seen == NULL || !pnl_motion_on(app, PNL_MOTION_COUNT))
+        return line;
+    if (seen->count_ms != 0 && pnl_app_tween(app, seen->count_ms, PNL_COUNT_MS) < 1.0) {
+        pnl_count_text(app, seen, line.text, text, text_len);
+        line.text = text;
+    }
+    if (seen->meter_ms != 0)
+        line.meter = pnl_meter_shown(app, seen);
+    return line;
+}
+
 void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
 {
     size_t i;
@@ -238,7 +353,10 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
                             ? pnl_fade_style(app, canvas, PNL_ROLE_ACCENT, app->seen[i].changed_ms, 9)
                             : 0;
 
-        pnl_draw_line(canvas, y++, &app->lines[i], label_width, highlight);
+        char text[PNL_CELL_MAX];
+        struct pnl_line line = pnl_shown_line(app, i, text, sizeof(text));
+
+        pnl_draw_line(canvas, y++, &line, label_width, highlight);
     }
     if (app->lines_len > 0)
         y++;
