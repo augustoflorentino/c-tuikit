@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.11.0 - 2026-06-05
+
+Live numbers: a number that changes moves to its new value instead of jumping.
+
+- `PNL_MOTION_COUNT` is a new motion, part of `TUIKIT_MOTION=all`:
+  - when the first number in a status line or a value changes and the text before it stays the
+    same, the panel counts from the old number to the new one, keeping the decimals and the
+    text around it ("120 requests" climbs to "480 requests")
+  - a status meter glides to its new level, the bar and the percentage together
+  - a change in the middle of a count starts from the number on screen, so nothing jumps back
+- the status lines keep their text as you gave it: the count is only drawn
+- `examples/basic.c` shows a traffic line that counts and a memory meter that glides
+
 ## 5.10.0 - 2026-06-05
 
 Feedback: the panel answers what you do with a small movement.
