@@ -36,11 +36,14 @@
 #define PNL_SPIN_MS 80
 #define PNL_GLIDE_MS 140
 #define PNL_MOTION_ALL                                                                                          \
-    (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER | PNL_MOTION_ENTER)
+    (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER | PNL_MOTION_ENTER | \
+     PNL_MOTION_FEEDBACK)
 #define PNL_ENTER_MS 150
 #define PNL_EXIT_MS 120
 #define PNL_CASCADE_STEP_MS 30
 #define PNL_CASCADE_STEPS 8
+#define PNL_SHAKE_MS 240
+#define PNL_SHIMMER_MS 1200
 #define PNL_PULSE_MS 1200
 #define PNL_PULSE_DEPTH 7
 #define PNL_TYPE_CHAR_MS 12
@@ -317,6 +320,9 @@ struct pnl_app {
     struct pnl_glide select_glide;
     long long transition_ms;
     long long cascade_ms;
+    long long shake_ms;
+    long long chosen_ms;
+    size_t chosen;
     struct pnl_ghost ghost;
     int transition_shift;
     int anim_frame;
@@ -442,6 +448,7 @@ PNL_INTERNAL void pnl_toasts_expire(pnl_app_t *app);
 PNL_INTERNAL void pnl_toasts_draw(pnl_app_t *app);
 PNL_INTERNAL void pnl_ghost_draw(pnl_app_t *app);
 PNL_INTERNAL double pnl_ease_out(double t);
+PNL_INTERNAL int pnl_shake_offset(pnl_app_t *app);
 PNL_INTERNAL void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style);
 PNL_INTERNAL int pnl_text_width_n(const char *text, size_t len);
 PNL_INTERNAL int pnl_canvas_clip(pnl_canvas_t *canvas, int x, int y, int max, int style, const char *text);

@@ -101,8 +101,11 @@ static int pnl_confirm_key(void *ctx, pnl_app_t *app, int key)
     }
     if (key == 'y' || key == 'Y' || key == 'n' || key == 'N' || key == PNL_KEY_ESCAPE)
         view->yes = key == 'y' || key == 'Y';
-    else if (key != PNL_KEY_ENTER)
+    else if (key != PNL_KEY_ENTER) {
+        if (key >= ' ' && key < 0x7f)
+            pnl_view_shake(app);
         return 1;
+    }
     view->answered = 1;
     pnl_view_pop(app);
     return 1;
@@ -368,7 +371,9 @@ static int pnl_pick_key(void *ctx, pnl_app_t *app, int key)
         pnl_view_pop(app);
         return 1;
     }
-    if (pnl_edit_key(&view->edit, key))
+    if (key == PNL_KEY_ENTER)
+        pnl_view_shake(app);
+    else if (pnl_edit_key(&view->edit, key))
         pnl_pick_filter(view);
     return 1;
 }

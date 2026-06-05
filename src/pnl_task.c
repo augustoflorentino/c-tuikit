@@ -175,6 +175,27 @@ static void pnl_task_join(pnl_task_t *task)
         task->then_fn(task->then_ctx, task->app);
 }
 
+static void pnl_task_shimmer(pnl_task_t *task, pnl_canvas_t *canvas, int y)
+{
+    static const int steps[] = {8, 4, 8};
+    pnl_app_t *app = task->app;
+    int filled = (int)(PNL_TASK_BAR * ((double)task->done / (double)task->total));
+    int depth = canvas->screen->palette.depth;
+    int head;
+    int i;
+
+    if (!pnl_motion_on(app, PNL_MOTION_FEEDBACK) || filled < 4 || task->done >= task->total ||
+        (depth != PNL_DEPTH_TRUE && depth != PNL_DEPTH_256))
+        return;
+    head = (int)(pnl_app_frame_ms(app) % PNL_SHIMMER_MS * (filled + 6) / PNL_SHIMMER_MS) - 3;
+    for (i = 0; i < 3; i++) {
+        if (head + i >= 0 && head + i < filled)
+            pnl_canvas_fill(canvas, 2 + head + i, y, 1, 1,
+                            PNL_BG(PNL_FADE_FIRST + steps[i]));
+    }
+    pnl_app_animate(app, PNL_FRAME_MS * 2);
+}
+
 static void pnl_task_draw_progress(pnl_task_t *task, pnl_canvas_t *canvas, int y)
 {
     char line[96];
@@ -185,6 +206,7 @@ static void pnl_task_draw_progress(pnl_task_t *task, pnl_canvas_t *canvas, int y
         return;
     }
     pnl_canvas_bar(canvas, 2, y, PNL_TASK_BAR, (double)task->done / (double)task->total, PNL_METER_ACCENT);
+    pnl_task_shimmer(task, canvas, y);
     snprintf(line, sizeof(line), "%3d%%  %llu / %llu", (int)(task->done >= task->total ? 100 : task->done * 100 / task->total),
              task->done, task->total);
     pnl_canvas_text(canvas, 3 + PNL_TASK_BAR, y, 0, line);

@@ -81,7 +81,7 @@ void pnl_dialog_draw(pnl_app_t *app, const pnl_canvas_t *area, struct pnl_view *
     struct pnl_canvas inner;
     int width = pnl_clamp_size(view->dialog_width + 4, area->width - 2);
     int height = pnl_clamp_size(view->dialog_height + 2, area->height);
-    int x = area->x + (area->width - width) / 2;
+    int x = area->x + (area->width - width) / 2 + (focused ? pnl_shake_offset(app) : 0);
     int y = area->y + (area->height - height) / 2;
     int style = PNL_FG(focused ? PNL_ROLE_ACCENT : PNL_ROLE_MUTED);
     double t = pnl_motion_on(app, PNL_MOTION_ENTER) ? pnl_app_tween(app, view->shown_ms, PNL_ENTER_MS) : 1.0;

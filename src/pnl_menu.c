@@ -184,6 +184,9 @@ static void pnl_draw_item(pnl_app_t *app, pnl_canvas_t *canvas, int y, size_t in
     int style = index == app->selected ? PNL_SELECTED_STYLE : 0;
     char number[2] = {0, 0};
 
+    if (app->chosen_ms != 0 && index == app->chosen)
+        style |= pnl_fade_style(app, canvas, PNL_ROLE_ACCENT, app->chosen_ms, 2);
+
     if (index < 9 && index < app->actions_len)
         number[0] = (char)('1' + index);
     else if (index == app->actions_len)
@@ -280,6 +283,8 @@ static int pnl_menu_jump(pnl_app_t *app, int key)
 static void pnl_menu_run(pnl_app_t *app, size_t index)
 {
     app->selected = index;
+    app->chosen = index;
+    app->chosen_ms = pnl_motion_on(app, PNL_MOTION_FEEDBACK) ? pnl_term_now_ms() : 0;
     app->actions[index].fn(app->actions[index].ctx, app);
 }
 

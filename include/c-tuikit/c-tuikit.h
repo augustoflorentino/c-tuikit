@@ -106,6 +106,7 @@ extern "C" {
 #define PNL_MOTION_PULSE 4
 #define PNL_MOTION_TYPEWRITER 8
 #define PNL_MOTION_ENTER 16
+#define PNL_MOTION_FEEDBACK 32
 
 #define PNL_COLUMN_RIGHT 1
 #define PNL_COLUMN_OPTIONAL 2
@@ -194,6 +195,7 @@ PNL_API int pnl_view_push(pnl_app_t *app, const char *title, pnl_draw_fn draw_fn
 PNL_API int pnl_view_push_dialog(pnl_app_t *app, const char *title, int width, int height, pnl_draw_fn draw_fn,
                                  pnl_key_fn key_fn, void *view_ctx);
 PNL_API int pnl_view_pop(pnl_app_t *app);
+PNL_API int pnl_view_shake(pnl_app_t *app);
 PNL_API int pnl_view_set_hints(pnl_app_t *app, const char *hints);
 PNL_API int pnl_task_run(pnl_app_t *app, const char *title, pnl_work_fn work_fn, void *work_ctx);
 PNL_API void pnl_task_progress(pnl_task_t *task, unsigned long long done, unsigned long long total);

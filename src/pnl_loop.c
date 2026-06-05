@@ -136,6 +136,34 @@ int pnl_view_pop(pnl_app_t *app)
     return PNL_OK;
 }
 
+int pnl_view_shake(pnl_app_t *app)
+{
+    if (app == NULL)
+        return PNL_ERR_ARG;
+    if (app->views_len == 0)
+        return PNL_ERR_NOT_FOUND;
+    if (pnl_motion_on(app, PNL_MOTION_FEEDBACK)) {
+        app->shake_ms = pnl_term_now_ms();
+        app->dirty = 1;
+    }
+    return PNL_OK;
+}
+
+int pnl_shake_offset(pnl_app_t *app)
+{
+    static const int offsets[] = {0, 2, -2, 2, -1, 1, 0};
+    double t;
+
+    if (app->shake_ms == 0)
+        return 0;
+    t = pnl_app_tween(app, app->shake_ms, PNL_SHAKE_MS);
+    if (t >= 1.0) {
+        app->shake_ms = 0;
+        return 0;
+    }
+    return offsets[(int)(t * 6.0)];
+}
+
 int pnl_view_modal(pnl_app_t *app, struct pnl_view *view)
 {
     size_t depth = app->views_len;
@@ -526,7 +554,7 @@ static int pnl_draw(pnl_app_t *app)
     app->screen.pulse = pnl_pulse_step(app);
     canvas.screen = &app->screen;
     canvas.focused = base == app->views_len;
-    canvas.x = pnl_transition_offset(app);
+    canvas.x = pnl_transition_offset(app) + (base == app->views_len ? pnl_shake_offset(app) : 0);
     canvas.y = 2;
     canvas.width = width;
     canvas.height = height > 4 ? height - 4 : 0;

@@ -204,7 +204,10 @@ static void test_loop_parts(void)
     CHECK(pnl_app_unwatch_fd(app, 0) == PNL_ERR_NOT_FOUND);
 #endif
     CHECK(pnl_view_set_hints(app, "x: y") == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_view_shake(app) == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_view_shake(NULL) == PNL_ERR_ARG);
     CHECK(pnl_view_push(app, "live", noop_draw, NULL, NULL) == PNL_OK);
+    CHECK(pnl_view_shake(app) == PNL_OK);
     CHECK(pnl_view_set_hints(app, "r: reload  esc: back") == PNL_OK);
     CHECK(pnl_view_set_hints(app, "r: reload") == PNL_OK);
     CHECK(pnl_view_set_hints(app, NULL) == PNL_ERR_ARG);
@@ -253,7 +256,8 @@ static void test_motion(void)
     CHECK(pnl_app_tween(NULL, now, 10) == 1.0);
     CHECK(pnl_app_motion(NULL) == 0);
     CHECK(pnl_app_frame_ms(NULL) == 0);
-    CHECK(pnl_app_enable_motion(app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER) == PNL_OK);
+    CHECK(pnl_app_enable_motion(app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER |
+                                         PNL_MOTION_ENTER | PNL_MOTION_FEEDBACK) == PNL_OK);
     CHECK(pnl_app_enable_motion(app, 0x4000) == PNL_ERR_ARG);
     CHECK(pnl_app_enable_motion(NULL, PNL_MOTION_SLIDE) == PNL_ERR_ARG);
     pnl_app_destroy(app);
