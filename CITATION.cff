@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If c-tuikit is part of your work, please cite it as below."
+type: software
+title: c-tuikit
+abstract: "C99 library of interactive terminal screens for command line tools: live status, actions, tasks with progress, tables, logs, forms and charts"
+authors:
+  - family-names: Florentino
+    given-names: Augusto
+license: MIT
+repository-code: "https://github.com/augustoflorentino/c-tuikit"
+keywords:
+  - tui
+  - terminal
+  - cli
+  - c99
+  - widgets
+  - library
