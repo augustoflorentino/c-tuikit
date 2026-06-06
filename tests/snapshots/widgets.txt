@@ -1,0 +1,16 @@
+widgets / widgets
+
+▎parts                       │ log
+first                        │            following  debug+
+second                       │
+count 3                      │ nothing yet
+                             │
+fill           50%           │
+- still waiting              │
+load                         │
+  █▄                         │
+▄███                         │
+                             │
+                             │
+
++: count  tab: next panel  esc: back

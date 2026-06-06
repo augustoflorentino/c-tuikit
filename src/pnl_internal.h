@@ -69,6 +69,7 @@
 #define PNL_LINKS 255
 #define PNL_LINK_POOL 8192
 #define PNL_PLOT_ROWS 256
+#define PNL_WIDGET_FOOTER 256
 
 struct pnl_mem {
     pnl_alloc_fn alloc_fn;
@@ -407,6 +408,8 @@ PNL_INTERNAL void pnl_inspect_free(pnl_app_t *app);
 PNL_INTERNAL void pnl_inspect_frame(pnl_app_t *app, long long took_us, size_t bytes);
 PNL_INTERNAL void pnl_inspect_event(pnl_app_t *app, int kind, int arg);
 PNL_INTERNAL void pnl_inspect_toggle(pnl_app_t *app);
+PNL_INTERNAL void pnl_widget_paint(pnl_widget_t *widget, pnl_canvas_t *canvas);
+PNL_INTERNAL const char *pnl_widget_hints(const pnl_widget_t *widget);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
 PNL_INTERNAL void pnl_record_output(const char *data, size_t data_len, int width, int height);
 PNL_INTERNAL void pnl_record_close(void);

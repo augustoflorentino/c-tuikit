@@ -9,6 +9,7 @@
 #define PNL_LOG_FILTER_MAX 128
 #define PNL_LOG_FOOTER "up/down: scroll  end: follow  v: level  /: filter  q: back"
 #define PNL_LOG_FILTER_FOOTER "type to filter  enter: keep  esc: clear"
+#define PNL_LOG_HINTS "end: follow  v: level  /: filter"
 
 struct pnl_log_entry {
     unsigned long long seq;
@@ -362,6 +363,58 @@ static void pnl_log_cli(pnl_log_t *logbook)
     fflush(stdout);
 }
 
+static struct pnl_log_view *pnl_log_view_new(pnl_app_t *app, pnl_log_t *logbook)
+{
+    struct pnl_log_view *view = pnl_mem_alloc(&app->mem, sizeof(*view));
+
+    if (view == NULL)
+        return NULL;
+    memset(view, 0, sizeof(*view));
+    view->logbook = logbook;
+    view->follow = 1;
+    view->footer = PNL_LOG_FOOTER;
+    pnl_edit_init(&view->edit, view->filter, sizeof(view->filter));
+    view->shown = pnl_mem_alloc(&app->mem, logbook->capacity * sizeof(*view->shown));
+    if (view->shown == NULL) {
+        pnl_log_drop(app, view);
+        return NULL;
+    }
+    return view;
+}
+
+static const char *pnl_log_hints(void *ctx)
+{
+    const struct pnl_log_view *view = ctx;
+
+    return view->editing ? PNL_LOG_FILTER_FOOTER : PNL_LOG_HINTS;
+}
+
+static void pnl_log_release(void *ctx)
+{
+    struct pnl_log_view *view = ctx;
+
+    pnl_log_drop(view->logbook->app, view);
+}
+
+int pnl_widget_log(pnl_app_t *app, pnl_log_t *logbook, pnl_widget_t **out_widget)
+{
+    static const pnl_widget_class_t log_class = {pnl_log_draw, pnl_log_key, NULL, pnl_log_hints, pnl_log_release};
+    struct pnl_log_view *view;
+    int status;
+
+    if (out_widget != NULL)
+        *out_widget = NULL;
+    if (app == NULL || logbook == NULL || logbook->app != app || out_widget == NULL)
+        return PNL_ERR_ARG;
+    view = pnl_log_view_new(app, logbook);
+    if (view == NULL)
+        return PNL_ERR_NOMEM;
+    status = pnl_widget_create(app, &log_class, view, out_widget);
+    if (status != PNL_OK)
+        pnl_log_release(view);
+    return status;
+}
+
 int pnl_log_open(pnl_app_t *app, pnl_log_t *logbook, const char *title)
 {
     struct pnl_log_view *view;
@@ -374,15 +427,9 @@ int pnl_log_open(pnl_app_t *app, pnl_log_t *logbook, const char *title)
         pnl_log_cli(logbook);
         return PNL_OK;
     }
-    view = pnl_mem_alloc(&app->mem, sizeof(*view));
+    view = pnl_log_view_new(app, logbook);
     if (view == NULL)
         return PNL_ERR_NOMEM;
-    memset(view, 0, sizeof(*view));
-    view->logbook = logbook;
-    view->follow = 1;
-    view->footer = PNL_LOG_FOOTER;
-    pnl_edit_init(&view->edit, view->filter, sizeof(view->filter));
-    view->shown = pnl_mem_alloc(&app->mem, logbook->capacity * sizeof(*view->shown));
     memset(&screen, 0, sizeof(screen));
     screen.footer_ref = &view->footer;
     screen.typing_ref = &view->editing;
@@ -391,7 +438,7 @@ int pnl_log_open(pnl_app_t *app, pnl_log_t *logbook, const char *title)
     screen.drop_fn = pnl_log_drop;
     screen.ctx = view;
     screen.title = pnl_mem_copy(&app->mem, title);
-    status = view->shown == NULL || screen.title == NULL ? PNL_ERR_NOMEM : pnl_view_push_internal(app, &screen);
+    status = screen.title == NULL ? PNL_ERR_NOMEM : pnl_view_push_internal(app, &screen);
     if (status != PNL_OK) {
         pnl_mem_free(&app->mem, screen.title);
         pnl_log_drop(app, view);

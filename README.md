@@ -57,6 +57,9 @@ up/down: move  enter: choose  ?: help  q: quit
   meter glides to its new level)
   (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
   or on their own over a slow SSH link
+- components (`pnl_widget_t`) you put together into screens: text, bars, graphs, spinners and the
+  live log come ready, stacks arrange them in rows or columns, and a component of your own is a
+  draw callback away; see [Components](#components)
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
   terminal gets narrow
@@ -143,8 +146,49 @@ See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be, and
 [`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs,
 [`examples/tail.c`](examples/tail.c), which follows a log file, and
-[`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table. The
+[`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table, and
+[`examples/monitor.c`](examples/monitor.c), a screen made only of components. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
+
+## Components
+
+A screen can be built from components instead of drawn by hand. Each one draws itself in the
+space it gets, may take keys, may say how many rows it wants and which keys it answers to:
+
+```c
+pnl_widget_t *cpu, *load, *events, *side;
+pnl_widget_bar(app, "cpu", PNL_METER_LEVEL | PNL_METER_PERCENT, &cpu);
+pnl_widget_graph(app, "load", PNL_GRAPH_CHART, 0, PNL_METER_LEVEL, 300, &load);
+pnl_widget_log(app, logbook, &events);
+pnl_widget_stack(app, PNL_STACK_ROWS, &side);
+pnl_widget_add(side, cpu, 0);
+pnl_widget_add(side, load, 0);
+
+pnl_layout_widget(layout, PNL_LAYOUT_ROOT, "machine", side, NULL);
+pnl_layout_widget(layout, PNL_LAYOUT_ROOT, "events", events, NULL);
+
+pnl_widget_set_value(cpu, 0.42);
+pnl_widget_set_value(load, 42.0);
+```
+
+`pnl_widget_set_value` moves a bar (gliding with `PNL_MOTION_COUNT`) or adds a point to a graph;
+`pnl_widget_set_text` changes text and labels. A component goes in a layout panel
+(`pnl_layout_widget`), fills a screen of its own (`pnl_view_push_widget`), sits in a stack or is
+drawn by another component (`pnl_widget_draw`). Tab, mouse clicks, the footer and `?` work the
+same for every one of them.
+
+A component of your own is a class of callbacks:
+
+```c
+static const pnl_widget_class_t clock_class = {clock_draw, clock_key, clock_height, clock_hints, NULL};
+pnl_widget_create(app, &clock_class, &clock_state, &clock);
+```
+
+Only `draw_fn` is required. `height_fn` returns the rows it wants for a width (0 to take what is
+left), `hints_fn` the keys for the footer, and `release_fn` runs on `pnl_widget_destroy`.
+Components are changed from the panel's own thread (actions, timers, keys) and must outlive the
+screens that show them. See [`examples/monitor.c`](examples/monitor.c), with a clock made from
+scratch.
 
 ## Testing a tool
 

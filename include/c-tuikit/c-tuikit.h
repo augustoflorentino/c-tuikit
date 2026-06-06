@@ -127,6 +127,13 @@ extern "C" {
 #define PNL_SPINNER_BLOCKS 3
 #define PNL_SPINNER_BOUNCE 4
 
+#define PNL_GRAPH_SPARKLINE 0
+#define PNL_GRAPH_CHART 1
+#define PNL_GRAPH_PLOT 2
+
+#define PNL_STACK_ROWS 0
+#define PNL_STACK_COLUMNS 1
+
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
@@ -134,6 +141,7 @@ typedef struct pnl_layout pnl_layout_t;
 typedef struct pnl_value pnl_value_t;
 typedef struct pnl_log pnl_log_t;
 typedef struct pnl_test pnl_test_t;
+typedef struct pnl_widget pnl_widget_t;
 
 typedef void *(*pnl_alloc_fn)(void *ctx, size_t size);
 typedef void (*pnl_free_fn)(void *ctx, void *ptr);
@@ -154,6 +162,16 @@ typedef void (*pnl_terminal_fn)(void *ctx);
 typedef void (*pnl_work_fn)(void *ctx, pnl_task_t *task);
 typedef const char *(*pnl_cell_fn)(void *ctx, size_t row, size_t column, char *buf, size_t buf_len);
 typedef void (*pnl_release_fn)(void *ctx);
+typedef int (*pnl_height_fn)(void *ctx, pnl_app_t *app, int width);
+typedef const char *(*pnl_hints_fn)(void *ctx);
+
+typedef struct pnl_widget_class {
+    pnl_draw_fn draw_fn;
+    pnl_key_fn key_fn;
+    pnl_height_fn height_fn;
+    pnl_hints_fn hints_fn;
+    pnl_release_fn release_fn;
+} pnl_widget_class_t;
 
 PNL_API int pnl_app_create(const char *title, const pnl_allocator_t *allocator, pnl_app_t **out_app);
 PNL_API void pnl_app_destroy(pnl_app_t *app);
@@ -229,6 +247,28 @@ PNL_API int pnl_layout_size(pnl_layout_t *layout, int node, int size, int min_si
 PNL_API int pnl_layout_focus(pnl_layout_t *layout, int node);
 PNL_API int pnl_layout_hints(pnl_layout_t *layout, int node, const char *hints);
 PNL_API int pnl_view_push_layout(pnl_app_t *app, const char *title, const pnl_layout_t *layout);
+PNL_API int pnl_layout_widget(pnl_layout_t *layout, int parent, const char *title, pnl_widget_t *widget,
+                              int *out_node);
+
+PNL_API int pnl_widget_create(pnl_app_t *app, const pnl_widget_class_t *widget_class, void *widget_ctx,
+                              pnl_widget_t **out_widget);
+PNL_API void pnl_widget_destroy(pnl_widget_t *widget);
+PNL_API void *pnl_widget_ctx(const pnl_widget_t *widget);
+PNL_API int pnl_widget_draw(pnl_widget_t *widget, pnl_canvas_t *canvas, int x, int y, int width, int height);
+PNL_API int pnl_widget_key(pnl_widget_t *widget, int key);
+PNL_API int pnl_widget_height(pnl_widget_t *widget, int width);
+PNL_API int pnl_view_push_widget(pnl_app_t *app, const char *title, pnl_widget_t *widget);
+PNL_API int pnl_widget_text(pnl_app_t *app, const char *text, int style, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_bar(pnl_app_t *app, const char *label, int flags, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_graph(pnl_app_t *app, const char *label, int kind, int rows, int flags, size_t capacity,
+                             pnl_widget_t **out_widget);
+PNL_API int pnl_widget_spinner(pnl_app_t *app, int kind, const char *text, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_log(pnl_app_t *app, pnl_log_t *logbook, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_stack(pnl_app_t *app, int kind, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_add(pnl_widget_t *stack, pnl_widget_t *child, int size);
+PNL_API int pnl_widget_set_text(pnl_widget_t *widget, const char *text);
+PNL_API int pnl_widget_set_value(pnl_widget_t *widget, double value);
+PNL_API int pnl_widget_set_range(pnl_widget_t *widget, double min, double max);
 
 PNL_API int pnl_canvas_focused(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);

@@ -792,6 +792,168 @@ static void test_charts(void)
     pnl_app_destroy(app);
 }
 
+struct counter_widget {
+    int count;
+    int released;
+};
+
+static void counter_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    struct counter_widget *counter = ctx;
+    char text[32];
+
+    (void)app;
+    snprintf(text, sizeof(text), "count %d", counter->count);
+    pnl_canvas_text(canvas, 0, 0, 0, text);
+}
+
+static int counter_key(void *ctx, pnl_app_t *app, int key)
+{
+    struct counter_widget *counter = ctx;
+
+    (void)app;
+    if (key != '+')
+        return 0;
+    counter->count++;
+    return 1;
+}
+
+static int counter_height(void *ctx, pnl_app_t *app, int width)
+{
+    (void)ctx;
+    (void)app;
+    (void)width;
+    return 2;
+}
+
+static const char *counter_hints(void *ctx)
+{
+    (void)ctx;
+    return "+: count";
+}
+
+static void counter_release(void *ctx)
+{
+    struct counter_widget *counter = ctx;
+
+    counter->released++;
+}
+
+struct widget_screen {
+    pnl_layout_t *layout;
+    pnl_widget_t *stack;
+};
+
+static void open_widgets(void *ctx, pnl_app_t *app)
+{
+    struct widget_screen *screen = ctx;
+
+    CHECK(pnl_view_push_layout(app, "widgets", screen->layout) == PNL_OK);
+}
+
+static void open_widget(void *ctx, pnl_app_t *app)
+{
+    struct widget_screen *screen = ctx;
+
+    CHECK(pnl_view_push_widget(app, "one", screen->stack) == PNL_OK);
+}
+
+static void test_widgets(void)
+{
+    static const pnl_widget_class_t counter_class = {counter_draw, counter_key, counter_height, counter_hints,
+                                                     counter_release};
+    static const pnl_widget_class_t empty_class = {NULL, NULL, NULL, NULL, NULL};
+    struct counter_widget counter = {0, 0};
+    struct widget_screen screen = {NULL, NULL};
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    pnl_log_t *logbook = NULL;
+    pnl_widget_t *custom = NULL;
+    pnl_widget_t *text = NULL;
+    pnl_widget_t *bar = NULL;
+    pnl_widget_t *graph = NULL;
+    pnl_widget_t *spinner = NULL;
+    pnl_widget_t *log = NULL;
+    pnl_widget_t *out = (pnl_widget_t *)&counter;
+    int node = 0;
+
+    CHECK(pnl_app_create("widgets", NULL, &app) == PNL_OK);
+    CHECK(pnl_widget_create(app, &empty_class, NULL, &out) == PNL_ERR_ARG);
+    CHECK(out == NULL);
+    CHECK(pnl_widget_create(NULL, &counter_class, &counter, &custom) == PNL_ERR_ARG);
+    CHECK(pnl_widget_create(app, &counter_class, &counter, &custom) == PNL_OK);
+    CHECK(pnl_widget_ctx(custom) == &counter);
+    CHECK(pnl_widget_ctx(NULL) == NULL);
+    CHECK(pnl_widget_height(custom, 10) == 2);
+    CHECK(pnl_widget_key(custom, '+') == 1);
+    CHECK(pnl_widget_key(custom, 'x') == 0);
+    CHECK(pnl_widget_key(NULL, '+') == 0);
+    CHECK(pnl_widget_text(app, "first\nsecond", PNL_BOLD, &text) == PNL_OK);
+    CHECK(pnl_widget_height(text, 10) == 2);
+    CHECK(pnl_widget_bar(app, "fill", PNL_METER_PERCENT, &bar) == PNL_OK);
+    CHECK(pnl_widget_set_value(bar, 0.5) == PNL_OK);
+    CHECK(pnl_widget_graph(app, "load", PNL_GRAPH_CHART, 2, 0, 4, &graph) == PNL_OK);
+    CHECK(pnl_widget_graph(app, "load", 7, 2, 0, 4, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_graph(app, "load", PNL_GRAPH_PLOT, 2, 0, 0, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_height(graph, 10) == 3);
+    CHECK(pnl_widget_set_value(graph, 100.0) == PNL_OK);
+    CHECK(pnl_widget_set_value(graph, 25.0) == PNL_OK);
+    CHECK(pnl_widget_set_value(graph, 50.0) == PNL_OK);
+    CHECK(pnl_widget_set_value(graph, 100.0) == PNL_OK);
+    CHECK(pnl_widget_set_value(graph, 75.0) == PNL_OK);
+    CHECK(pnl_widget_set_range(graph, 0.0, 100.0) == PNL_OK);
+    CHECK(pnl_widget_set_range(graph, 2.0, 1.0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_range(bar, 0.0, 1.0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_spinner(app, PNL_SPINNER_LINE, "waiting", &spinner) == PNL_OK);
+    CHECK(pnl_widget_spinner(app, 9, "waiting", &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_text(spinner, "still waiting") == PNL_OK);
+    CHECK(pnl_widget_set_text(custom, "x") == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_value(text, 1.0) == PNL_ERR_ARG);
+    CHECK(pnl_log_create(app, 10, &logbook) == PNL_OK);
+    CHECK(pnl_widget_log(app, logbook, &log) == PNL_OK);
+    CHECK(pnl_widget_stack(app, 5, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &screen.stack) == PNL_OK);
+    CHECK(pnl_widget_add(screen.stack, screen.stack, 0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_add(text, custom, 0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_add(screen.stack, text, 0) == PNL_OK);
+    CHECK(pnl_widget_add(screen.stack, custom, 0) == PNL_OK);
+    CHECK(pnl_widget_add(screen.stack, bar, 0) == PNL_OK);
+    CHECK(pnl_widget_add(screen.stack, spinner, 0) == PNL_OK);
+    CHECK(pnl_widget_add(screen.stack, graph, 0) == PNL_OK);
+    CHECK(pnl_widget_height(screen.stack, 20) == 9);
+    CHECK(pnl_layout_create(app, PNL_SPLIT_COLUMNS, &screen.layout) == PNL_OK);
+    CHECK(pnl_layout_widget(screen.layout, PNL_LAYOUT_ROOT, "parts", screen.stack, &node) == PNL_OK);
+    CHECK(pnl_layout_widget(screen.layout, PNL_LAYOUT_ROOT, "log", log, NULL) == PNL_OK);
+    CHECK(pnl_layout_widget(screen.layout, PNL_LAYOUT_ROOT, "none", NULL, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_app_add_action(app, "Widgets", open_widgets, &screen) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "One", open_widget, &screen) == PNL_OK);
+    CHECK(pnl_test_create(app, 60, 16, &test) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter + +") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "count 3") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "+: count  tab: next panel") != NULL);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/widgets.txt") == PNL_OK);
+    CHECK(pnl_log_write(logbook, PNL_LEVEL_WARN, "disk almost full") == PNL_OK);
+    CHECK(pnl_test_keys(test, "tab") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "disk almost") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "v: level") != NULL);
+    CHECK(pnl_test_keys(test, "esc down enter +") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "count 4") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "+: count  esc: back") != NULL);
+    pnl_test_destroy(test);
+    pnl_layout_destroy(screen.layout);
+    pnl_widget_destroy(screen.stack);
+    pnl_widget_destroy(log);
+    pnl_widget_destroy(spinner);
+    pnl_widget_destroy(graph);
+    pnl_widget_destroy(bar);
+    pnl_widget_destroy(text);
+    pnl_widget_destroy(custom);
+    pnl_widget_destroy(NULL);
+    CHECK(counter.released == 1);
+    pnl_log_destroy(logbook);
+    pnl_app_destroy(app);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -837,5 +999,6 @@ int main(void)
     test_links();
     test_inspector();
     test_charts();
+    test_widgets();
     return 0;
 }

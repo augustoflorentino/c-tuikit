@@ -18,6 +18,7 @@ struct pnl_node {
     pnl_draw_fn draw_fn;
     pnl_key_fn key_fn;
     void *ctx;
+    pnl_widget_t *widget;
     int size;
     int min_size;
     int active;
@@ -157,6 +158,34 @@ int pnl_layout_panel(pnl_layout_t *layout, int parent, const char *title, pnl_dr
     layout->nodes[node].ctx = panel_ctx;
     if (layout->focus < 0)
         layout->focus = node;
+    if (out_node != NULL)
+        *out_node = node;
+    return PNL_OK;
+}
+
+static void pnl_layout_widget_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    (void)app;
+    pnl_widget_paint(ctx, canvas);
+}
+
+static int pnl_layout_widget_key(void *ctx, pnl_app_t *app, int key)
+{
+    (void)app;
+    return pnl_widget_key(ctx, key);
+}
+
+int pnl_layout_widget(pnl_layout_t *layout, int parent, const char *title, pnl_widget_t *widget, int *out_node)
+{
+    int node;
+    int status;
+
+    if (layout == NULL || widget == NULL)
+        return PNL_ERR_ARG;
+    status = pnl_layout_panel(layout, parent, title, pnl_layout_widget_draw, pnl_layout_widget_key, widget, &node);
+    if (status != PNL_OK)
+        return status;
+    layout->nodes[node].widget = widget;
     if (out_node != NULL)
         *out_node = node;
     return PNL_OK;
@@ -427,6 +456,9 @@ static int pnl_layout_is_visible(const pnl_layout_t *layout, int node)
 static void pnl_layout_footer(pnl_layout_t *layout)
 {
     const char *hints = layout->focus >= 0 ? layout->nodes[layout->focus].hints : NULL;
+
+    if (hints == NULL && layout->focus >= 0)
+        hints = pnl_widget_hints(layout->nodes[layout->focus].widget);
 
     snprintf(layout->footer_text, sizeof(layout->footer_text), "%s%s%s%sesc: back", hints ? hints : "",
              hints ? "  " : "", layout->visible_len > 1 ? "tab: next panel  " : "",
