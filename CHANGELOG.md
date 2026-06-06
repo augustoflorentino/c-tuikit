@@ -4,6 +4,19 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 5.12.0 - 2026-06-05
+
+Waiting: more ways to show that something is going on.
+
+- `pnl_canvas_spinner` draws a spinner of five kinds: `PNL_SPINNER_DOTS` (the one the panel
+  already used), `PNL_SPINNER_LINE` (plain ASCII), `PNL_SPINNER_ARC`, `PNL_SPINNER_BLOCKS` and
+  `PNL_SPINNER_BOUNCE`; with motion off it stands still on its first frame
+- `pnl_canvas_busy` draws a bar for work with no known end: a block that sweeps from side to
+  side, slowing at the ends, moving by eighths of a cell
+- a task with no total shows that bar next to the seconds it has been running, where it used to
+  show the seconds alone
+- the live screen of `examples/basic.c` shows every spinner and the busy bar
+
 ## 5.11.0 - 2026-06-05
 
 Live numbers: a number that changes moves to its new value instead of jumping.
