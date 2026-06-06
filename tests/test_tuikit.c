@@ -763,6 +763,13 @@ static void chart_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     pnl_canvas_bar(canvas, 0, 4, 10, 0.5, PNL_METER_PERCENT);
     pnl_canvas_plot(canvas, 0, 5, 4, 1000, wave, 7, 0.0, 100.0, 0);
     pnl_canvas_chart(canvas, 0, 5, 4, 2, rising, 6, 0.0, 0);
+    CHECK(pnl_canvas_spinner(canvas, 0, 5, 0, PNL_SPINNER_DOTS) == PNL_OK);
+    CHECK(pnl_canvas_spinner(canvas, 2, 5, 0, PNL_SPINNER_LINE) == PNL_OK);
+    CHECK(pnl_canvas_spinner(canvas, 4, 5, 0, PNL_SPINNER_ARC) == PNL_OK);
+    CHECK(pnl_canvas_spinner(canvas, 6, 5, 0, 99) == PNL_ERR_ARG);
+    CHECK(pnl_canvas_spinner(NULL, 6, 5, 0, PNL_SPINNER_DOTS) == PNL_ERR_ARG);
+    pnl_canvas_busy(canvas, 12, 5, 10, 0);
+    pnl_canvas_busy(canvas, 12, 6, 2, 0);
 }
 
 static void open_charts(void *ctx, pnl_app_t *app)

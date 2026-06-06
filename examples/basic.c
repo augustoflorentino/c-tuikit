@@ -99,6 +99,8 @@ static void draw_load(struct service *svc, pnl_canvas_t *canvas, const double *o
     pnl_canvas_text(canvas, 2, 6, PNL_FG(PNL_ROLE_MUTED), "now");
     pnl_canvas_bar(canvas, 8, 6, 30, svc->load_len ? ordered[svc->load_len - 1] / 100.0 : 0.0,
                    PNL_METER_LEVEL | PNL_METER_PERCENT);
+    pnl_canvas_text(canvas, 42, 6, PNL_FG(PNL_ROLE_MUTED), "busy");
+    pnl_canvas_busy(canvas, 48, 6, 24, PNL_METER_ACCENT);
     pnl_canvas_text(canvas, 2, 8, PNL_FG(PNL_ROLE_MUTED), "chart");
     pnl_canvas_chart(canvas, 8, 8, width / 2 - 8, 5, ordered, svc->load_len, 100.0, PNL_METER_LEVEL);
     for (i = 0; i < 4; i++)
@@ -122,6 +124,8 @@ static void draw_live(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     (void)app;
     snprintf(line, sizeof(line), "%d ticks of 100 ms", svc->ticks);
     pnl_canvas_text(canvas, 2, 0, 0, line);
+    for (i = 0; i <= PNL_SPINNER_BOUNCE; i++)
+        pnl_canvas_spinner(canvas, 24 + (int)i * 3, 0, PNL_FG(PNL_ROLE_ACCENT), (int)i);
     pnl_canvas_fill(canvas, 2, 2, filled, 1, PNL_BG(PNL_ROLE_ACCENT));
     for (i = 0; i < svc->load_len; i++)
         ordered[i] = svc->load[(svc->ticks - (int)svc->load_len + (int)i) % HISTORY];

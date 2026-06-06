@@ -5,6 +5,6 @@ charts / charts
         in  out
 
    50%
-
+⠋ - ◜
 
 esc: back

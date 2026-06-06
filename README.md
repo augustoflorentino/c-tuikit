@@ -45,6 +45,9 @@ up/down: move  enter: choose  ?: help  q: quit
 - charts for the canvas: bars (with the percentage inside if you like), sparklines, column
   charts several rows tall, labeled columns side by side and line plots drawn with braille dots;
   each one can shift from green to red as the value rises
+- waiting indicators: five spinners (`pnl_canvas_spinner`: dots, line, arc, blocks, bounce) and
+  a bar that sweeps back and forth when there is no end to measure (`pnl_canvas_busy`), which
+  tasks without a total now show
 - a frame clock for small time-based animations: spinners, smooth bars, a fading highlight on
   values that change; optional sliding selection, screen transitions, pulse, typewriter and
   entrances (`PNL_MOTION_ENTER`: dialogs grow in and shrink away, notifications slide out, menu

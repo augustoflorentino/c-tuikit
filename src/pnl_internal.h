@@ -34,6 +34,7 @@
 #define PNL_TASK_TICK_MS 50
 #define PNL_FRAME_MS 33
 #define PNL_SPIN_MS 80
+#define PNL_BUSY_MS 1600
 #define PNL_GLIDE_MS 140
 #define PNL_MOTION_ALL                                                                                          \
     (PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE | PNL_MOTION_TYPEWRITER | PNL_MOTION_ENTER | \

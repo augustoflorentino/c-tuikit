@@ -121,6 +121,12 @@ extern "C" {
 #define PNL_METER_LEVEL 1
 #define PNL_METER_PERCENT 2
 
+#define PNL_SPINNER_DOTS 0
+#define PNL_SPINNER_LINE 1
+#define PNL_SPINNER_ARC 2
+#define PNL_SPINNER_BLOCKS 3
+#define PNL_SPINNER_BOUNCE 4
+
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
 typedef struct pnl_task pnl_task_t;
@@ -234,6 +240,8 @@ PNL_API int pnl_color_depth(void);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
 PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,
                                   size_t values_len, double max, int flags);
+PNL_API int pnl_canvas_spinner(pnl_canvas_t *canvas, int x, int y, int style, int kind);
+PNL_API void pnl_canvas_busy(pnl_canvas_t *canvas, int x, int y, int width, int flags);
 PNL_API void pnl_canvas_chart(pnl_canvas_t *canvas, int x, int y, int width, int height, const double *values,
                               size_t values_len, double max, int flags);
 PNL_API void pnl_canvas_columns(pnl_canvas_t *canvas, int x, int y, int width, int height, const double *values,

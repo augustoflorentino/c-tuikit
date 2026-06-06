@@ -13,12 +13,74 @@ static const char *const pnl_spin_frames[] = {"\xe2\xa0\x8b", "\xe2\xa0\x99", "\
                                               "\xe2\xa0\xbc", "\xe2\xa0\xb4", "\xe2\xa0\xa6", "\xe2\xa0\xa7",
                                               "\xe2\xa0\x87", "\xe2\xa0\x8f"};
 
-#define PNL_SPIN_FRAMES (int)(sizeof(pnl_spin_frames) / sizeof(pnl_spin_frames[0]))
+static const char *const pnl_line_frames[] = {"-", "\\", "|", "/"};
+
+static const char *const pnl_arc_frames[] = {"\xe2\x97\x9c", "\xe2\x97\xa0", "\xe2\x97\x9d",
+                                             "\xe2\x97\x9e", "\xe2\x97\xa1", "\xe2\x97\x9f"};
+
+static const char *const pnl_block_frames[] = {"\xe2\x96\x96", "\xe2\x96\x98", "\xe2\x96\x9d",
+                                               "\xe2\x96\x97"};
+
+static const char *const pnl_bounce_frames[] = {"\xe2\xa0\x81", "\xe2\xa0\x82", "\xe2\xa0\x84",
+                                                "\xe2\xa1\x80", "\xe2\xa0\x84", "\xe2\xa0\x82"};
+
+struct pnl_spinner_kind {
+    const char *const *frames;
+    int len;
+};
+
+static const struct pnl_spinner_kind pnl_spinner_kinds[] = {
+    {pnl_spin_frames, 10}, {pnl_line_frames, 4}, {pnl_arc_frames, 6}, {pnl_block_frames, 4}, {pnl_bounce_frames, 6}};
 
 void pnl_draw_spinner(pnl_canvas_t *canvas, int x, int y, int style)
 {
-    canvas->screen->spinning = 1;
-    pnl_canvas_text(canvas, x, y, style, pnl_spin_frames[canvas->screen->spin % PNL_SPIN_FRAMES]);
+    pnl_canvas_spinner(canvas, x, y, style, PNL_SPINNER_DOTS);
+}
+
+int pnl_canvas_spinner(pnl_canvas_t *canvas, int x, int y, int style, int kind)
+{
+    const struct pnl_spinner_kind *spinner;
+    int spin;
+
+    if (canvas == NULL || kind < 0 || kind > PNL_SPINNER_BOUNCE)
+        return PNL_ERR_ARG;
+    spinner = &pnl_spinner_kinds[kind];
+    spin = canvas->screen->spin;
+    if (spin >= 0)
+        canvas->screen->spinning = 1;
+    pnl_canvas_text(canvas, x, y, style, spinner->frames[spin > 0 ? spin % spinner->len : 0]);
+    return PNL_OK;
+}
+
+void pnl_canvas_busy(pnl_canvas_t *canvas, int x, int y, int width, int flags)
+{
+    int length = width / 5 < 3 ? 3 : width / 5;
+    int color = flags & PNL_METER_LEVEL ? pnl_level_color(0.5) : PNL_ROLE_ACCENT;
+    double phase = 0.0;
+    int start;
+    int eighths;
+
+    if (canvas == NULL || width <= length)
+        return;
+    if (canvas->screen->spin >= 0) {
+        long long now = pnl_term_now_ms() % PNL_BUSY_MS;
+        double t = (double)now * 2.0 / PNL_BUSY_MS;
+
+        t = t > 1.0 ? 2.0 - t : t;
+        phase = t < 0.5 ? 2.0 * t * t : 1.0 - 2.0 * (1.0 - t) * (1.0 - t);
+        canvas->screen->spinning = 1;
+    }
+    eighths = (int)(phase * (width - length) * 8 + 0.5);
+    start = eighths / 8;
+    pnl_canvas_fill(canvas, x, y, width, 1, PNL_BG(PNL_ROLE_SURFACE));
+    pnl_canvas_fill(canvas, x + start + 1, y, length - 1, 1, PNL_BG(color));
+    if (eighths % 8 == 0) {
+        pnl_canvas_fill(canvas, x + start, y, 1, 1, PNL_BG(color));
+        return;
+    }
+    pnl_canvas_text(canvas, x + start, y, PNL_FG(PNL_ROLE_SURFACE) | PNL_BG(color), pnl_eighths[eighths % 8]);
+    pnl_canvas_text(canvas, x + start + length, y, PNL_FG(color) | PNL_BG(PNL_ROLE_SURFACE),
+                    pnl_eighths[eighths % 8]);
 }
 
 static double pnl_clamp(double fraction)

@@ -202,7 +202,8 @@ static void pnl_task_draw_progress(pnl_task_t *task, pnl_canvas_t *canvas, int y
 
     if (task->total == 0) {
         snprintf(line, sizeof(line), "%llds", (pnl_term_now_ms() - task->started_ms) / 1000);
-        pnl_canvas_text(canvas, 2, y, PNL_FG(PNL_ROLE_MUTED), line);
+        pnl_canvas_busy(canvas, 2, y, PNL_TASK_BAR, PNL_METER_ACCENT);
+        pnl_canvas_text(canvas, 3 + PNL_TASK_BAR, y, PNL_FG(PNL_ROLE_MUTED), line);
         return;
     }
     pnl_canvas_bar(canvas, 2, y, PNL_TASK_BAR, (double)task->done / (double)task->total, PNL_METER_ACCENT);
