@@ -147,7 +147,9 @@ See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs,
 [`examples/tail.c`](examples/tail.c), which follows a log file, and
 [`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table, and
-[`examples/monitor.c`](examples/monitor.c), a screen made only of components. The
+[`examples/monitor.c`](examples/monitor.c), a screen made only of components, and
+[`examples/gallery.c`](examples/gallery.c), which keeps generating new combinations of charts,
+bars, spinners and motion. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
 
 ## Components
