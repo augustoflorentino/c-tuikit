@@ -4,6 +4,36 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.0.0 - 2026-06-10
+
+Components: screens are no longer drawn by hand only, they are put together from parts.
+
+Up to now a screen was one draw callback and one key callback. Everything inside it, a bar next
+to a graph above a log, was drawn by hand, and the log lived only on a screen of its own. From
+6.0 a screen is made of components (`pnl_widget_t`): each one draws itself in the space it gets,
+may take keys, may ask for a number of rows and may name the keys it answers to.
+
+- ready-made components:
+  - `pnl_widget_text`: one or more lines in a style
+  - `pnl_widget_bar`: a labeled bar that glides to its new value with `PNL_MOTION_COUNT`
+  - `pnl_widget_graph`: a sparkline, column chart or braille line that keeps its last points,
+    scaled to them or to `pnl_widget_set_range`
+  - `pnl_widget_spinner`: any of the five spinners with a line of text
+  - `pnl_widget_log`: the live log, with scrolling, levels and its filter, inside any panel
+  - `pnl_widget_stack`: rows or columns of other components; sized ones keep their size, the
+    rest share what is left; keys and clicks reach the component under them
+- `pnl_widget_set_text` and `pnl_widget_set_value` change them; the panel redraws by itself
+- putting them on screen: `pnl_layout_widget` places one in a layout panel, where tab, clicks,
+  the footer and the focus mark work as for any panel; `pnl_view_push_widget` gives one a screen
+  of its own; `pnl_widget_draw` draws one inside another
+- a component of your own is a `pnl_widget_class_t`: `draw_fn` and, if it needs them,
+  `key_fn`, `height_fn`, `hints_fn` and `release_fn`, then `pnl_widget_create`. It is treated
+  exactly like the ready-made ones
+- `examples/monitor.c` builds a whole screen from components, with a large clock written from
+  scratch as a component of its own
+- nothing was removed or changed: every 5.x program builds and runs as before. The major
+  version marks the new way of building screens; the shared library is now `libtuikit.so.6`
+
 ## 5.12.0 - 2026-06-05
 
 Waiting: more ways to show that something is going on.

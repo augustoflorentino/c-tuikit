@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(c-tuikit VERSION 5.12.0 DESCRIPTION "Interactive panels for command line tools: live status, actions, results" LANGUAGES C)
+project(c-tuikit VERSION 6.0.0 DESCRIPTION "Interactive panels for command line tools: live status, actions, results" LANGUAGES C)
 
 option(C_TUIKIT_BUILD_TESTS "Build tests" OFF)
 option(C_TUIKIT_BUILD_EXAMPLES "Build examples" OFF)
@@ -70,6 +70,8 @@ if(C_TUIKIT_BUILD_EXAMPLES)
     target_link_libraries(tuikit_tail PRIVATE c-tuikit)
     add_executable(tuikit_csv examples/csv.c)
     target_link_libraries(tuikit_csv PRIVATE c-tuikit)
+    add_executable(tuikit_monitor examples/monitor.c)
+    target_link_libraries(tuikit_monitor PRIVATE c-tuikit)
 endif()
 
 if(C_TUIKIT_BUILD_FUZZ)
