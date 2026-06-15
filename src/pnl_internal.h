@@ -57,6 +57,7 @@
 #define PNL_FADE_FIRST 128
 #define PNL_FADE_STEPS 16
 #define PNL_FADE_MS 600
+#define PNL_GRADIENT_STEPS_MAX 24
 #define PNL_DEPTH_NONE 0
 #define PNL_DEPTH_16 1
 #define PNL_DEPTH_256 2
@@ -113,6 +114,8 @@ struct pnl_palette {
     unsigned long rgb[PNL_ROLES];
     int x256[PNL_ROLES];
     int basic[PNL_ROLES];
+    unsigned long custom[256];
+    unsigned char custom_used[256];
 };
 
 struct pnl_theme {

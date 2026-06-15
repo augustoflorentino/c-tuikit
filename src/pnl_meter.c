@@ -55,7 +55,8 @@ int pnl_canvas_spinner(pnl_canvas_t *canvas, int x, int y, int style, int kind)
 void pnl_canvas_busy(pnl_canvas_t *canvas, int x, int y, int width, int flags)
 {
     int length = width / 5 < 3 ? 3 : width / 5;
-    int color = flags & PNL_METER_LEVEL ? pnl_level_color(0.5) : PNL_ROLE_ACCENT;
+    int color = flags >> 16 != 0 ? pnl_gradient_color(flags >> 16, 0.5)
+                : flags & PNL_METER_LEVEL ? pnl_level_color(0.5) : PNL_ROLE_ACCENT;
     double phase = 0.0;
     int start;
     int eighths;
@@ -97,10 +98,19 @@ int pnl_level_color(double fraction)
 
 static int pnl_meter_color(double fraction, int flags)
 {
+    if (flags >> 16 != 0)
+        return pnl_gradient_color(flags >> 16, fraction);
     return flags & PNL_METER_LEVEL ? pnl_level_color(fraction) : PNL_ROLE_ACCENT;
 }
 
-static void pnl_bar_percent(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int color)
+static int pnl_bar_cell(int flags, int color, int cell, int width)
+{
+    if (flags >> 16 == 0)
+        return color;
+    return pnl_gradient_color(flags >> 16, width > 1 ? (double)cell / (double)(width - 1) : 0.0);
+}
+
+static void pnl_bar_percent(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags, int color)
 {
     char text[8];
     int filled = (int)(fraction * width + 0.5);
@@ -111,10 +121,11 @@ static void pnl_bar_percent(pnl_canvas_t *canvas, int x, int y, int width, doubl
     for (i = 0; i < len && start >= 0; i++) {
         char glyph[2] = {text[i], '\0'};
         int inside = start + i < filled;
+        int ink = pnl_bar_cell(flags, color, start + i, width);
 
         pnl_canvas_text(canvas, x + start + i, y,
-                        PNL_BOLD | (inside ? PNL_BG(color) | PNL_FG(PNL_ROLE_SURFACE)
-                                           : PNL_BG(PNL_ROLE_SURFACE) | PNL_FG(color)),
+                        PNL_BOLD | (inside ? PNL_BG(ink) | PNL_FG(PNL_ROLE_SURFACE)
+                                           : PNL_BG(PNL_ROLE_SURFACE) | PNL_FG(ink)),
                         glyph);
     }
 }
@@ -124,6 +135,7 @@ void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fracti
     int color;
     int eighths;
     int filled;
+    int cell;
 
     if (canvas == NULL || width <= 0)
         return;
@@ -131,12 +143,14 @@ void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fracti
     color = pnl_meter_color(fraction, flags);
     eighths = (int)(fraction * width * 8 + 0.5);
     filled = eighths / 8;
-    pnl_canvas_fill(canvas, x, y, filled, 1, PNL_BG(color));
+    for (cell = 0; cell < filled; cell++)
+        pnl_canvas_fill(canvas, x + cell, y, 1, 1, PNL_BG(pnl_bar_cell(flags, color, cell, width)));
     pnl_canvas_fill(canvas, x + filled, y, width - filled, 1, PNL_BG(PNL_ROLE_SURFACE));
     if (eighths % 8 != 0)
-        pnl_canvas_text(canvas, x + filled, y, PNL_FG(color) | PNL_BG(PNL_ROLE_SURFACE), pnl_eighths[eighths % 8]);
+        pnl_canvas_text(canvas, x + filled, y, PNL_FG(pnl_bar_cell(flags, color, filled, width)) | PNL_BG(PNL_ROLE_SURFACE),
+                        pnl_eighths[eighths % 8]);
     if (flags & PNL_METER_PERCENT)
-        pnl_bar_percent(canvas, x, y, width, fraction, color);
+        pnl_bar_percent(canvas, x, y, width, fraction, flags, color);
 }
 
 static void pnl_column(pnl_canvas_t *canvas, int x, int bottom, int width, int height, double fraction, int flags)
@@ -146,7 +160,7 @@ static void pnl_column(pnl_canvas_t *canvas, int x, int bottom, int width, int h
 
     for (row = 0; row < height && eighths > row * 8; row++) {
         int part = eighths - row * 8 >= 8 ? 7 : eighths - row * 8 - 1;
-        double level = flags & PNL_METER_LEVEL ? (double)(row + 1) / height : 0.0;
+        double level = flags & PNL_METER_LEVEL || flags >> 16 != 0 ? (double)(row + 1) / height : 0.0;
         int i;
 
         for (i = 0; i < width; i++)

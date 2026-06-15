@@ -216,12 +216,39 @@ int pnl_fade_style(pnl_app_t *app, const pnl_canvas_t *canvas, int role, long lo
     return PNL_BG(PNL_FADE_FIRST + (role - PNL_ROLE_FIRST) * PNL_FADE_STEPS + step);
 }
 
+static const unsigned long pnl_basic_rgb[] = {0x000000UL, 0xcd0000UL, 0x00cd00UL, 0xcdcd00UL, 0x0000eeUL, 0xcd00cdUL,
+                                              0x00cdcdUL, 0xe5e5e5UL, 0x7f7f7fUL, 0xff0000UL, 0x00ff00UL, 0xffff00UL,
+                                              0x5c5cffUL, 0xff00ffUL, 0x00ffffUL, 0xffffffUL};
+
+static unsigned pnl_nearest_basic(unsigned long rgb)
+{
+    unsigned best = 0;
+    unsigned i;
+
+    for (i = 1; i < sizeof(pnl_basic_rgb) / sizeof(pnl_basic_rgb[0]); i++) {
+        if (pnl_distance(rgb, pnl_basic_rgb[i]) < pnl_distance(rgb, pnl_basic_rgb[best]))
+            best = i;
+    }
+    return best + 1;
+}
+
+static int pnl_custom_ink(char *buf, unsigned long rgb, int base, int depth)
+{
+    if (depth == PNL_DEPTH_TRUE)
+        return sprintf(buf, ";%d;2;%lu;%lu;%lu", base + 8, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+    if (depth == PNL_DEPTH_256)
+        return sprintf(buf, ";%d;5;%d", base + 8, pnl_rgb_to_256(rgb));
+    return pnl_ink_basic(buf, pnl_nearest_basic(rgb), base, base + 60);
+}
+
 int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_palette *palette)
 {
     int base = background ? 40 : 30;
     unsigned long rgb;
     int role;
 
+    if (ink < 256 && palette->custom_used[ink])
+        return pnl_custom_ink(buf, palette->custom[ink], base, palette->depth);
     if (ink >= PNL_FADE_FIRST && ink < PNL_FADE_FIRST + PNL_ROLES * PNL_FADE_STEPS)
         return pnl_fade_ink(buf, (int)ink - PNL_FADE_FIRST, base, palette);
     if (ink >= PNL_LEVEL_FIRST && ink < PNL_LEVEL_FIRST + PNL_LEVEL_STEPS)
@@ -235,4 +262,139 @@ int pnl_color_ink(char *buf, unsigned ink, int background, const struct pnl_pale
     if (palette->depth == PNL_DEPTH_256)
         return sprintf(buf, ";%d;5;%d", base + 8, palette->x256[role]);
     return pnl_ink_basic(buf, (unsigned)palette->basic[role], base, base + 60);
+}
+
+static const int pnl_custom_ranges[3][2] = {{17, 31}, {240, 255}, {39, 63}};
+
+static int pnl_custom_run(const struct pnl_palette *palette, int length, int gradient)
+{
+    int r;
+
+    for (r = 0; r < 3; r++) {
+        const int *range = pnl_custom_ranges[gradient ? 2 - r : r];
+        int start;
+
+        for (start = range[0]; start + length - 1 <= range[1]; start++) {
+            int i = 0;
+
+            while (i < length && !palette->custom_used[start + i])
+                i++;
+            if (i == length)
+                return start;
+        }
+    }
+    return -1;
+}
+
+int pnl_app_color(pnl_app_t *app, unsigned long rgb, int *out_color)
+{
+    struct pnl_palette *palette;
+    int slot;
+    int i;
+
+    if (out_color != NULL)
+        *out_color = PNL_COLOR_DEFAULT;
+    if (app == NULL || out_color == NULL || rgb > 0xffffffUL)
+        return PNL_ERR_ARG;
+    palette = &app->screen.palette;
+    for (i = 0; i < 256; i++) {
+        if (palette->custom_used[i] == 1 && palette->custom[i] == rgb) {
+            *out_color = i;
+            return PNL_OK;
+        }
+    }
+    slot = pnl_custom_run(palette, 1, 0);
+    if (slot < 0)
+        return PNL_ERR_NOMEM;
+    palette->custom[slot] = rgb;
+    palette->custom_used[slot] = 1;
+    *out_color = slot;
+    return PNL_OK;
+}
+
+static unsigned long pnl_gradient_rgb(const unsigned long *stops, size_t count, double t)
+{
+    double place = t * (double)(count - 1);
+    size_t low = (size_t)place;
+
+    if (low >= count - 1)
+        return stops[count - 1];
+    return pnl_mix(stops[low], stops[low + 1], (int)((place - (double)low) * 100.0 + 0.5));
+}
+
+int pnl_app_gradient(pnl_app_t *app, const unsigned long *stops, size_t count, int steps, int *out_gradient)
+{
+    struct pnl_palette *palette;
+    int first;
+    int i;
+
+    if (out_gradient != NULL)
+        *out_gradient = 0;
+    if (app == NULL || stops == NULL || out_gradient == NULL || count < 2 || steps < 2 ||
+        steps > PNL_GRADIENT_STEPS_MAX)
+        return PNL_ERR_ARG;
+    for (i = 0; i < (int)count; i++) {
+        if (stops[i] > 0xffffffUL)
+            return PNL_ERR_ARG;
+    }
+    palette = &app->screen.palette;
+    first = pnl_custom_run(palette, steps, 1);
+    if (first < 0)
+        return PNL_ERR_NOMEM;
+    for (i = 0; i < steps; i++) {
+        palette->custom[first + i] = pnl_gradient_rgb(stops, count, (double)i / (double)(steps - 1));
+        palette->custom_used[first + i] = 2;
+    }
+    *out_gradient = first | steps << 8;
+    return PNL_OK;
+}
+
+int pnl_gradient_color(int gradient, double fraction)
+{
+    int first = gradient & 0xff;
+    int steps = gradient >> 8 & 0xff;
+
+    if (steps < 2)
+        return first;
+    fraction = fraction > 0.0 ? (fraction < 1.0 ? fraction : 1.0) : 0.0;
+    return first + (int)(fraction * (steps - 1) + 0.5);
+}
+
+int pnl_canvas_gradient_text(pnl_canvas_t *canvas, int x, int y, int style, int gradient, const char *text)
+{
+    size_t count = 0;
+    size_t index = 0;
+    const char *p;
+
+    if (canvas == NULL || text == NULL)
+        return x;
+    for (p = text; *p != '\0'; p++)
+        count += ((unsigned char)*p & 0xc0) != 0x80;
+    for (p = text; *p != '\0';) {
+        char glyph[8];
+        size_t len = 1;
+        double t = count > 1 ? (double)index / (double)(count - 1) : 0.0;
+
+        while (p[len] != '\0' && ((unsigned char)p[len] & 0xc0) == 0x80 && len < sizeof(glyph) - 1)
+            len++;
+        memcpy(glyph, p, len);
+        glyph[len] = '\0';
+        x = pnl_canvas_text(canvas, x, y, (style & ~0xff00) | PNL_FG(pnl_gradient_color(gradient, t)), glyph);
+        p += len;
+        index++;
+    }
+    return x;
+}
+
+void pnl_canvas_gradient_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int gradient)
+{
+    int i;
+
+    if (canvas == NULL || width <= 0)
+        return;
+    for (i = 0; i < width; i++) {
+        double t = width > 1 ? (double)i / (double)(width - 1) : 0.0;
+
+        pnl_canvas_fill(canvas, x + i, y, 1, height, PNL_BG(pnl_gradient_color(gradient, t)));
+    }
 }

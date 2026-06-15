@@ -120,6 +120,7 @@ extern "C" {
 #define PNL_METER_ACCENT 0
 #define PNL_METER_LEVEL 1
 #define PNL_METER_PERCENT 2
+#define PNL_METER_GRADIENT(gradient) ((gradient) << 16)
 
 #define PNL_SPINNER_DOTS 0
 #define PNL_SPINNER_LINE 1
@@ -292,6 +293,12 @@ PNL_API int pnl_canvas_text(pnl_canvas_t *canvas, int x, int y, int style, const
 PNL_API int pnl_canvas_link(pnl_canvas_t *canvas, int x, int y, int style, const char *text, const char *url);
 PNL_API void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int style);
 PNL_API int pnl_color_depth(void);
+PNL_API int pnl_app_color(pnl_app_t *app, unsigned long rgb, int *out_color);
+PNL_API int pnl_app_gradient(pnl_app_t *app, const unsigned long *stops, size_t count, int steps,
+                             int *out_gradient);
+PNL_API int pnl_gradient_color(int gradient, double fraction);
+PNL_API int pnl_canvas_gradient_text(pnl_canvas_t *canvas, int x, int y, int style, int gradient, const char *text);
+PNL_API void pnl_canvas_gradient_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int gradient);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
 PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,
                                   size_t values_len, double max, int flags);

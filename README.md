@@ -41,7 +41,8 @@ up/down: move  enter: choose  ?: help  q: quit
 - the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
-  (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`)
+  (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`); colors and gradients of your
+  own from RGB, see [Colors of your own](#colors-of-your-own)
 - charts for the canvas: bars (with the percentage inside if you like), sparklines, column
   charts several rows tall, labeled columns side by side and line plots drawn with braille dots;
   each one can shift from green to red as the value rises
@@ -222,6 +223,32 @@ callback. While a text field has the focus every key is typed into it, even `q` 
 still goes back. A component of your own joins the tab order with `pnl_widget_set_focusable`
 and draws itself highlighted when `pnl_canvas_focused` says so. See
 [`examples/form.c`](examples/form.c).
+
+## Colors of your own
+
+Roles keep a tool readable on any terminal and theme. When a part needs a color of its own,
+register it once and use it like any other:
+
+```c
+int orange, sunset;
+static const unsigned long stops[] = {0xffb347, 0xff5e62, 0x9b2fff};
+
+pnl_app_color(app, 0xff8800, &orange);
+pnl_app_gradient(app, stops, 3, 12, &sunset);
+
+pnl_canvas_text(canvas, 0, 0, PNL_FG(orange), "orange text");
+pnl_canvas_gradient_text(canvas, 0, 1, PNL_BOLD, sunset, "a title in sunset colors");
+pnl_canvas_gradient_fill(canvas, 0, 2, 40, 1, sunset);
+pnl_canvas_bar(canvas, 0, 3, 40, 0.7, PNL_METER_GRADIENT(sunset) | PNL_METER_PERCENT);
+pnl_widget_graph(app, "load", PNL_GRAPH_CHART, 6, PNL_METER_GRADIENT(sunset), 200, &load);
+```
+
+A gradient runs through two or more stops in 2 to 24 steps; `pnl_gradient_color` gives the
+color at any point between 0 and 1. `PNL_METER_GRADIENT` paints bars along their length and
+charts, sparklines and plots by height. Colors are sent as they are in true color and fitted to
+the nearest one on 256 and 16 color terminals; with `NO_COLOR` they are left out. There is room
+for about fifty of them (a gradient takes one per step); past that the call returns
+`PNL_ERR_NOMEM`.
 
 ## Testing a tool
 

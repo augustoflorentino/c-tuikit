@@ -15,6 +15,11 @@ enum { TILE_CHART, TILE_PLOT, TILE_SPARKS, TILE_BARS, TILE_EQUALIZER, TILE_SPINN
 enum { WAVE_SINE, WAVE_SQUARE, WAVE_SAW, WAVE_BOUNCE, WAVE_PULSE, WAVE_NOISE, WAVE_KINDS };
 
 static const char *const tile_names[] = {"chart", "line", "sparklines", "bars", "equalizer", "spinners", "counter"};
+static const char *const scheme_names[] = {"", ", heat", ", sunset", ", ocean", ", aurora", ", ember"};
+static const unsigned long palettes[4][3] = {{0xffb347UL, 0xff5e62UL, 0x9b2fffUL},
+                                             {0x00c6ffUL, 0x0072ffUL, 0x6a00f4UL},
+                                             {0x43e97bUL, 0x38f9d7UL, 0xa17fe0UL},
+                                             {0xf9d423UL, 0xff4e50UL, 0x8e0e00UL}};
 static const char *const wave_names[] = {"sine", "square", "saw", "bounce", "heartbeat", "noise"};
 static const char *const digits[] = {"#### ## ## ####", " # ##  #  # ###", "###  #####  ###", "###  ####  ####",
                                      "# ## ####  #  #", "####  ###  ####", "####  #### ####", "###  #  #  #  #",
@@ -27,6 +32,7 @@ struct tile {
     int kind;
     int wave;
     int flags;
+    int scheme;
     int lanes;
     double speed;
     double phase;
@@ -52,6 +58,7 @@ struct gallery {
     int paused;
     int automatic;
     int timer;
+    int gradients[4];
 };
 
 static unsigned int roll(struct gallery *gallery, unsigned int range)
@@ -112,7 +119,7 @@ static void tile_title(struct tile *tile)
         return;
     }
     snprintf(tile->title, sizeof(tile->title), "%s of %s at %.1fx%s", tile_names[tile->kind],
-             wave_names[tile->wave], tile->speed, tile->flags & PNL_METER_LEVEL ? ", heat" : "");
+             wave_names[tile->wave], tile->speed, scheme_names[tile->scheme]);
 }
 
 static void tile_roll(struct gallery *gallery, struct tile *tile)
@@ -121,7 +128,10 @@ static void tile_roll(struct gallery *gallery, struct tile *tile)
     tile->gallery = gallery;
     tile->kind = (int)roll(gallery, TILE_KINDS);
     tile->wave = (int)roll(gallery, WAVE_KINDS);
-    tile->flags = roll(gallery, 3) > 0 ? PNL_METER_LEVEL : PNL_METER_ACCENT;
+    tile->scheme = (int)roll(gallery, 6);
+    tile->flags = tile->scheme == 0   ? PNL_METER_ACCENT
+                  : tile->scheme == 1 ? PNL_METER_LEVEL
+                                      : PNL_METER_GRADIENT(gallery->gradients[tile->scheme - 2]);
     tile->lanes = tile->kind == TILE_SPARKS ? LANES : 1;
     tile->speed = 0.2 + (double)roll(gallery, 15) / 10.0;
     tile->phase = (double)roll(gallery, 100) / 100.0;
@@ -162,16 +172,18 @@ static void draw_digit(pnl_canvas_t *canvas, int x, int y, int digit, int style)
 static void draw_counter(const struct tile *tile, pnl_canvas_t *canvas, double value, int height)
 {
     int number = (int)(value * 999.0 + 0.5);
-    int color = tile->flags & PNL_METER_LEVEL ? 0 : PNL_BG(PNL_ROLE_ACCENT);
+    int color = tile->scheme == 0 ? PNL_BG(PNL_ROLE_ACCENT) : 0;
     int y = height > 6 ? (height - 6) / 2 : 0;
     int i;
 
     for (i = 0; i < 3; i++) {
         int digit = i == 0 ? number / 100 : i == 1 ? number / 10 % 10 : number % 10;
 
-        draw_digit(canvas, 1 + i * 4, y, digit, color != 0 ? color : PNL_BG(value > 0.7 ? PNL_ROLE_FAIL
-                                                                     : value > 0.4 ? PNL_ROLE_WARN
-                                                                                   : PNL_ROLE_OK));
+        if (tile->scheme > 1)
+            color = PNL_BG(pnl_gradient_color(tile->gallery->gradients[tile->scheme - 2], i / 2.0));
+        else if (tile->scheme == 1)
+            color = PNL_BG(value > 0.7 ? PNL_ROLE_FAIL : value > 0.4 ? PNL_ROLE_WARN : PNL_ROLE_OK);
+        draw_digit(canvas, 1 + i * 4, y, digit, color);
     }
     pnl_canvas_bar(canvas, 1, y + 6, 11, value, tile->flags);
 }
@@ -276,7 +288,7 @@ static void gallery_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     (void)app;
     snprintf(line, sizeof(line), "variation %u%s%s", gallery->variation, gallery->paused ? "  paused" : "",
              gallery->automatic ? "  changes by itself" : "");
-    pnl_canvas_text(canvas, 0, 0, PNL_BOLD, line);
+    pnl_canvas_gradient_text(canvas, 0, 0, PNL_BOLD, gallery->gradients[gallery->variation % 4], line);
     if (gallery->automatic && !gallery->paused)
         pnl_canvas_bar(canvas, pnl_canvas_width(canvas) - 21, 0, 20, (double)gallery->ticks / AUTO_TICKS,
                        PNL_METER_ACCENT);
@@ -374,6 +386,16 @@ static void release(struct gallery *gallery)
     pnl_widget_destroy(gallery->grid);
 }
 
+static int register_gradients(struct gallery *gallery)
+{
+    int status = PNL_OK;
+    int i;
+
+    for (i = 0; i < 4 && status == PNL_OK; i++)
+        status = pnl_app_gradient(gallery->app, palettes[i], 3, 12, &gallery->gradients[i]);
+    return status;
+}
+
 static void open_gallery(void *ctx, pnl_app_t *app)
 {
     struct gallery *gallery = ctx;
@@ -393,6 +415,8 @@ int main(int argc, char **argv)
     if (status == PNL_OK)
         status = pnl_app_enable_motion(gallery.app, PNL_MOTION_SLIDE | PNL_MOTION_TRANSITION | PNL_MOTION_PULSE |
                                                         PNL_MOTION_ENTER | PNL_MOTION_FEEDBACK | PNL_MOTION_COUNT);
+    if (status == PNL_OK)
+        status = register_gradients(&gallery);
     if (status == PNL_OK)
         status = build(&gallery);
     if (status == PNL_OK)

@@ -1053,6 +1053,81 @@ static void test_forms(void)
     pnl_app_destroy(app);
 }
 
+struct color_screen {
+    int orange;
+    int sunset;
+};
+
+static void draw_colors(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
+{
+    struct color_screen *screen = ctx;
+
+    (void)app;
+    pnl_canvas_text(canvas, 0, 0, PNL_FG(screen->orange), "orange");
+    pnl_canvas_gradient_text(canvas, 0, 1, PNL_BOLD, screen->sunset, "sunset");
+    pnl_canvas_gradient_fill(canvas, 0, 2, 10, 1, screen->sunset);
+    pnl_canvas_bar(canvas, 0, 3, 10, 0.5, PNL_METER_GRADIENT(screen->sunset) | PNL_METER_PERCENT);
+}
+
+static void open_colors(void *ctx, pnl_app_t *app)
+{
+    CHECK(pnl_view_push(app, "colors", draw_colors, NULL, ctx) == PNL_OK);
+}
+
+static void test_custom_colors(void)
+{
+    static const unsigned long stops[] = {0xff8800UL, 0xff0066UL, 0x6600ffUL};
+    struct color_screen screen = {0, 0};
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    int color = -1;
+    int again = -1;
+    int gradient = -1;
+    int count = 0;
+    FILE *file;
+    char cast[65536];
+    size_t len;
+
+    CHECK(pnl_app_create("colors", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_color(NULL, 0xff8800UL, &color) == PNL_ERR_ARG);
+    CHECK(pnl_app_color(app, 0x1000000UL, &color) == PNL_ERR_ARG);
+    CHECK(color == PNL_COLOR_DEFAULT);
+    CHECK(pnl_app_color(app, 0xff8800UL, &screen.orange) == PNL_OK);
+    CHECK(pnl_app_color(app, 0xff8800UL, &again) == PNL_OK);
+    CHECK(again == screen.orange);
+    CHECK(screen.orange > PNL_COLOR_BRIGHT_WHITE && screen.orange < 256);
+    CHECK(pnl_app_gradient(app, stops, 1, 8, &gradient) == PNL_ERR_ARG);
+    CHECK(pnl_app_gradient(app, stops, 3, 1, &gradient) == PNL_ERR_ARG);
+    CHECK(pnl_app_gradient(app, stops, 3, 25, &gradient) == PNL_ERR_ARG);
+    CHECK(gradient == 0);
+    CHECK(pnl_app_gradient(app, stops, 3, 8, &screen.sunset) == PNL_OK);
+    CHECK(pnl_gradient_color(screen.sunset, 0.0) + 7 == pnl_gradient_color(screen.sunset, 1.0));
+    CHECK(pnl_gradient_color(screen.sunset, -1.0) == pnl_gradient_color(screen.sunset, 0.0));
+    CHECK(pnl_gradient_color(screen.sunset, 0.5) != screen.orange);
+    while (pnl_app_color(app, 0x010101UL * (unsigned long)(count + 1), &color) == PNL_OK)
+        count++;
+    CHECK(count > 30 && count < 60);
+    CHECK(pnl_app_gradient(app, stops, 3, 24, &gradient) == PNL_ERR_NOMEM);
+    CHECK(pnl_app_add_action(app, "Colors", open_colors, &screen) == PNL_OK);
+    CHECK(pnl_app_record(app, "colors.cast") == PNL_OK);
+    CHECK(pnl_test_create(app, 30, 8, &test) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "sunset") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "50%") != NULL);
+    pnl_test_destroy(test);
+    pnl_app_destroy(app);
+    file = fopen("colors.cast", "rb");
+    CHECK(file != NULL);
+    if (file == NULL)
+        return;
+    len = fread(cast, 1, sizeof(cast) - 1, file);
+    cast[len] = '\0';
+    fclose(file);
+    remove("colors.cast");
+    CHECK(strstr(cast, "38;2;255;136;0") != NULL);
+    CHECK(strstr(cast, "48;2;102;0;255") != NULL);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -1100,5 +1175,6 @@ int main(void)
     test_charts();
     test_widgets();
     test_forms();
+    test_custom_colors();
     return 0;
 }
