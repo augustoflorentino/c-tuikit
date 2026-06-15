@@ -628,11 +628,12 @@ static int pnl_stack_mouse(struct pnl_stack_widget *stack, pnl_app_t *app, int k
 
 static int pnl_stack_step(struct pnl_stack_widget *stack, int key)
 {
-    int back = key == PNL_KEY_BACKTAB || key == PNL_KEY_UP;
+    int back = key == PNL_KEY_BACKTAB || key == PNL_KEY_UP || key == PNL_KEY_LEFT;
+    int rows = stack->kind == PNL_STACK_ROWS && (key == PNL_KEY_UP || key == PNL_KEY_DOWN);
+    int columns = stack->kind == PNL_STACK_COLUMNS && (key == PNL_KEY_LEFT || key == PNL_KEY_RIGHT);
     int next;
 
-    if (key != PNL_KEY_TAB && key != PNL_KEY_BACKTAB && key != PNL_KEY_ENTER &&
-        (stack->kind != PNL_STACK_ROWS || (key != PNL_KEY_UP && key != PNL_KEY_DOWN)))
+    if (key != PNL_KEY_TAB && key != PNL_KEY_BACKTAB && key != PNL_KEY_ENTER && !rows && !columns)
         return 0;
     next = pnl_stack_first(stack, stack->focus + (back ? -1 : 1), back ? -1 : 1);
     if (next < 0)

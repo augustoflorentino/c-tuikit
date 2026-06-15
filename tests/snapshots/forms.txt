@@ -5,7 +5,7 @@ pass  **
 color < green >
 size              ▊                    4
 [x] loud
- Save
+ Save     Cancel
 
 
 
