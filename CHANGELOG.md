@@ -4,6 +4,22 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.1.0 - 2026-06-15
+
+Gallery: a screen that never shows the same thing twice.
+
+- `examples/gallery.c` (`tuikit_gallery`) fills the screen with six tiles and keeps making new
+  combinations: each tile picks a kind (column chart, braille line, sparklines, bars with their
+  percentage, equalizer, spinners with busy bars, a large counter), a wave to follow (sine,
+  square, saw, bounce, heartbeat, noise), a speed and colors by level or accent
+- a new combination comes every eight seconds, with a bar at the top counting down to it, or at
+  once with `n`; space pauses, `a` turns the automatic change on and off
+- the screen motions can be called up from it: `t` sends a notification, `d` opens a dialog
+  that grows in, `x` shakes the screen or the dialog
+- the gallery is built entirely from components: a stack of two rows of three cells, each cell
+  a title above a component of its own, under one component that draws the header and takes
+  the keys
+
 ## 6.0.0 - 2026-06-10
 
 Components: screens are no longer drawn by hand only, they are put together from parts.
