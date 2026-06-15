@@ -4,6 +4,38 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.2.0 - 2026-06-15
+
+Forms: components that take the focus, and the keys that move between them.
+
+6.0 put screens together from parts, but every part only showed something. Asking for a name, a
+region and a number still meant a chain of dialogs, one question at a time. From 6.2 a form is a
+stack of fields, all on screen at once, with a summary next to it that follows every key.
+
+- new components that take the focus:
+  - `pnl_widget_input`: a text field with the usual editing keys; `PNL_INPUT_SECRET` shows
+    stars instead of the text
+  - `pnl_widget_check`: a checkbox, toggled with space or a click
+  - `pnl_widget_choice`: one option out of a list, changed with left and right
+  - `pnl_widget_slider`: a number between two limits in steps, moved with the arrows, home, end
+    or a click on the bar, gliding with `PNL_MOTION_COUNT`
+  - `pnl_widget_button`: runs an action on enter, space or a click and flashes with
+    `PNL_MOTION_FEEDBACK`
+- focus inside stacks: tab, shift-tab, enter and up/down walk the fields, nested stacks
+  included; a click focuses the field under it. Past the last field tab goes on to the next
+  layout panel, or back to the first field on a screen of its own
+- `pnl_widget_on_change` calls back on every change made by the user; `pnl_widget_get_text`
+  and `pnl_widget_get_value` read any component; `pnl_widget_set_text` and
+  `pnl_widget_set_value` fill fields from code; `pnl_widget_focus` moves the focus, for example
+  back to a field that is missing
+- a component of your own joins the tab order with `pnl_widget_set_focusable` and knows it has
+  the focus through `pnl_canvas_focused`
+- while a text field has the focus, keys are typed into it, even `q`, `?` and remapped keys;
+  esc still goes back
+- the footer says `tab: next` while a form has the focus, and each field names its keys
+- `examples/form.c` (`tuikit_form`): a form for a new service with a summary updated as you type,
+  and a deploy button that shakes and returns to the name when it is empty
+
 ## 6.1.0 - 2026-06-15
 
 Gallery: a screen that never shows the same thing twice.
