@@ -3,21 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PNL_WIDGET_TEXT 1
-#define PNL_WIDGET_BAR 2
-#define PNL_WIDGET_GRAPH 3
-#define PNL_WIDGET_SPINNER 4
-#define PNL_WIDGET_STACK 5
 #define PNL_GRAPH_CAPACITY_MAX 4096
-
-struct pnl_widget {
-    pnl_app_t *app;
-    pnl_widget_class_t widget_class;
-    void *ctx;
-    int kind;
-    char footer_text[PNL_WIDGET_FOOTER];
-    const char *footer;
-};
 
 struct pnl_text_widget {
     pnl_app_t *app;
@@ -66,6 +52,7 @@ struct pnl_stack_widget {
     struct pnl_stack_child *children;
     size_t len;
     size_t cap;
+    int focus;
 };
 
 int pnl_widget_create(pnl_app_t *app, const pnl_widget_class_t *widget_class, void *widget_ctx,
@@ -106,6 +93,19 @@ void pnl_widget_paint(pnl_widget_t *widget, pnl_canvas_t *canvas)
 {
     if (canvas->width > 0 && canvas->height > 0)
         widget->widget_class.draw_fn(widget->ctx, widget->app, canvas);
+}
+
+static void pnl_widget_place(pnl_widget_t *widget, pnl_canvas_t *canvas, int x, int y, int width, int height,
+                             int focused)
+{
+    struct pnl_canvas inner = *canvas;
+
+    inner.focused = focused;
+    inner.x = canvas->x + x;
+    inner.y = canvas->y + y;
+    inner.width = x + width > canvas->width ? canvas->width - x : width;
+    inner.height = y + height > canvas->height ? canvas->height - y : height;
+    pnl_widget_paint(widget, &inner);
 }
 
 int pnl_widget_draw(pnl_widget_t *widget, pnl_canvas_t *canvas, int x, int y, int width, int height)
@@ -150,15 +150,20 @@ static void pnl_widget_view_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas
     const char *hints = pnl_widget_hints(widget);
 
     (void)app;
-    snprintf(widget->footer_text, sizeof(widget->footer_text), "%s%sesc: back", hints ? hints : "",
-             hints ? "  " : "");
+    snprintf(widget->footer_text, sizeof(widget->footer_text), "%s%s%sesc: back", hints ? hints : "",
+             hints ? "  " : "", pnl_widget_focusable(widget) ? "tab: next  " : "");
     pnl_widget_paint(widget, canvas);
 }
 
 static int pnl_widget_view_key(void *ctx, pnl_app_t *app, int key)
 {
     (void)app;
-    return pnl_widget_key(ctx, key);
+    if (pnl_widget_key(ctx, key))
+        return 1;
+    if ((key != PNL_KEY_TAB && key != PNL_KEY_BACKTAB) || !pnl_widget_focusable(ctx))
+        return 0;
+    pnl_widget_focus_edge(ctx, key == PNL_KEY_BACKTAB);
+    return 1;
 }
 
 int pnl_view_push_widget(pnl_app_t *app, const char *title, pnl_widget_t *widget)
@@ -183,7 +188,7 @@ int pnl_view_push_widget(pnl_app_t *app, const char *title, pnl_widget_t *widget
     return status;
 }
 
-static int pnl_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
+int pnl_widget_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
                        pnl_widget_t **out_widget)
 {
     int status = pnl_widget_create(app, widget_class, ctx, out_widget);
@@ -196,7 +201,7 @@ static int pnl_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widge
     return PNL_OK;
 }
 
-static int pnl_copy_into(pnl_app_t *app, char **slot, const char *text)
+int pnl_widget_copy(pnl_app_t *app, char **slot, const char *text)
 {
     char *copy = NULL;
 
@@ -267,11 +272,11 @@ int pnl_widget_text(pnl_app_t *app, const char *text, int style, pnl_widget_t **
     memset(widget, 0, sizeof(*widget));
     widget->app = app;
     widget->style = style;
-    if (pnl_copy_into(app, &widget->text, text != NULL ? text : "") != PNL_OK) {
+    if (pnl_widget_copy(app, &widget->text, text != NULL ? text : "") != PNL_OK) {
         pnl_text_release(widget);
         return PNL_ERR_NOMEM;
     }
-    return pnl_builtin(app, PNL_WIDGET_TEXT, &text_class, widget, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_TEXT, &text_class, widget, out_widget);
 }
 
 static void pnl_label_draw(pnl_canvas_t *canvas, const char *label, int *x)
@@ -323,11 +328,11 @@ int pnl_widget_bar(pnl_app_t *app, const char *label, int flags, pnl_widget_t **
     memset(widget, 0, sizeof(*widget));
     widget->app = app;
     widget->flags = flags;
-    if (pnl_copy_into(app, &widget->label, label) != PNL_OK) {
+    if (pnl_widget_copy(app, &widget->label, label) != PNL_OK) {
         pnl_bar_release(widget);
         return PNL_ERR_NOMEM;
     }
-    return pnl_builtin(app, PNL_WIDGET_BAR, &bar_class, widget, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_BAR, &bar_class, widget, out_widget);
 }
 
 static void pnl_graph_bounds(const struct pnl_graph_widget *widget, double *min, double *max)
@@ -420,11 +425,11 @@ int pnl_widget_graph(pnl_app_t *app, const char *label, int kind, int rows, int 
     widget->flags = flags;
     widget->capacity = capacity;
     widget->values = pnl_mem_alloc(&app->mem, capacity * sizeof(*widget->values));
-    if (widget->values == NULL || pnl_copy_into(app, &widget->label, label) != PNL_OK) {
+    if (widget->values == NULL || pnl_widget_copy(app, &widget->label, label) != PNL_OK) {
         pnl_graph_release(widget);
         return PNL_ERR_NOMEM;
     }
-    return pnl_builtin(app, PNL_WIDGET_GRAPH, &graph_class, widget, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_GRAPH, &graph_class, widget, out_widget);
 }
 
 static void pnl_spinner_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
@@ -461,11 +466,11 @@ int pnl_widget_spinner(pnl_app_t *app, int kind, const char *text, pnl_widget_t 
     memset(widget, 0, sizeof(*widget));
     widget->app = app;
     widget->kind = kind;
-    if (pnl_copy_into(app, &widget->text, text) != PNL_OK) {
+    if (pnl_widget_copy(app, &widget->text, text) != PNL_OK) {
         pnl_spinner_release(widget);
         return PNL_ERR_NOMEM;
     }
-    return pnl_builtin(app, PNL_WIDGET_SPINNER, &spinner_class, widget, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_SPINNER, &spinner_class, widget, out_widget);
 }
 
 int pnl_widget_set_text(pnl_widget_t *widget, const char *text)
@@ -473,14 +478,14 @@ int pnl_widget_set_text(pnl_widget_t *widget, const char *text)
     if (widget == NULL || text == NULL)
         return PNL_ERR_ARG;
     if (widget->kind == PNL_WIDGET_TEXT)
-        return pnl_copy_into(widget->app, &((struct pnl_text_widget *)widget->ctx)->text, text);
+        return pnl_widget_copy(widget->app, &((struct pnl_text_widget *)widget->ctx)->text, text);
     if (widget->kind == PNL_WIDGET_SPINNER)
-        return pnl_copy_into(widget->app, &((struct pnl_spinner_widget *)widget->ctx)->text, text);
+        return pnl_widget_copy(widget->app, &((struct pnl_spinner_widget *)widget->ctx)->text, text);
     if (widget->kind == PNL_WIDGET_BAR)
-        return pnl_copy_into(widget->app, &((struct pnl_bar_widget *)widget->ctx)->label, text);
+        return pnl_widget_copy(widget->app, &((struct pnl_bar_widget *)widget->ctx)->label, text);
     if (widget->kind == PNL_WIDGET_GRAPH)
-        return pnl_copy_into(widget->app, &((struct pnl_graph_widget *)widget->ctx)->label, text);
-    return PNL_ERR_ARG;
+        return pnl_widget_copy(widget->app, &((struct pnl_graph_widget *)widget->ctx)->label, text);
+    return pnl_form_set_text(widget, text);
 }
 
 static void pnl_graph_push(struct pnl_graph_widget *widget, double value)
@@ -503,7 +508,7 @@ int pnl_widget_set_value(pnl_widget_t *widget, double value)
     } else if (widget->kind == PNL_WIDGET_GRAPH) {
         pnl_graph_push(widget->ctx, value);
     } else {
-        return PNL_ERR_ARG;
+        return pnl_form_set_value(widget, value);
     }
     widget->app->dirty = 1;
     return PNL_OK;
@@ -513,6 +518,8 @@ int pnl_widget_set_range(pnl_widget_t *widget, double min, double max)
 {
     struct pnl_graph_widget *graph;
 
+    if (widget != NULL && widget->kind == PNL_WIDGET_SLIDER)
+        return pnl_form_set_range(widget, min, max);
     if (widget == NULL || widget->kind != PNL_WIDGET_GRAPH || !(max >= min))
         return PNL_ERR_ARG;
     graph = widget->ctx;
@@ -542,6 +549,32 @@ static int pnl_stack_sizes(struct pnl_stack_widget *stack, int length, int acros
     return flexible > 0 && left > 0 ? left / flexible : 0;
 }
 
+static int pnl_stack_first(const struct pnl_stack_widget *stack, int from, int step)
+{
+    int i;
+
+    for (i = from; i >= 0 && i < (int)stack->len; i += step) {
+        if (pnl_widget_focusable(stack->children[i].widget))
+            return i;
+    }
+    return -1;
+}
+
+static int pnl_stack_current(struct pnl_stack_widget *stack)
+{
+    if (stack->focus < 0 || stack->focus >= (int)stack->len ||
+        !pnl_widget_focusable(stack->children[stack->focus].widget))
+        stack->focus = pnl_stack_first(stack, 0, 1);
+    return stack->focus;
+}
+
+static int pnl_stack_child_focused(struct pnl_stack_widget *stack, const pnl_canvas_t *canvas, size_t i)
+{
+    if (!pnl_widget_focusable(stack->children[i].widget))
+        return canvas->focused;
+    return canvas->focused && (int)i == pnl_stack_current(stack);
+}
+
 static void pnl_stack_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct pnl_stack_widget *stack = ctx;
@@ -563,7 +596,8 @@ static void pnl_stack_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
         child->width = columns ? size : across;
         child->height = columns ? across : size;
         if (size > 0)
-            pnl_widget_draw(child->widget, canvas, child->x, child->y, child->width, child->height);
+            pnl_widget_place(child->widget, canvas, child->x, child->y, child->width, child->height,
+                             pnl_stack_child_focused(stack, canvas, i));
         child->x += canvas->x;
         child->y += canvas->y;
         pos += size + columns;
@@ -583,20 +617,47 @@ static int pnl_stack_mouse(struct pnl_stack_widget *stack, pnl_app_t *app, int k
             continue;
         app->mouse_ox = child->x;
         app->mouse_oy = child->y;
-        return pnl_widget_key(child->widget, key);
+        if (key == PNL_KEY_CLICK && pnl_widget_focusable(child->widget)) {
+            stack->focus = (int)i;
+            app->dirty = 1;
+        }
+        return pnl_widget_key(child->widget, key) || (key == PNL_KEY_CLICK && stack->focus == (int)i);
     }
     return 0;
+}
+
+static int pnl_stack_step(struct pnl_stack_widget *stack, int key)
+{
+    int back = key == PNL_KEY_BACKTAB || key == PNL_KEY_UP;
+    int next;
+
+    if (key != PNL_KEY_TAB && key != PNL_KEY_BACKTAB && key != PNL_KEY_ENTER &&
+        (stack->kind != PNL_STACK_ROWS || (key != PNL_KEY_UP && key != PNL_KEY_DOWN)))
+        return 0;
+    next = pnl_stack_first(stack, stack->focus + (back ? -1 : 1), back ? -1 : 1);
+    if (next < 0)
+        return 0;
+    stack->focus = next;
+    pnl_widget_focus_edge(stack->children[next].widget, back);
+    stack->app->dirty = 1;
+    return 1;
 }
 
 static int pnl_stack_key(void *ctx, pnl_app_t *app, int key)
 {
     struct pnl_stack_widget *stack = ctx;
+    int focus;
     size_t i;
 
     if (pnl_is_mouse_key(key))
         return pnl_stack_mouse(stack, app, key);
+    focus = pnl_stack_current(stack);
+    if (focus >= 0 && pnl_widget_key(stack->children[focus].widget, key))
+        return 1;
+    if (focus >= 0 && pnl_stack_step(stack, key))
+        return 1;
     for (i = 0; i < stack->len; i++) {
-        if (pnl_widget_key(stack->children[i].widget, key))
+        if (!pnl_widget_focusable(stack->children[i].widget) && pnl_widget_key(stack->children[i].widget, key))
             return 1;
     }
     return 0;
@@ -623,8 +684,11 @@ static int pnl_stack_height(void *ctx, pnl_app_t *app, int width)
 static const char *pnl_stack_hints(void *ctx)
 {
     struct pnl_stack_widget *stack = ctx;
+    int focus = pnl_stack_current(stack);
     size_t i;
 
+    if (focus >= 0 && pnl_widget_hints(stack->children[focus].widget) != NULL)
+        return pnl_widget_hints(stack->children[focus].widget);
     for (i = 0; i < stack->len; i++) {
         const char *hints = pnl_widget_hints(stack->children[i].widget);
 
@@ -658,7 +722,8 @@ int pnl_widget_stack(pnl_app_t *app, int kind, pnl_widget_t **out_widget)
     memset(stack, 0, sizeof(*stack));
     stack->app = app;
     stack->kind = kind;
-    return pnl_builtin(app, PNL_WIDGET_STACK, &stack_class, stack, out_widget);
+    stack->focus = -1;
+    return pnl_widget_builtin(app, PNL_WIDGET_STACK, &stack_class, stack, out_widget);
 }
 
 int pnl_widget_add(pnl_widget_t *stack, pnl_widget_t *child, int size)
@@ -679,5 +744,114 @@ int pnl_widget_add(pnl_widget_t *stack, pnl_widget_t *child, int size)
     ctx->children[ctx->len].size = size;
     ctx->len++;
     stack->app->dirty = 1;
+    return PNL_OK;
+}
+
+int pnl_widget_focusable(const pnl_widget_t *widget)
+{
+    const struct pnl_stack_widget *stack;
+    size_t i;
+
+    if (widget == NULL)
+        return 0;
+    if (widget->kind != PNL_WIDGET_STACK)
+        return widget->focusable;
+    stack = widget->ctx;
+    for (i = 0; i < stack->len; i++) {
+        if (pnl_widget_focusable(stack->children[i].widget))
+            return 1;
+    }
+    return 0;
+}
+
+void pnl_widget_focus_edge(pnl_widget_t *widget, int last)
+{
+    struct pnl_stack_widget *stack;
+
+    if (widget == NULL || widget->kind != PNL_WIDGET_STACK)
+        return;
+    stack = widget->ctx;
+    stack->focus = last ? pnl_stack_first(stack, (int)stack->len - 1, -1) : pnl_stack_first(stack, 0, 1);
+    if (stack->focus >= 0)
+        pnl_widget_focus_edge(stack->children[stack->focus].widget, last);
+    widget->app->dirty = 1;
+}
+
+void pnl_widget_changed(pnl_widget_t *widget)
+{
+    widget->app->dirty = 1;
+    if (widget->change_fn != NULL)
+        widget->change_fn(widget->change_ctx, widget->app, widget);
+}
+
+int pnl_widget_on_change(pnl_widget_t *widget, pnl_change_fn change_fn, void *change_ctx)
+{
+    if (widget == NULL)
+        return PNL_ERR_ARG;
+    widget->change_fn = change_fn;
+    widget->change_ctx = change_ctx;
+    return PNL_OK;
+}
+
+int pnl_widget_set_focusable(pnl_widget_t *widget, int focusable)
+{
+    if (widget == NULL || widget->kind == PNL_WIDGET_STACK)
+        return PNL_ERR_ARG;
+    widget->focusable = focusable != 0;
+    widget->app->dirty = 1;
+    return PNL_OK;
+}
+
+int pnl_widget_focus(pnl_widget_t *stack, pnl_widget_t *child)
+{
+    struct pnl_stack_widget *ctx;
+    size_t i;
+
+    if (stack == NULL || child == NULL || stack->kind != PNL_WIDGET_STACK || !pnl_widget_focusable(child))
+        return PNL_ERR_ARG;
+    ctx = stack->ctx;
+    for (i = 0; i < ctx->len; i++) {
+        pnl_widget_t *inner = ctx->children[i].widget;
+
+        if (inner == child || (inner->kind == PNL_WIDGET_STACK && pnl_widget_focus(inner, child) == PNL_OK)) {
+            ctx->focus = (int)i;
+            stack->app->dirty = 1;
+            return PNL_OK;
+        }
+    }
+    return PNL_ERR_NOT_FOUND;
+}
+
+const char *pnl_widget_get_text(const pnl_widget_t *widget)
+{
+    if (widget == NULL)
+        return NULL;
+    if (widget->kind == PNL_WIDGET_TEXT)
+        return ((const struct pnl_text_widget *)widget->ctx)->text;
+    if (widget->kind == PNL_WIDGET_SPINNER)
+        return ((const struct pnl_spinner_widget *)widget->ctx)->text;
+    if (widget->kind == PNL_WIDGET_BAR)
+        return ((const struct pnl_bar_widget *)widget->ctx)->label;
+    if (widget->kind == PNL_WIDGET_GRAPH)
+        return ((const struct pnl_graph_widget *)widget->ctx)->label;
+    return pnl_form_get_text(widget);
+}
+
+int pnl_widget_get_value(const pnl_widget_t *widget, double *out_value)
+{
+    const struct pnl_graph_widget *graph;
+
+    if (widget == NULL || out_value == NULL)
+        return PNL_ERR_ARG;
+    if (widget->kind == PNL_WIDGET_BAR) {
+        *out_value = ((const struct pnl_bar_widget *)widget->ctx)->glide.to;
+        return PNL_OK;
+    }
+    if (widget->kind != PNL_WIDGET_GRAPH)
+        return pnl_form_get_value(widget, out_value);
+    graph = widget->ctx;
+    if (graph->len == 0)
+        return PNL_ERR_NOT_FOUND;
+    *out_value = graph->values[graph->len - 1];
     return PNL_OK;
 }

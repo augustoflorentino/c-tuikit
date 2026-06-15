@@ -954,6 +954,105 @@ static void test_widgets(void)
     pnl_app_destroy(app);
 }
 
+struct form_screen {
+    pnl_widget_t *stack;
+    int pressed;
+    int changes;
+};
+
+static void open_form(void *ctx, pnl_app_t *app)
+{
+    struct form_screen *screen = ctx;
+
+    CHECK(pnl_view_push_widget(app, "form", screen->stack) == PNL_OK);
+}
+
+static void form_pressed(void *ctx, pnl_app_t *app)
+{
+    struct form_screen *screen = ctx;
+
+    (void)app;
+    screen->pressed++;
+}
+
+static void form_changed(void *ctx, pnl_app_t *app, pnl_widget_t *widget)
+{
+    struct form_screen *screen = ctx;
+
+    (void)app;
+    (void)widget;
+    screen->changes++;
+}
+
+static void test_forms(void)
+{
+    static const char *const colors[] = {"red", "green", "blue"};
+    const char *const broken[] = {"one", NULL};
+    struct form_screen screen = {NULL, 0, 0};
+    pnl_widget_t *fields[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
+    pnl_widget_t *out = NULL;
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    double value = -1.0;
+    char long_text[300];
+    size_t i;
+
+    memset(long_text, 'a', sizeof(long_text) - 1);
+    long_text[sizeof(long_text) - 1] = '\0';
+    CHECK(pnl_app_create("forms", NULL, &app) == PNL_OK);
+    CHECK(pnl_widget_input(app, "name", 4, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_choice(app, "color", colors, 0, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_choice(app, "color", broken, 2, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_slider(app, "size", 5.0, 5.0, 1.0, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_button(app, NULL, form_pressed, &screen, &out) == PNL_ERR_ARG);
+    CHECK(out == NULL);
+    CHECK(pnl_widget_input(app, "name ", 0, &fields[0]) == PNL_OK);
+    CHECK(pnl_widget_input(app, "pass ", PNL_INPUT_SECRET, &fields[1]) == PNL_OK);
+    CHECK(pnl_widget_choice(app, "color", colors, 3, &fields[2]) == PNL_OK);
+    CHECK(pnl_widget_slider(app, "size ", 0.0, 10.0, 2.0, &fields[3]) == PNL_OK);
+    CHECK(pnl_widget_check(app, "loud", 0, &fields[4]) == PNL_OK);
+    CHECK(pnl_widget_button(app, "Save", form_pressed, &screen, &fields[5]) == PNL_OK);
+    CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &screen.stack) == PNL_OK);
+    CHECK(pnl_widget_set_focusable(screen.stack, 1) == PNL_ERR_ARG);
+    CHECK(pnl_widget_focus(screen.stack, fields[0]) == PNL_ERR_NOT_FOUND);
+    for (i = 0; i < 6; i++) {
+        CHECK(pnl_widget_add(screen.stack, fields[i], 0) == PNL_OK);
+        CHECK(pnl_widget_on_change(fields[i], form_changed, &screen) == PNL_OK);
+    }
+    CHECK(pnl_widget_set_text(fields[0], long_text) == PNL_ERR_ARG);
+    CHECK(pnl_widget_get_value(fields[0], &value) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_value(fields[2], 3.0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_value(fields[3], 4.6) == PNL_OK);
+    CHECK(pnl_widget_get_value(fields[3], &value) == PNL_OK && value == 4.0);
+    CHECK(pnl_widget_set_value(fields[3], 0.0) == PNL_OK);
+    CHECK(strcmp(pnl_widget_get_text(fields[2]), "red") == 0);
+    CHECK(pnl_app_add_action(app, "Form", open_form, &screen) == PNL_OK);
+    CHECK(pnl_test_create(app, 40, 12, &test) == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter \"web q?\" tab \"pw\" tab right tab right right tab space tab enter") == PNL_OK);
+    CHECK(strcmp(pnl_widget_get_text(fields[0]), "web q?") == 0);
+    CHECK(strcmp(pnl_widget_get_text(fields[1]), "pw") == 0);
+    CHECK(strcmp(pnl_widget_get_text(fields[2]), "green") == 0);
+    CHECK(pnl_widget_get_value(fields[3], &value) == PNL_OK && value == 4.0);
+    CHECK(pnl_widget_get_value(fields[4], &value) == PNL_OK && value == 1.0);
+    CHECK(screen.pressed == 1);
+    CHECK(screen.changes == 12);
+    CHECK(strstr(pnl_test_screen(test), "enter: press  tab: next  esc: back") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "pw") == NULL);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/forms.txt") == PNL_OK);
+    CHECK(pnl_test_keys(test, "tab \"x\" backtab space") == PNL_OK);
+    CHECK(strcmp(pnl_widget_get_text(fields[0]), "web q?x") == 0);
+    CHECK(screen.pressed == 2);
+    CHECK(pnl_widget_focus(screen.stack, fields[4]) == PNL_OK);
+    CHECK(pnl_test_keys(test, "space down down") == PNL_OK);
+    CHECK(pnl_widget_get_value(fields[4], &value) == PNL_OK && value == 0.0);
+    CHECK(strstr(pnl_test_screen(test), "enter: press") != NULL);
+    pnl_test_destroy(test);
+    pnl_widget_destroy(screen.stack);
+    for (i = 0; i < 6; i++)
+        pnl_widget_destroy(fields[i]);
+    pnl_app_destroy(app);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -1000,5 +1099,6 @@ int main(void)
     test_inspector();
     test_charts();
     test_widgets();
+    test_forms();
     return 0;
 }

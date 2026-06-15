@@ -133,6 +133,7 @@ extern "C" {
 
 #define PNL_STACK_ROWS 0
 #define PNL_STACK_COLUMNS 1
+#define PNL_INPUT_SECRET 1
 
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
@@ -164,6 +165,7 @@ typedef const char *(*pnl_cell_fn)(void *ctx, size_t row, size_t column, char *b
 typedef void (*pnl_release_fn)(void *ctx);
 typedef int (*pnl_height_fn)(void *ctx, pnl_app_t *app, int width);
 typedef const char *(*pnl_hints_fn)(void *ctx);
+typedef void (*pnl_change_fn)(void *ctx, pnl_app_t *app, pnl_widget_t *widget);
 
 typedef struct pnl_widget_class {
     pnl_draw_fn draw_fn;
@@ -269,6 +271,19 @@ PNL_API int pnl_widget_add(pnl_widget_t *stack, pnl_widget_t *child, int size);
 PNL_API int pnl_widget_set_text(pnl_widget_t *widget, const char *text);
 PNL_API int pnl_widget_set_value(pnl_widget_t *widget, double value);
 PNL_API int pnl_widget_set_range(pnl_widget_t *widget, double min, double max);
+PNL_API int pnl_widget_input(pnl_app_t *app, const char *label, int flags, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_check(pnl_app_t *app, const char *label, int checked, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_choice(pnl_app_t *app, const char *label, const char *const *options, size_t count,
+                              pnl_widget_t **out_widget);
+PNL_API int pnl_widget_slider(pnl_app_t *app, const char *label, double min, double max, double step,
+                              pnl_widget_t **out_widget);
+PNL_API int pnl_widget_button(pnl_app_t *app, const char *label, pnl_action_fn action_fn, void *action_ctx,
+                              pnl_widget_t **out_widget);
+PNL_API int pnl_widget_on_change(pnl_widget_t *widget, pnl_change_fn change_fn, void *change_ctx);
+PNL_API const char *pnl_widget_get_text(const pnl_widget_t *widget);
+PNL_API int pnl_widget_get_value(const pnl_widget_t *widget, double *out_value);
+PNL_API int pnl_widget_set_focusable(pnl_widget_t *widget, int focusable);
+PNL_API int pnl_widget_focus(pnl_widget_t *stack, pnl_widget_t *child);
 
 PNL_API int pnl_canvas_focused(const pnl_canvas_t *canvas);
 PNL_API int pnl_canvas_width(const pnl_canvas_t *canvas);

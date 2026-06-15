@@ -1,0 +1,12 @@
+forms / form
+
+name  web q?
+pass  **
+color < green >
+size              ▊                    4
+[x] loud
+ Save
+
+
+
+enter: press  tab: next  esc: back

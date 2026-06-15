@@ -70,6 +70,28 @@
 #define PNL_LINK_POOL 8192
 #define PNL_PLOT_ROWS 256
 #define PNL_WIDGET_FOOTER 256
+#define PNL_WIDGET_TEXT 1
+#define PNL_WIDGET_BAR 2
+#define PNL_WIDGET_GRAPH 3
+#define PNL_WIDGET_SPINNER 4
+#define PNL_WIDGET_STACK 5
+#define PNL_WIDGET_INPUT 6
+#define PNL_WIDGET_CHECK 7
+#define PNL_WIDGET_CHOICE 8
+#define PNL_WIDGET_SLIDER 9
+#define PNL_WIDGET_BUTTON 10
+
+struct pnl_widget {
+    pnl_app_t *app;
+    pnl_widget_class_t widget_class;
+    void *ctx;
+    int kind;
+    int focusable;
+    pnl_change_fn change_fn;
+    void *change_ctx;
+    char footer_text[PNL_WIDGET_FOOTER];
+    const char *footer;
+};
 
 struct pnl_mem {
     pnl_alloc_fn alloc_fn;
@@ -347,6 +369,7 @@ struct pnl_app {
     int cli_needs_tty;
     int quit;
     int dirty;
+    int widget_typing;
     struct pnl_term term;
     struct pnl_screen screen;
     struct pnl_theme theme;
@@ -410,6 +433,19 @@ PNL_INTERNAL void pnl_inspect_event(pnl_app_t *app, int kind, int arg);
 PNL_INTERNAL void pnl_inspect_toggle(pnl_app_t *app);
 PNL_INTERNAL void pnl_widget_paint(pnl_widget_t *widget, pnl_canvas_t *canvas);
 PNL_INTERNAL const char *pnl_widget_hints(const pnl_widget_t *widget);
+PNL_INTERNAL int pnl_widget_focusable(const pnl_widget_t *widget);
+PNL_INTERNAL int pnl_widget_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
+                                    pnl_widget_t **out_widget);
+PNL_INTERNAL int pnl_widget_copy(pnl_app_t *app, char **slot, const char *text);
+PNL_INTERNAL int pnl_form_set_text(pnl_widget_t *widget, const char *text);
+PNL_INTERNAL const char *pnl_form_get_text(const pnl_widget_t *widget);
+PNL_INTERNAL int pnl_form_get_value(const pnl_widget_t *widget, double *out_value);
+PNL_INTERNAL int pnl_form_set_value(pnl_widget_t *widget, double value);
+PNL_INTERNAL int pnl_form_set_range(pnl_widget_t *widget, double min, double max);
+PNL_INTERNAL void pnl_widget_focus_edge(pnl_widget_t *widget, int last);
+PNL_INTERNAL void pnl_widget_changed(pnl_widget_t *widget);
+PNL_INTERNAL void pnl_edit_draw_styled(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width,
+                                       int focused, int style);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
 PNL_INTERNAL void pnl_record_output(const char *data, size_t data_len, int width, int height);
 PNL_INTERNAL void pnl_record_close(void);

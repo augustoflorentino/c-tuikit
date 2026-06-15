@@ -553,6 +553,7 @@ static int pnl_draw(pnl_app_t *app)
     app->screen.spinning = 0;
     app->screen.pulse = pnl_pulse_step(app);
     canvas.screen = &app->screen;
+    app->widget_typing = 0;
     canvas.focused = base == app->views_len;
     canvas.x = pnl_transition_offset(app) + (base == app->views_len ? pnl_shake_offset(app) : 0);
     canvas.y = 2;

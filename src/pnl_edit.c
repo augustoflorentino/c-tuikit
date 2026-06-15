@@ -104,6 +104,12 @@ static int pnl_edit_width(const char *text, size_t len)
 
 void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused)
 {
+    pnl_edit_draw_styled(edit, canvas, x, y, width, focused, 0);
+}
+
+void pnl_edit_draw_styled(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width, int focused,
+                          int style)
+{
     size_t start = 0;
     char cursor_cell[5] = " ";
     size_t cell_len;
@@ -114,7 +120,7 @@ void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int
     while (pnl_edit_width(edit->text + start, edit->cursor - start) > width - 1)
         start = pnl_edit_next(edit, start);
     cursor_x = x + pnl_edit_width(edit->text + start, edit->cursor - start);
-    pnl_canvas_text(canvas, x, y, 0, edit->text + start);
+    pnl_canvas_text(canvas, x, y, style, edit->text + start);
     if (!focused)
         return;
     cell_len = pnl_edit_next(edit, edit->cursor) - edit->cursor;
@@ -122,5 +128,5 @@ void pnl_edit_draw(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int
         memcpy(cursor_cell, edit->text + edit->cursor, cell_len);
         cursor_cell[cell_len] = '\0';
     }
-    pnl_canvas_text(canvas, cursor_x, y, PNL_REVERSE, cursor_cell);
+    pnl_canvas_text(canvas, cursor_x, y, style | PNL_REVERSE, cursor_cell);
 }

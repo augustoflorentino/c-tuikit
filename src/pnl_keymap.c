@@ -87,7 +87,7 @@ static int pnl_keymap_typing(const pnl_app_t *app)
 {
     const struct pnl_view *top = app->views_len > 0 ? &app->views[app->views_len - 1] : NULL;
 
-    return top != NULL && top->typing_ref != NULL && *top->typing_ref;
+    return app->widget_typing || (top != NULL && top->typing_ref != NULL && *top->typing_ref);
 }
 
 int pnl_keymap_apply(const pnl_app_t *app, int key)

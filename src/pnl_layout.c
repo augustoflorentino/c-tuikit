@@ -456,12 +456,13 @@ static int pnl_layout_is_visible(const pnl_layout_t *layout, int node)
 static void pnl_layout_footer(pnl_layout_t *layout)
 {
     const char *hints = layout->focus >= 0 ? layout->nodes[layout->focus].hints : NULL;
+    int fields = layout->focus >= 0 && pnl_widget_focusable(layout->nodes[layout->focus].widget);
 
     if (hints == NULL && layout->focus >= 0)
         hints = pnl_widget_hints(layout->nodes[layout->focus].widget);
 
     snprintf(layout->footer_text, sizeof(layout->footer_text), "%s%s%s%sesc: back", hints ? hints : "",
-             hints ? "  " : "", layout->visible_len > 1 ? "tab: next panel  " : "",
+             hints ? "  " : "", fields ? "tab: next  " : layout->visible_len > 1 ? "tab: next panel  " : "",
              layout->has_tabs ? "[ ]: switch tab  " : "");
     layout->footer = layout->footer_text;
 }
@@ -586,9 +587,13 @@ static int pnl_layout_key(void *ctx, pnl_app_t *app, int key)
 
     if (pnl_is_mouse_key(key))
         return pnl_layout_mouse(layout, app, key);
-
+    if (layout->focus >= 0 && layout->nodes[layout->focus].widget != NULL &&
+        pnl_widget_key(layout->nodes[layout->focus].widget, key))
+        return 1;
     if (key == PNL_KEY_TAB || key == PNL_KEY_BACKTAB) {
         pnl_layout_cycle(layout, key == PNL_KEY_TAB ? 1 : -1);
+        if (layout->focus >= 0)
+            pnl_widget_focus_edge(layout->nodes[layout->focus].widget, key == PNL_KEY_BACKTAB);
         return 1;
     }
     if (key == '[' || key == ']')
@@ -596,6 +601,8 @@ static int pnl_layout_key(void *ctx, pnl_app_t *app, int key)
     if (layout->focus < 0)
         return 0;
     focused = &layout->nodes[layout->focus];
+    if (focused->widget != NULL)
+        return 0;
     return focused->key_fn != NULL && focused->key_fn(focused->ctx, app, key);
 }
 

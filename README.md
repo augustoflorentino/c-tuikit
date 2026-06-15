@@ -60,6 +60,9 @@ up/down: move  enter: choose  ?: help  q: quit
 - components (`pnl_widget_t`) you put together into screens: text, bars, graphs, spinners and the
   live log come ready, stacks arrange them in rows or columns, and a component of your own is a
   draw callback away; see [Components](#components)
+- forms built from components: text fields (also hidden, for secrets), checkboxes, choices,
+  sliders and buttons, with tab, enter and the arrows moving between them and a callback on
+  every change
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
   terminal gets narrow
@@ -149,7 +152,7 @@ See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table, and
 [`examples/monitor.c`](examples/monitor.c), a screen made only of components, and
 [`examples/gallery.c`](examples/gallery.c), which keeps generating new combinations of charts,
-bars, spinners and motion. The
+bars, spinners and motion, and [`examples/form.c`](examples/form.c), a form with a live summary. The
 header `include/c-tuikit/c-tuikit.h` is the API reference.
 
 ## Components
@@ -191,6 +194,34 @@ left), `hints_fn` the keys for the footer, and `release_fn` runs on `pnl_widget_
 Components are changed from the panel's own thread (actions, timers, keys) and must outlive the
 screens that show them. See [`examples/monitor.c`](examples/monitor.c), with a clock made from
 scratch.
+
+### Forms
+
+Text fields, checkboxes, choices, sliders and buttons are components that take the focus. Put
+them in a stack and tab, shift-tab, enter and up/down move between them; a click focuses one;
+when the last one is passed, tab goes on to the next panel:
+
+```c
+pnl_widget_input(app, "name  ", 0, &name);
+pnl_widget_input(app, "token ", PNL_INPUT_SECRET, &token);
+pnl_widget_choice(app, "region", regions, 4, &region);
+pnl_widget_slider(app, "copies", 1, 12, 1, &copies);
+pnl_widget_check(app, "daily backups", 1, &backups);
+pnl_widget_button(app, "Deploy", deploy, &form, &button);
+
+pnl_widget_on_change(name, describe, &form);
+pnl_widget_get_text(name);
+pnl_widget_get_value(copies, &value);
+pnl_widget_focus(fields, name);
+```
+
+`pnl_widget_get_text` gives what a field holds (or the option chosen) and `pnl_widget_get_value`
+the number behind it: the slider position, the index of the choice, 1 or 0 for a checkbox.
+`pnl_widget_set_text` and `pnl_widget_set_value` fill them from code without calling the change
+callback. While a text field has the focus every key is typed into it, even `q` and `?`; esc
+still goes back. A component of your own joins the tab order with `pnl_widget_set_focusable`
+and draws itself highlighted when `pnl_canvas_focused` says so. See
+[`examples/form.c`](examples/form.c).
 
 ## Testing a tool
 
