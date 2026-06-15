@@ -4,6 +4,30 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.3.0 - 2026-06-15
+
+Colors of your own: any RGB, and gradients that bars and charts follow.
+
+Until now every color came from a role (accent, ok, warn...) or from the sixteen colors every
+terminal knows. Roles keep a tool readable everywhere, but a brand color, a heat map in your own
+tones or a title that fades from orange to violet were out of reach. From 6.3 a tool can bring
+its own colors.
+
+- `pnl_app_color(app, 0xff8800, &orange)` registers a color and gives back a number to use with
+  `PNL_FG` and `PNL_BG`, like any other; the same color registered twice gives the same number
+- `pnl_app_gradient(app, stops, count, steps, &gradient)` spreads two or more stops over 2 to 24
+  steps; `pnl_gradient_color(gradient, 0.7)` picks the color at any point
+- `PNL_METER_GRADIENT(gradient)` in the flags of any meter: bars are painted along their length
+  (the percentage too), column charts and sparklines by height, braille lines by value, and the
+  sweeping busy bar takes the middle color. Bar, graph and slider components take it as well
+- `pnl_canvas_gradient_text` paints text letter by letter; `pnl_canvas_gradient_fill` paints a
+  band from one end to the other
+- in true color the colors go out as they are; on 256 color terminals they take the closest
+  of the palette and on 16 color ones the closest basic color, so the same code works over an
+  old SSH session
+- the gallery has four gradients (sunset, ocean, aurora and ember) among its color schemes, and
+  its header changes colors with each new variation
+
 ## 6.2.0 - 2026-06-15
 
 Forms: components that take the focus, and the keys that move between them.
