@@ -4,9 +4,6 @@
 #include <string.h>
 #include <time.h>
 
-static const char *const digits[] = {"#### ## ## ####", " # ##  #  # ###", "###  #####  ###", "###  ####  ####",
-                                     "# ## ####  #  #", "####  ###  ####", "####  #### ####", "###  #  #  #  #",
-                                     "#### ##### ####", "#### ####  ####"};
 
 struct clock {
     int style;
@@ -26,44 +23,18 @@ struct machine {
     int ticks;
 };
 
-static void draw_digit(pnl_canvas_t *canvas, int x, int digit, int style)
-{
-    int row;
-    int column;
-
-    for (row = 0; row < 5; row++) {
-        for (column = 0; column < 3; column++) {
-            if (digits[digit][row * 3 + column] == '#')
-                pnl_canvas_fill(canvas, x + column, row, 1, 1, style);
-        }
-    }
-}
-
 static void clock_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     struct clock *clock = ctx;
     time_t now = time(NULL);
     struct tm *local = localtime(&now);
-    int parts[3];
-    int x = 0;
-    int i;
+    char text[16];
 
     (void)app;
     if (local == NULL)
         return;
-    parts[0] = local->tm_hour;
-    parts[1] = local->tm_min;
-    parts[2] = local->tm_sec;
-    for (i = 0; i < 3; i++) {
-        draw_digit(canvas, x, parts[i] / 10, clock->style);
-        draw_digit(canvas, x + 4, parts[i] % 10, clock->style);
-        x += 8;
-        if (i < 2 && now % 2 == 0) {
-            pnl_canvas_fill(canvas, x, 1, 1, 1, clock->style);
-            pnl_canvas_fill(canvas, x, 3, 1, 1, clock->style);
-        }
-        x += 2;
-    }
+    snprintf(text, sizeof(text), "%02d:%02d:%02d", local->tm_hour, local->tm_min, local->tm_sec);
+    pnl_canvas_big(canvas, 0, 0, PNL_BIG_SMALL, PNL_FG(clock->style), 0, text);
 }
 
 static int clock_height(void *ctx, pnl_app_t *app, int width)
@@ -71,7 +42,7 @@ static int clock_height(void *ctx, pnl_app_t *app, int width)
     (void)ctx;
     (void)app;
     (void)width;
-    return 6;
+    return pnl_big_height(PNL_BIG_SMALL) + 1;
 }
 
 static int clock_key(void *ctx, pnl_app_t *app, int key)
@@ -81,7 +52,7 @@ static int clock_key(void *ctx, pnl_app_t *app, int key)
     (void)app;
     if (key != 'c')
         return 0;
-    clock->style = clock->style == PNL_BG(PNL_ROLE_ACCENT) ? PNL_BG(PNL_ROLE_OK) : PNL_BG(PNL_ROLE_ACCENT);
+    clock->style = clock->style == PNL_ROLE_ACCENT ? PNL_ROLE_OK : PNL_ROLE_ACCENT;
     return 1;
 }
 
@@ -215,7 +186,7 @@ static void open_monitor(void *ctx, pnl_app_t *app)
 int main(int argc, char **argv)
 {
     static const pnl_widget_class_t clock_class = {clock_draw, clock_key, clock_height, clock_hints, NULL};
-    struct clock clock_state = {PNL_BG(PNL_ROLE_ACCENT)};
+    struct clock clock_state = {PNL_ROLE_ACCENT};
     struct machine machine;
     struct screen screen = {NULL};
     pnl_widget_t *clock = NULL;

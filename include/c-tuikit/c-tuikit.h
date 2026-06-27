@@ -135,6 +135,8 @@ extern "C" {
 #define PNL_STACK_ROWS 0
 #define PNL_STACK_COLUMNS 1
 #define PNL_INPUT_SECRET 1
+#define PNL_BIG_SMALL 0
+#define PNL_BIG_LARGE 1
 
 typedef struct pnl_app pnl_app_t;
 typedef struct pnl_canvas pnl_canvas_t;
@@ -298,6 +300,14 @@ PNL_API int pnl_app_gradient(pnl_app_t *app, const unsigned long *stops, size_t 
                              int *out_gradient);
 PNL_API int pnl_gradient_color(int gradient, double fraction);
 PNL_API int pnl_canvas_gradient_text(pnl_canvas_t *canvas, int x, int y, int style, int gradient, const char *text);
+PNL_API int pnl_canvas_big(pnl_canvas_t *canvas, int x, int y, int size, int style, int gradient, const char *text);
+PNL_API int pnl_big_width(int size, const char *text);
+PNL_API int pnl_big_height(int size);
+PNL_API int pnl_canvas_art(pnl_canvas_t *canvas, int x, int y, int style, int gradient, const char *art);
+PNL_API int pnl_app_set_banner(pnl_app_t *app, const char *art, int gradient);
+PNL_API int pnl_widget_big(pnl_app_t *app, const char *text, int size, int style, int gradient,
+                           pnl_widget_t **out_widget);
+PNL_API int pnl_widget_art(pnl_app_t *app, const char *art, int style, int gradient, pnl_widget_t **out_widget);
 PNL_API void pnl_canvas_gradient_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int gradient);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
 PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,

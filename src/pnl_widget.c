@@ -485,6 +485,8 @@ int pnl_widget_set_text(pnl_widget_t *widget, const char *text)
         return pnl_widget_copy(widget->app, &((struct pnl_bar_widget *)widget->ctx)->label, text);
     if (widget->kind == PNL_WIDGET_GRAPH)
         return pnl_widget_copy(widget->app, &((struct pnl_graph_widget *)widget->ctx)->label, text);
+    if (widget->kind == PNL_WIDGET_BIG || widget->kind == PNL_WIDGET_ART)
+        return pnl_widget_copy(widget->app, &((struct pnl_big_widget *)widget->ctx)->text, text);
     return pnl_form_set_text(widget, text);
 }
 
@@ -835,6 +837,8 @@ const char *pnl_widget_get_text(const pnl_widget_t *widget)
         return ((const struct pnl_bar_widget *)widget->ctx)->label;
     if (widget->kind == PNL_WIDGET_GRAPH)
         return ((const struct pnl_graph_widget *)widget->ctx)->label;
+    if (widget->kind == PNL_WIDGET_BIG || widget->kind == PNL_WIDGET_ART)
+        return ((const struct pnl_big_widget *)widget->ctx)->text;
     return pnl_form_get_text(widget);
 }
 

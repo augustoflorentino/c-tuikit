@@ -21,9 +21,6 @@ static const unsigned long palettes[4][3] = {{0xffb347UL, 0xff5e62UL, 0x9b2fffUL
                                              {0x43e97bUL, 0x38f9d7UL, 0xa17fe0UL},
                                              {0xf9d423UL, 0xff4e50UL, 0x8e0e00UL}};
 static const char *const wave_names[] = {"sine", "square", "saw", "bounce", "heartbeat", "noise"};
-static const char *const digits[] = {"#### ## ## ####", " # ##  #  # ###", "###  #####  ###", "###  ####  ####",
-                                     "# ## ####  #  #", "####  ###  ####", "####  #### ####", "###  #  #  #  #",
-                                     "#### ##### ####", "#### ####  ####"};
 
 struct gallery;
 
@@ -156,36 +153,17 @@ static void tile_step(struct gallery *gallery, struct tile *tile)
         tile->len++;
 }
 
-static void draw_digit(pnl_canvas_t *canvas, int x, int y, int digit, int style)
-{
-    int row;
-    int column;
-
-    for (row = 0; row < 5; row++) {
-        for (column = 0; column < 3; column++) {
-            if (digits[digit][row * 3 + column] == '#')
-                pnl_canvas_fill(canvas, x + column, y + row, 1, 1, style);
-        }
-    }
-}
-
 static void draw_counter(const struct tile *tile, pnl_canvas_t *canvas, double value, int height)
 {
-    int number = (int)(value * 999.0 + 0.5);
-    int color = tile->scheme == 0 ? PNL_BG(PNL_ROLE_ACCENT) : 0;
-    int y = height > 6 ? (height - 6) / 2 : 0;
-    int i;
+    int gradient = tile->scheme > 1 ? tile->gallery->gradients[tile->scheme - 2] : 0;
+    int role = tile->scheme == 0 ? PNL_ROLE_ACCENT : value > 0.7 ? PNL_ROLE_FAIL : value > 0.4 ? PNL_ROLE_WARN : PNL_ROLE_OK;
+    int size = height >= 8 ? PNL_BIG_LARGE : PNL_BIG_SMALL;
+    int y = height > pnl_big_height(size) + 2 ? (height - pnl_big_height(size) - 2) / 2 : 0;
+    char number[8];
 
-    for (i = 0; i < 3; i++) {
-        int digit = i == 0 ? number / 100 : i == 1 ? number / 10 % 10 : number % 10;
-
-        if (tile->scheme > 1)
-            color = PNL_BG(pnl_gradient_color(tile->gallery->gradients[tile->scheme - 2], i / 2.0));
-        else if (tile->scheme == 1)
-            color = PNL_BG(value > 0.7 ? PNL_ROLE_FAIL : value > 0.4 ? PNL_ROLE_WARN : PNL_ROLE_OK);
-        draw_digit(canvas, 1 + i * 4, y, digit, color);
-    }
-    pnl_canvas_bar(canvas, 1, y + 6, 11, value, tile->flags);
+    snprintf(number, sizeof(number), "%d%%", (int)(value * 100.0 + 0.5));
+    pnl_canvas_big(canvas, 1, y, size, PNL_FG(role), gradient, number);
+    pnl_canvas_bar(canvas, 1, y + pnl_big_height(size) + 1, pnl_big_width(size, "100%"), value, tile->flags);
 }
 
 static void draw_equalizer(const struct tile *tile, pnl_canvas_t *canvas, double clock, int width, int height)
@@ -417,6 +395,8 @@ int main(int argc, char **argv)
                                                         PNL_MOTION_ENTER | PNL_MOTION_FEEDBACK | PNL_MOTION_COUNT);
     if (status == PNL_OK)
         status = register_gradients(&gallery);
+    if (status == PNL_OK)
+        status = pnl_app_set_banner(gallery.app, NULL, gallery.gradients[0]);
     if (status == PNL_OK)
         status = build(&gallery);
     if (status == PNL_OK)

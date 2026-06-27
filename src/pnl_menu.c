@@ -348,6 +348,7 @@ void pnl_menu_draw(pnl_app_t *app, pnl_canvas_t *canvas)
     if (!app->anim_frame)
         pnl_menu_refresh(app);
     label_width = pnl_label_width(app);
+    y = pnl_banner_draw(app, canvas, (int)(app->lines_len + app->actions_len) + 2);
     for (i = 0; i < app->lines_len; i++) {
         int highlight = i < app->seen_len && app->seen[i].changed_ms != 0
                             ? pnl_fade_style(app, canvas, PNL_ROLE_ACCENT, app->seen[i].changed_ms, 9)

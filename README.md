@@ -64,6 +64,9 @@ up/down: move  enter: choose  ?: help  q: quit
 - forms built from components: text fields (also hidden, for secrets), checkboxes, choices,
   sliders and buttons, with tab, enter and the arrows moving between them and a callback on
   every change
+- big letters and ASCII art: a built-in block font in two sizes for numbers that matter (a clock,
+  a total, a percentage), and a banner on the main screen with the tool's own art or its name
+  in big letters; see [Big letters and art](#big-letters-and-art)
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
   terminal gets narrow
@@ -249,6 +252,35 @@ charts, sparklines and plots by height. Colors are sent as they are in true colo
 the nearest one on 256 and 16 color terminals; with `NO_COLOR` they are left out. There is room
 for about fifty of them (a gradient takes one per step); past that the call returns
 `PNL_ERR_NOMEM`.
+
+## Big letters and art
+
+The main screen can open with the tool's own banner: art of your own, or the name of the tool in
+big letters when `art` is `NULL`. A gradient colors it from left to right:
+
+```c
+pnl_app_set_banner(app, NULL, sunset);
+pnl_app_set_banner(app, "┌───────┐   ┌──────┐   ┌────────┐\n"
+                        "│ build ├──>│ test ├──>│ deploy │\n"
+                        "└───────┘   └──────┘   └────────┘", 0);
+```
+
+The banner shows only when the status lines and every action still fit below it, and never in
+linear mode. Big letters come from a 3 by 5 pixel font drawn with blocks: `PNL_BIG_SMALL` is three
+rows tall, `PNL_BIG_LARGE` five rows with wider letters. It has the digits, the letters (lower
+case is drawn as upper case) and the usual signs (`. , : ; - + = _ % / ! ? ( ) < > * # ' " $ @ |`):
+
+```c
+pnl_canvas_big(canvas, 0, 0, PNL_BIG_LARGE, PNL_FG(PNL_ROLE_OK), 0, "99.9%");
+pnl_big_width(PNL_BIG_LARGE, "99.9%");
+pnl_widget_big(app, "12:45", PNL_BIG_SMALL, 0, sunset, &clock);
+pnl_widget_art(app, logo, PNL_FG(PNL_ROLE_MUTED), 0, &picture);
+```
+
+`pnl_canvas_art` draws art of several lines, leaving its spaces untouched so it can sit over
+other things. In linear mode big letters are written as plain text, so a screen reader reads
+the number and not the blocks. `examples/deploy.c` opens with its pipeline as a banner, the
+monitor clock and the gallery counters use big letters.
 
 ## Testing a tool
 

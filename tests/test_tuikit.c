@@ -1147,6 +1147,59 @@ static void test_custom_colors(void)
     CHECK(strstr(cast, "48;2;102;0;255") != NULL);
 }
 
+static void open_big(void *ctx, pnl_app_t *app)
+{
+    CHECK(pnl_view_push_widget(app, "big", ctx) == PNL_OK);
+}
+
+static void test_big_text(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    pnl_widget_t *stack = NULL;
+    pnl_widget_t *big = NULL;
+    pnl_widget_t *art = NULL;
+    pnl_widget_t *out = NULL;
+
+    CHECK(pnl_big_width(PNL_BIG_SMALL, "12:3") == 13);
+    CHECK(pnl_big_width(PNL_BIG_LARGE, "12:3") == 26);
+    CHECK(pnl_big_width(PNL_BIG_SMALL, "~") == 3);
+    CHECK(pnl_big_width(7, "1") == 0 && pnl_big_width(PNL_BIG_SMALL, NULL) == 0);
+    CHECK(pnl_big_height(PNL_BIG_SMALL) == 3 && pnl_big_height(PNL_BIG_LARGE) == 5);
+    CHECK(pnl_app_create("ship", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_set_banner(NULL, NULL, 0) == PNL_ERR_ARG);
+    CHECK(pnl_app_set_banner(app, NULL, 0) == PNL_OK);
+    CHECK(pnl_widget_big(app, "42%", 3, 0, 0, &out) == PNL_ERR_ARG);
+    CHECK(pnl_widget_big(app, NULL, PNL_BIG_SMALL, 0, 0, &out) == PNL_ERR_ARG);
+    CHECK(out == NULL);
+    CHECK(pnl_widget_big(app, "42%", PNL_BIG_LARGE, PNL_FG(PNL_ROLE_OK), 0, &big) == PNL_OK);
+    CHECK(pnl_widget_art(app, "/\\\n\\/", 0, 0, &art) == PNL_OK);
+    CHECK(pnl_widget_height(big, 20) == 5 && pnl_widget_height(art, 20) == 2);
+    CHECK(pnl_widget_set_text(big, "7:05") == PNL_OK);
+    CHECK(strcmp(pnl_widget_get_text(big), "7:05") == 0);
+    CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &stack) == PNL_OK);
+    CHECK(pnl_widget_add(stack, big, 0) == PNL_OK);
+    CHECK(pnl_widget_add(stack, art, 0) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Big", open_big, stack) == PNL_OK);
+    CHECK(pnl_test_create(app, 40, 14, &test) == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "\xe2\x96\x80") != NULL);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/banner.txt") == PNL_OK);
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/big.txt") == PNL_OK);
+    CHECK(pnl_test_keys(test, "esc") == PNL_OK);
+    CHECK(pnl_app_set_banner(app, "+--+\n|ok|\n+--+", 0) == PNL_OK);
+    CHECK(pnl_test_wait(test, 10) == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "|ok|") != NULL);
+    pnl_test_destroy(test);
+    CHECK(pnl_test_create(app, 40, 8, &test) == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "|ok|") == NULL);
+    pnl_test_destroy(test);
+    pnl_widget_destroy(stack);
+    pnl_widget_destroy(big);
+    pnl_widget_destroy(art);
+    pnl_app_destroy(app);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -1195,5 +1248,6 @@ int main(void)
     test_widgets();
     test_forms();
     test_custom_colors();
+    test_big_text();
     return 0;
 }

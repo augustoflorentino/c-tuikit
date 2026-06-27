@@ -1,0 +1,14 @@
+ship
+
+  ▄▀▀ █ █ ▀█▀ █▀▄
+   ▀▄ █▀█  █  █▀
+  ▀▀  ▀ ▀ ▀▀▀ ▀
+
+  > 1 Big
+    q Quit
+
+
+
+
+
+up/down: move  enter: choose  ?: help

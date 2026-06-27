@@ -81,6 +81,16 @@
 #define PNL_WIDGET_CHOICE 8
 #define PNL_WIDGET_SLIDER 9
 #define PNL_WIDGET_BUTTON 10
+#define PNL_WIDGET_BIG 11
+#define PNL_WIDGET_ART 12
+
+struct pnl_big_widget {
+    pnl_app_t *app;
+    char *text;
+    int size;
+    int style;
+    int gradient;
+};
 
 struct pnl_widget {
     pnl_app_t *app;
@@ -302,6 +312,9 @@ struct pnl_inspect;
 struct pnl_app {
     struct pnl_mem mem;
     char *title;
+    char *banner;
+    int banner_gradient;
+    int banner_set;
     struct pnl_action *actions;
     size_t actions_len;
     size_t actions_cap;
@@ -440,6 +453,7 @@ PNL_INTERNAL int pnl_widget_focusable(const pnl_widget_t *widget);
 PNL_INTERNAL int pnl_widget_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
                                     pnl_widget_t **out_widget);
 PNL_INTERNAL int pnl_widget_copy(pnl_app_t *app, char **slot, const char *text);
+PNL_INTERNAL int pnl_banner_draw(pnl_app_t *app, pnl_canvas_t *canvas, int needed);
 PNL_INTERNAL int pnl_form_set_text(pnl_widget_t *widget, const char *text);
 PNL_INTERNAL const char *pnl_form_get_text(const pnl_widget_t *widget);
 PNL_INTERNAL int pnl_form_get_value(const pnl_widget_t *widget, double *out_value);
