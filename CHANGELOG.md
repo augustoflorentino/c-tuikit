@@ -4,6 +4,15 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.3.1 - 2026-06-27
+
+Side by side fields answer to the arrows.
+
+- in a stack of columns, left and right now move the focus between components, the way up and
+  down already did in a stack of rows. In the form example the right arrow did nothing on Deploy
+  and Reset could only be reached with tab or the mouse; now it goes straight there. Choices and
+  sliders still take left and right for themselves while they have the focus
+
 ## 6.3.0 - 2026-06-15
 
 Colors of your own: any RGB, and gradients that bars and charts follow.
