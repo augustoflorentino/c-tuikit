@@ -4,6 +4,33 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.4.0 - 2026-06-27
+
+Big letters and art: a tool can now show who it is and what matters most at a glance.
+
+A panel full of small text treats every number the same. The one that matters, the uptime, the
+error rate, the time left, deserves to be read from across the room, and a tool deserves a face
+of its own when it opens. 6.4 brings both, without images: everything is drawn with characters
+every terminal already has.
+
+- a built-in block font, 3 by 5 pixels, with digits, letters and the usual signs:
+  - `PNL_BIG_SMALL` packs two pixel rows into each line with half blocks, three lines tall
+  - `PNL_BIG_LARGE` is five lines tall with letters twice as wide
+  - `pnl_canvas_big` draws it in any style or gradient; `pnl_big_width` and `pnl_big_height`
+    measure it for centering and aligning
+- `pnl_app_set_banner` puts the tool's own art at the top of the main screen, or its name in big
+  letters when no art is given, colored by a gradient if one is passed. It shows only while the
+  status lines and every action still fit, so a short terminal loses the banner, never the menu
+- `pnl_canvas_art` draws art of several lines; spaces are left untouched, so it can sit over a
+  band or a chart
+- components: `pnl_widget_big` for a number or word in big letters, updated with
+  `pnl_widget_set_text`, and `pnl_widget_art` for a picture
+- in linear mode big letters are written as plain text and the banner is left out, so screen
+  readers get the value and not a pile of blocks
+- the examples use it where it means something: deploy opens with its pipeline (build, test,
+  deploy) drawn in boxes, the monitor clock is now big letters, and the gallery shows its name
+  in a gradient and its counters as large percentages
+
 ## 6.3.1 - 2026-06-27
 
 Side by side fields answer to the arrows.
