@@ -144,7 +144,7 @@ int pnl_canvas_big(pnl_canvas_t *canvas, int x, int y, int size, int style, int 
     return x + width;
 }
 
-static int pnl_art_size(const char *art, int *out_width)
+int pnl_art_size(const char *art, int *out_width)
 {
     int lines = 1;
     int width = 0;
@@ -213,13 +213,37 @@ int pnl_app_set_banner(pnl_app_t *app, const char *art, int gradient)
     return PNL_OK;
 }
 
+int pnl_app_set_banner_widget(pnl_app_t *app, pnl_widget_t *widget)
+{
+    if (app == NULL || (widget != NULL && widget->app != app))
+        return PNL_ERR_ARG;
+    app->banner_widget = widget;
+    app->dirty = 1;
+    return PNL_OK;
+}
+
+static int pnl_banner_widget_draw(pnl_app_t *app, pnl_canvas_t *canvas, int needed)
+{
+    int width = pnl_canvas_width(canvas) - 2;
+    int height = pnl_widget_height(app->banner_widget, width);
+
+    if (height <= 0 || height + needed + PNL_BANNER_ROOM / 4 > pnl_canvas_height(canvas))
+        return 0;
+    pnl_widget_draw(app->banner_widget, canvas, 2, 0, width, height);
+    return height + 1;
+}
+
 int pnl_banner_draw(pnl_app_t *app, pnl_canvas_t *canvas, int needed)
 {
     int style = PNL_BOLD | PNL_FG(PNL_ROLE_ACCENT);
     int width = 0;
     int height;
 
-    if (!app->banner_set || canvas->screen->linear)
+    if (canvas->screen->linear)
+        return 0;
+    if (app->banner_widget != NULL)
+        return pnl_banner_widget_draw(app, canvas, needed);
+    if (!app->banner_set)
         return 0;
     height = app->banner != NULL ? pnl_art_size(app->banner, &width) : pnl_big_height(PNL_BIG_SMALL);
     if (app->banner == NULL)

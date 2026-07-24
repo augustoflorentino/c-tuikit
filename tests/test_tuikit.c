@@ -1200,6 +1200,64 @@ static void test_big_text(void)
     pnl_app_destroy(app);
 }
 
+static void open_live(void *ctx, pnl_app_t *app)
+{
+    CHECK(pnl_view_push_widget(app, "live", ctx) == PNL_OK);
+}
+
+static void test_live_art(void)
+{
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+    pnl_widget_t *flow = NULL;
+    pnl_widget_t *scene = NULL;
+    pnl_widget_t *stage = NULL;
+    double state = -1;
+    int step = -1;
+
+    CHECK(pnl_app_create("ship", NULL, &app) == PNL_OK);
+    CHECK(pnl_widget_flow(app, &flow) == PNL_OK);
+    CHECK(pnl_widget_add_step(flow, "build", &step) == PNL_OK && step == 0);
+    CHECK(pnl_widget_add_step(flow, "test", NULL) == PNL_OK);
+    CHECK(pnl_widget_add_step(flow, "ship", &step) == PNL_OK && step == 2);
+    CHECK(pnl_widget_add_step(NULL, "x", NULL) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_step(flow, 3, PNL_STEP_OK, NULL) == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_widget_set_step(flow, 0, 9, NULL) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_step(flow, 0, PNL_STEP_OK, "1.2s") == PNL_OK);
+    CHECK(pnl_widget_set_step(flow, 1, PNL_STEP_FAIL, "2 failed") == PNL_OK);
+    CHECK(pnl_widget_set_step(flow, 2, PNL_STEP_SKIP, NULL) == PNL_OK);
+    CHECK(pnl_widget_height(flow, 60) == 4 && pnl_widget_height(flow, 20) == 5);
+    CHECK(pnl_widget_scene(app, &scene) == PNL_OK);
+    CHECK(pnl_widget_add_scene(scene, 1, "a\fb", 0, 0, 100) == PNL_OK);
+    CHECK(pnl_widget_add_scene(scene, 2, "\\o/\nok", 0, 0, 0) == PNL_OK);
+    CHECK(pnl_widget_add_scene(scene, 3, "x", 0, 0, 0) == PNL_OK);
+    CHECK(pnl_widget_add_scene(scene, 3, "no\nluck", 0, 0, 0) == PNL_OK);
+    CHECK(pnl_widget_add_scene(flow, 1, "x", 0, 0, 0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_height(scene, 20) == 2);
+    CHECK(pnl_widget_set_value(scene, 3) == PNL_OK);
+    CHECK(pnl_widget_get_value(scene, &state) == PNL_OK && state == 3);
+    CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &stage) == PNL_OK);
+    CHECK(pnl_widget_add(stage, flow, 0) == PNL_OK);
+    CHECK(pnl_widget_add(stage, scene, 0) == PNL_OK);
+    CHECK(pnl_app_set_banner_widget(app, flow) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Live", open_live, stage) == PNL_OK);
+    CHECK(pnl_test_create(app, 50, 16, &test) == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "build") != NULL && strstr(pnl_test_screen(test), "> 1 Live") != NULL);
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    CHECK(pnl_test_expect(test, PNL_SNAPSHOTS "/live.txt") == PNL_OK);
+    CHECK(pnl_widget_set_value(scene, 2) == PNL_OK);
+    CHECK(pnl_test_wait(test, 10) == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "\\o/") != NULL && strstr(pnl_test_screen(test), "luck") == NULL);
+    pnl_test_destroy(test);
+    CHECK(pnl_app_set_banner_widget(app, NULL) == PNL_OK);
+    CHECK(pnl_app_set_banner_widget(NULL, flow) == PNL_ERR_ARG);
+    CHECK(pnl_task_show(NULL, flow) == PNL_ERR_ARG);
+    pnl_widget_destroy(stage);
+    pnl_widget_destroy(flow);
+    pnl_widget_destroy(scene);
+    pnl_app_destroy(app);
+}
+
 static void test_inspector(void)
 {
     pnl_app_t *app = NULL;
@@ -1249,5 +1307,6 @@ int main(void)
     test_forms();
     test_custom_colors();
     test_big_text();
+    test_live_art();
     return 0;
 }

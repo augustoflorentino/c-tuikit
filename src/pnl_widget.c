@@ -509,6 +509,8 @@ int pnl_widget_set_value(pnl_widget_t *widget, double value)
         pnl_glide_to(widget->app, &bar->glide, value, PNL_MOTION_COUNT);
     } else if (widget->kind == PNL_WIDGET_GRAPH) {
         pnl_graph_push(widget->ctx, value);
+    } else if (widget->kind == PNL_WIDGET_SCENE) {
+        return pnl_scene_set_state(widget, value);
     } else {
         return pnl_form_set_value(widget, value);
     }
@@ -852,6 +854,8 @@ int pnl_widget_get_value(const pnl_widget_t *widget, double *out_value)
         *out_value = ((const struct pnl_bar_widget *)widget->ctx)->glide.to;
         return PNL_OK;
     }
+    if (widget->kind == PNL_WIDGET_SCENE)
+        return pnl_scene_state(widget, out_value);
     if (widget->kind != PNL_WIDGET_GRAPH)
         return pnl_form_get_value(widget, out_value);
     graph = widget->ctx;

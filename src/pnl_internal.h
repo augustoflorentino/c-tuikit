@@ -83,6 +83,8 @@
 #define PNL_WIDGET_BUTTON 10
 #define PNL_WIDGET_BIG 11
 #define PNL_WIDGET_ART 12
+#define PNL_WIDGET_FLOW 13
+#define PNL_WIDGET_SCENE 14
 
 struct pnl_big_widget {
     pnl_app_t *app;
@@ -315,6 +317,7 @@ struct pnl_app {
     char *banner;
     int banner_gradient;
     int banner_set;
+    pnl_widget_t *banner_widget;
     struct pnl_action *actions;
     size_t actions_len;
     size_t actions_cap;
@@ -461,6 +464,9 @@ PNL_INTERNAL int pnl_form_set_value(pnl_widget_t *widget, double value);
 PNL_INTERNAL int pnl_form_set_range(pnl_widget_t *widget, double min, double max);
 PNL_INTERNAL void pnl_widget_focus_edge(pnl_widget_t *widget, int last);
 PNL_INTERNAL void pnl_widget_changed(pnl_widget_t *widget);
+PNL_INTERNAL int pnl_art_size(const char *art, int *out_width);
+PNL_INTERNAL int pnl_scene_set_state(pnl_widget_t *widget, double value);
+PNL_INTERNAL int pnl_scene_state(const pnl_widget_t *widget, double *out_value);
 PNL_INTERNAL void pnl_edit_draw_styled(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width,
                                        int focused, int style);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);

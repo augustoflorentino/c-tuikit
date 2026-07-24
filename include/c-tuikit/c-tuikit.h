@@ -308,6 +308,21 @@ PNL_API int pnl_app_set_banner(pnl_app_t *app, const char *art, int gradient);
 PNL_API int pnl_widget_big(pnl_app_t *app, const char *text, int size, int style, int gradient,
                            pnl_widget_t **out_widget);
 PNL_API int pnl_widget_art(pnl_app_t *app, const char *art, int style, int gradient, pnl_widget_t **out_widget);
+
+#define PNL_STEP_WAIT 0
+#define PNL_STEP_RUN 1
+#define PNL_STEP_OK 2
+#define PNL_STEP_FAIL 3
+#define PNL_STEP_SKIP 4
+
+PNL_API int pnl_widget_flow(pnl_app_t *app, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_add_step(pnl_widget_t *flow, const char *label, int *out_step);
+PNL_API int pnl_widget_set_step(pnl_widget_t *flow, int step, int state, const char *detail);
+PNL_API int pnl_widget_scene(pnl_app_t *app, pnl_widget_t **out_widget);
+PNL_API int pnl_widget_add_scene(pnl_widget_t *scene, int state, const char *frames, int style, int gradient,
+                                 int frame_ms);
+PNL_API int pnl_app_set_banner_widget(pnl_app_t *app, pnl_widget_t *widget);
+PNL_API int pnl_task_show(pnl_task_t *task, pnl_widget_t *widget);
 PNL_API void pnl_canvas_gradient_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, int gradient);
 PNL_API void pnl_canvas_bar(pnl_canvas_t *canvas, int x, int y, int width, double fraction, int flags);
 PNL_API void pnl_canvas_sparkline(pnl_canvas_t *canvas, int x, int y, int width, const double *values,

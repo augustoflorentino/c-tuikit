@@ -34,6 +34,7 @@ struct pnl_task {
     char log[PNL_TASK_LOG][PNL_TASK_TEXT];
     size_t log_start;
     size_t log_len;
+    pnl_widget_t *widget;
 };
 
 static void pnl_task_copy(char *dest, const char *text)
@@ -230,13 +231,47 @@ static void pnl_task_draw_log(pnl_task_t *task, pnl_canvas_t *canvas, int y)
     }
 }
 
+int pnl_task_show(pnl_task_t *task, pnl_widget_t *widget)
+{
+    if (task == NULL || (widget != NULL && widget->app != task->app))
+        return PNL_ERR_ARG;
+    if (pnl_task_cli(task))
+        return PNL_OK;
+    pnl_lock(&task->lock);
+    task->widget = widget;
+    pnl_unlock(&task->lock);
+    pnl_term_wake(&task->app->term);
+    return PNL_OK;
+}
+
+static int pnl_task_draw_widget(pnl_task_t *task, pnl_canvas_t *canvas)
+{
+    int width = pnl_canvas_width(canvas) - 2;
+    int height;
+
+    if (task->widget == NULL || width <= 0)
+        return 0;
+    height = pnl_widget_height(task->widget, width);
+    if (height <= 0 || height + 6 > pnl_canvas_height(canvas))
+        return 0;
+    pnl_widget_draw(task->widget, canvas, 2, 0, width, height);
+    return height + 1;
+}
+
 static void pnl_task_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
 {
     pnl_task_t *task = ctx;
+    struct pnl_canvas below;
     int finished;
+    int top;
 
     (void)app;
     pnl_lock(&task->lock);
+    top = pnl_task_draw_widget(task, canvas);
+    below = *canvas;
+    below.y += top;
+    below.height -= top;
+    canvas = &below;
     finished = task->finished;
     if (!finished && canvas->screen->spin >= 0) {
         pnl_draw_spinner(canvas, 2, 0, PNL_FG(PNL_ROLE_ACCENT));

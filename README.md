@@ -67,6 +67,8 @@ up/down: move  enter: choose  ?: help  q: quit
 - big letters and ASCII art: a built-in block font in two sizes for numbers that matter (a clock,
   a total, a percentage), and a banner on the main screen with the tool's own art or its name
   in big letters; see [Big letters and art](#big-letters-and-art)
+- live art: a diagram of steps that follows a task as it runs, and pictures that change with the
+  state of the tool, both drawn from the tool's own art
 - screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
   focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
   terminal gets narrow
@@ -277,10 +279,41 @@ pnl_widget_big(app, "12:45", PNL_BIG_SMALL, 0, sunset, &clock);
 pnl_widget_art(app, logo, PNL_FG(PNL_ROLE_MUTED), 0, &picture);
 ```
 
+### Art that follows the work
+
+Two components turn art into part of the interface, drawn from what the tool is doing:
+
+- `pnl_widget_flow` is a diagram of steps in boxes joined by arrows. Each step is waiting,
+  running, ok, failed or skipped; a running step spins and the arrow into it moves. A worker
+  thread can call `pnl_widget_set_step` directly. When the boxes do not fit across, the flow
+  turns into a list going down
+- `pnl_widget_scene` holds one picture per state, each with one or more frames separated by
+  `\f`. `pnl_widget_set_value(scene, state)` switches the picture; frames play at `frame_ms`
+
+```c
+pnl_widget_flow(app, &flow);
+pnl_widget_add_step(flow, "build", NULL);
+pnl_widget_add_step(flow, "test", NULL);
+pnl_widget_scene(app, &scene);
+pnl_widget_add_scene(scene, RUNNING, "[#]   |==|\f   [#]|==|", PNL_FG(PNL_ROLE_ACCENT), 0, 180);
+pnl_widget_add_scene(scene, FAILED, "[#] x |??|", PNL_FG(PNL_ROLE_FAIL), 0, 0);
+
+pnl_app_set_banner_widget(app, flow);
+pnl_task_show(task, stage);
+pnl_widget_set_step(flow, 1, PNL_STEP_FAIL, "2 failed");
+pnl_widget_set_value(scene, FAILED);
+```
+
+`pnl_app_set_banner_widget` puts any component where the banner goes, so the main screen shows
+how the last run went. `pnl_task_show` draws a component above the step, progress and log of a
+running task. The state numbers belong to the tool; the library only matches them. In linear
+mode scenes are left out and a flow is read as a list.
+
 `pnl_canvas_art` draws art of several lines, leaving its spaces untouched so it can sit over
 other things. In linear mode big letters are written as plain text, so a screen reader reads
-the number and not the blocks. `examples/deploy.c` opens with its pipeline as a banner, the
-monitor clock and the gallery counters use big letters.
+the number and not the blocks. `examples/deploy.c` opens with its pipeline as a live
+banner and shows a package travelling to the server while it deploys; the monitor clock and the
+gallery counters use big letters.
 
 ## Testing a tool
 
