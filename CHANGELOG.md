@@ -4,6 +4,31 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.5.0 - 2026-08-02
+
+Live art: the picture on the screen now follows the work.
+
+6.4 gave a tool a face, but a face that never changes says nothing about what is happening. A
+deploy has a shape (build, test, upload, switch traffic) and the most useful picture of it is
+that shape, lit up as it goes: which box is running, which one broke, which ones never ran.
+6.5 gives the art to the tool and lets the tool move it.
+
+- `pnl_widget_flow`: a diagram of steps in boxes joined by arrows. Each step is waiting,
+  running, ok, failed or skipped (`PNL_STEP_*`) with a short detail under it, such as a time or
+  "2 failed". The running step spins and the arrow leading into it moves. Steps are set with
+  `pnl_widget_set_step`, safe to call from a worker thread. Too narrow for the boxes, the flow
+  becomes a list going down, which is also how linear mode reads it
+- `pnl_widget_scene`: pictures by state, drawn by the tool itself. Each state takes one or more
+  frames separated by `\f`, played at the pace given; `pnl_widget_set_value` picks the state and
+  `pnl_widget_get_value` reads it back. Adding a state again replaces its picture. Linear mode
+  leaves scenes out, so screen readers are not handed a drawing
+- `pnl_app_set_banner_widget` puts any component in the banner spot of the main screen, so the
+  menu opens on how the last run went
+- `pnl_task_show` puts a component above the step, progress and log of a running task
+- the deploy example now uses all of it: its pipeline is a live banner, a package travels to the
+  server while it deploys, and the picture ends on a celebration or on the server refusing the
+  package. Every third deploy fails its tests, to show the other ending
+
 ## 6.4.0 - 2026-06-27
 
 Big letters and art: a tool can now show who it is and what matters most at a glance.
