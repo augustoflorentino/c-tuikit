@@ -80,3 +80,4 @@ jobs:
       - run: cmake --preset fuzz
       - run: cmake --build build/fuzz
       - run: ./build/fuzz/fuzz_keys -max_total_time=60
+      - run: ./build/fuzz/fuzz_files -max_total_time=60

@@ -2,3 +2,6 @@ build/
 build-consumer/
 dist/
 prefix/
+*.obj
+*.o
+compile_commands.json

@@ -91,10 +91,90 @@ static void *pnl_form_alloc(pnl_app_t *app, size_t size)
     return widget;
 }
 
-static int pnl_form_finish(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
-                           pnl_widget_t **self, pnl_widget_t **out_widget)
+static int pnl_input_set(pnl_widget_t *widget, const char *text)
 {
-    int status = pnl_widget_builtin(app, kind, widget_class, ctx, out_widget);
+    struct pnl_input_widget *input = widget->ctx;
+    size_t len = strlen(text);
+
+    if (len >= sizeof(input->text))
+        return PNL_ERR_ARG;
+    memcpy(input->text, text, len + 1);
+    pnl_edit_init(&input->edit, input->text, sizeof(input->text));
+    widget->app->dirty = 1;
+    return PNL_OK;
+}
+
+static const char *pnl_input_get(const pnl_widget_t *widget)
+{
+    return ((const struct pnl_input_widget *)widget->ctx)->text;
+}
+
+static int pnl_check_set_label(pnl_widget_t *widget, const char *text)
+{
+    return pnl_widget_copy(widget->app, &((struct pnl_check_widget *)widget->ctx)->label, text);
+}
+
+static const char *pnl_check_label(const pnl_widget_t *widget)
+{
+    return ((const struct pnl_check_widget *)widget->ctx)->label;
+}
+
+static int pnl_check_set(pnl_widget_t *widget, double value)
+{
+    ((struct pnl_check_widget *)widget->ctx)->checked = value != 0.0;
+    widget->app->dirty = 1;
+    return PNL_OK;
+}
+
+static int pnl_check_get(const pnl_widget_t *widget, double *out_value)
+{
+    *out_value = ((const struct pnl_check_widget *)widget->ctx)->checked;
+    return PNL_OK;
+}
+
+static int pnl_choice_set_label(pnl_widget_t *widget, const char *text)
+{
+    return pnl_widget_copy(widget->app, &((struct pnl_choice_widget *)widget->ctx)->label, text);
+}
+
+static const char *pnl_choice_option(const pnl_widget_t *widget)
+{
+    const struct pnl_choice_widget *choice = widget->ctx;
+
+    return choice->options[choice->index];
+}
+
+static int pnl_choice_set(pnl_widget_t *widget, double value)
+{
+    struct pnl_choice_widget *choice = widget->ctx;
+
+    if (value < 0.0 || value >= (double)choice->count)
+        return PNL_ERR_ARG;
+    choice->index = (size_t)value;
+    widget->app->dirty = 1;
+    return PNL_OK;
+}
+
+static int pnl_choice_get(const pnl_widget_t *widget, double *out_value)
+{
+    *out_value = (double)((const struct pnl_choice_widget *)widget->ctx)->index;
+    return PNL_OK;
+}
+
+static int pnl_button_set_label(pnl_widget_t *widget, const char *text)
+{
+    return pnl_widget_copy(widget->app, &((struct pnl_button_widget *)widget->ctx)->label, text);
+}
+
+static const char *pnl_button_label(const pnl_widget_t *widget)
+{
+    return ((const struct pnl_button_widget *)widget->ctx)->label;
+}
+
+static int pnl_form_finish(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class,
+                           const struct pnl_widget_ops *ops, void *ctx, pnl_widget_t **self, pnl_widget_t **out_widget)
+{
+    int status = pnl_widget_builtin(app, kind, widget_class, ops, ctx, out_widget);
 
     if (status != PNL_OK)
         return status;
@@ -177,6 +257,7 @@ int pnl_widget_input(pnl_app_t *app, const char *label, int flags, pnl_widget_t 
 {
     static const pnl_widget_class_t input_class = {pnl_field_draw, pnl_field_key, pnl_field_line, pnl_field_hints,
                                                    pnl_field_release};
+    static const struct pnl_widget_ops input_ops = {pnl_input_set, pnl_input_get, NULL, NULL, NULL};
     struct pnl_input_widget *input;
 
     if (out_widget != NULL)
@@ -184,6 +265,8 @@ int pnl_widget_input(pnl_app_t *app, const char *label, int flags, pnl_widget_t 
     if (app == NULL || out_widget == NULL || (flags & ~PNL_INPUT_SECRET) != 0)
         return PNL_ERR_ARG;
     input = pnl_form_alloc(app, sizeof(*input));
+    if (input != NULL)
+        input->app = app;
     if (input == NULL || pnl_widget_copy(app, &input->label, label) != PNL_OK) {
         if (input != NULL)
             pnl_field_release(input);
@@ -192,7 +275,7 @@ int pnl_widget_input(pnl_app_t *app, const char *label, int flags, pnl_widget_t 
     input->app = app;
     input->flags = flags;
     pnl_edit_init(&input->edit, input->text, sizeof(input->text));
-    return pnl_form_finish(app, PNL_WIDGET_INPUT, &input_class, input, &input->self, out_widget);
+    return pnl_form_finish(app, PNL_WIDGET_INPUT, &input_class, &input_ops, input, &input->self, out_widget);
 }
 
 static void pnl_check_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
@@ -236,6 +319,7 @@ int pnl_widget_check(pnl_app_t *app, const char *label, int checked, pnl_widget_
 {
     static const pnl_widget_class_t check_class = {pnl_check_draw, pnl_check_key, pnl_field_line, pnl_check_hints,
                                                    pnl_check_release};
+    static const struct pnl_widget_ops check_ops = {pnl_check_set_label, pnl_check_label, pnl_check_set, pnl_check_get, NULL};
     struct pnl_check_widget *check;
 
     if (out_widget != NULL)
@@ -243,6 +327,8 @@ int pnl_widget_check(pnl_app_t *app, const char *label, int checked, pnl_widget_
     if (app == NULL || out_widget == NULL)
         return PNL_ERR_ARG;
     check = pnl_form_alloc(app, sizeof(*check));
+    if (check != NULL)
+        check->app = app;
     if (check == NULL || pnl_widget_copy(app, &check->label, label) != PNL_OK) {
         if (check != NULL)
             pnl_check_release(check);
@@ -250,7 +336,7 @@ int pnl_widget_check(pnl_app_t *app, const char *label, int checked, pnl_widget_
     }
     check->app = app;
     check->checked = checked != 0;
-    return pnl_form_finish(app, PNL_WIDGET_CHECK, &check_class, check, &check->self, out_widget);
+    return pnl_form_finish(app, PNL_WIDGET_CHECK, &check_class, &check_ops, check, &check->self, out_widget);
 }
 
 static void pnl_choice_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
@@ -320,6 +406,7 @@ int pnl_widget_choice(pnl_app_t *app, const char *label, const char *const *opti
 {
     static const pnl_widget_class_t choice_class = {pnl_choice_draw, pnl_choice_key, pnl_field_line, pnl_choice_hints,
                                                     pnl_choice_release};
+    static const struct pnl_widget_ops choice_ops = {pnl_choice_set_label, pnl_choice_option, pnl_choice_set, pnl_choice_get, NULL};
     struct pnl_choice_widget *choice;
     size_t i;
 
@@ -339,7 +426,7 @@ int pnl_widget_choice(pnl_app_t *app, const char *label, const char *const *opti
         pnl_choice_release(choice);
         return PNL_ERR_NOMEM;
     }
-    return pnl_form_finish(app, PNL_WIDGET_CHOICE, &choice_class, choice, &choice->self, out_widget);
+    return pnl_form_finish(app, PNL_WIDGET_CHOICE, &choice_class, &choice_ops, choice, &choice->self, out_widget);
 }
 
 static double pnl_slider_fit(const struct pnl_slider_widget *slider, double value)
@@ -350,6 +437,8 @@ static double pnl_slider_fit(const struct pnl_slider_widget *slider, double valu
     if (slider->step <= 0.0)
         return value;
     steps = (value - slider->min) / slider->step + 0.5;
+    if (!(steps < 9.0e18))
+        return value;
     value = slider->min + (double)(long long)steps * slider->step;
     return value > slider->max ? slider->max : value;
 }
@@ -431,11 +520,50 @@ static void pnl_slider_release(void *ctx)
     pnl_form_release(slider->app, slider->label, slider);
 }
 
+static int pnl_slider_set_label(pnl_widget_t *widget, const char *text)
+{
+    return pnl_widget_copy(widget->app, &((struct pnl_slider_widget *)widget->ctx)->label, text);
+}
+
+static const char *pnl_slider_label(const pnl_widget_t *widget)
+{
+    return ((const struct pnl_slider_widget *)widget->ctx)->label;
+}
+
+static int pnl_slider_set(pnl_widget_t *widget, double value)
+{
+    struct pnl_slider_widget *slider = widget->ctx;
+
+    slider->value = pnl_slider_fit(slider, value);
+    pnl_glide_to(slider->app, &slider->glide, pnl_slider_share(slider, slider->value), PNL_MOTION_COUNT);
+    widget->app->dirty = 1;
+    return PNL_OK;
+}
+
+static int pnl_slider_get(const pnl_widget_t *widget, double *out_value)
+{
+    *out_value = ((const struct pnl_slider_widget *)widget->ctx)->value;
+    return PNL_OK;
+}
+
+static int pnl_slider_range(pnl_widget_t *widget, double min, double max)
+{
+    struct pnl_slider_widget *slider = widget->ctx;
+
+    if (!(max > min))
+        return PNL_ERR_ARG;
+    slider->min = min;
+    slider->max = max;
+    return pnl_slider_set(widget, slider->value);
+}
+
 int pnl_widget_slider(pnl_app_t *app, const char *label, double min, double max, double step,
                       pnl_widget_t **out_widget)
 {
     static const pnl_widget_class_t slider_class = {pnl_slider_draw, pnl_slider_key, pnl_field_line, pnl_slider_hints,
                                                     pnl_slider_release};
+    static const struct pnl_widget_ops slider_ops = {pnl_slider_set_label, pnl_slider_label, pnl_slider_set, pnl_slider_get,
+                                                     pnl_slider_range};
     struct pnl_slider_widget *slider;
 
     if (out_widget != NULL)
@@ -443,6 +571,8 @@ int pnl_widget_slider(pnl_app_t *app, const char *label, double min, double max,
     if (app == NULL || out_widget == NULL || !(max > min) || !(step >= 0.0))
         return PNL_ERR_ARG;
     slider = pnl_form_alloc(app, sizeof(*slider));
+    if (slider != NULL)
+        slider->app = app;
     if (slider == NULL || pnl_widget_copy(app, &slider->label, label) != PNL_OK) {
         if (slider != NULL)
             pnl_slider_release(slider);
@@ -453,7 +583,7 @@ int pnl_widget_slider(pnl_app_t *app, const char *label, double min, double max,
     slider->max = max;
     slider->step = step;
     slider->value = min;
-    return pnl_form_finish(app, PNL_WIDGET_SLIDER, &slider_class, slider, &slider->self, out_widget);
+    return pnl_form_finish(app, PNL_WIDGET_SLIDER, &slider_class, &slider_ops, slider, &slider->self, out_widget);
 }
 
 static void pnl_button_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
@@ -501,6 +631,7 @@ int pnl_widget_button(pnl_app_t *app, const char *label, pnl_action_fn action_fn
 {
     static const pnl_widget_class_t button_class = {pnl_button_draw, pnl_button_key, pnl_field_line, pnl_button_hints,
                                                     pnl_button_release};
+    static const struct pnl_widget_ops button_ops = {pnl_button_set_label, pnl_button_label, NULL, NULL, NULL};
     struct pnl_button_widget *button;
 
     if (out_widget != NULL)
@@ -508,6 +639,8 @@ int pnl_widget_button(pnl_app_t *app, const char *label, pnl_action_fn action_fn
     if (app == NULL || out_widget == NULL || label == NULL)
         return PNL_ERR_ARG;
     button = pnl_form_alloc(app, sizeof(*button));
+    if (button != NULL)
+        button->app = app;
     if (button == NULL || pnl_widget_copy(app, &button->label, label) != PNL_OK) {
         if (button != NULL)
             pnl_button_release(button);
@@ -516,88 +649,6 @@ int pnl_widget_button(pnl_app_t *app, const char *label, pnl_action_fn action_fn
     button->app = app;
     button->action_fn = action_fn;
     button->action_ctx = action_ctx;
-    return pnl_form_finish(app, PNL_WIDGET_BUTTON, &button_class, button, &button->self, out_widget);
+    return pnl_form_finish(app, PNL_WIDGET_BUTTON, &button_class, &button_ops, button, &button->self, out_widget);
 }
 
-int pnl_form_set_text(pnl_widget_t *widget, const char *text)
-{
-    struct pnl_input_widget *input = widget->ctx;
-    size_t len = strlen(text);
-
-    if (widget->kind == PNL_WIDGET_CHECK)
-        return pnl_widget_copy(widget->app, &((struct pnl_check_widget *)widget->ctx)->label, text);
-    if (widget->kind == PNL_WIDGET_CHOICE)
-        return pnl_widget_copy(widget->app, &((struct pnl_choice_widget *)widget->ctx)->label, text);
-    if (widget->kind == PNL_WIDGET_SLIDER)
-        return pnl_widget_copy(widget->app, &((struct pnl_slider_widget *)widget->ctx)->label, text);
-    if (widget->kind == PNL_WIDGET_BUTTON)
-        return pnl_widget_copy(widget->app, &((struct pnl_button_widget *)widget->ctx)->label, text);
-    if (widget->kind != PNL_WIDGET_INPUT || len >= sizeof(input->text))
-        return PNL_ERR_ARG;
-    memcpy(input->text, text, len + 1);
-    pnl_edit_init(&input->edit, input->text, sizeof(input->text));
-    widget->app->dirty = 1;
-    return PNL_OK;
-}
-
-const char *pnl_form_get_text(const pnl_widget_t *widget)
-{
-    const struct pnl_choice_widget *choice = widget->ctx;
-
-    if (widget->kind == PNL_WIDGET_INPUT)
-        return ((const struct pnl_input_widget *)widget->ctx)->text;
-    if (widget->kind == PNL_WIDGET_CHOICE)
-        return choice->options[choice->index];
-    if (widget->kind == PNL_WIDGET_CHECK)
-        return ((const struct pnl_check_widget *)widget->ctx)->label;
-    if (widget->kind == PNL_WIDGET_SLIDER)
-        return ((const struct pnl_slider_widget *)widget->ctx)->label;
-    if (widget->kind == PNL_WIDGET_BUTTON)
-        return ((const struct pnl_button_widget *)widget->ctx)->label;
-    return NULL;
-}
-
-int pnl_form_get_value(const pnl_widget_t *widget, double *out_value)
-{
-    if (widget->kind == PNL_WIDGET_CHECK)
-        *out_value = ((const struct pnl_check_widget *)widget->ctx)->checked;
-    else if (widget->kind == PNL_WIDGET_CHOICE)
-        *out_value = (double)((const struct pnl_choice_widget *)widget->ctx)->index;
-    else if (widget->kind == PNL_WIDGET_SLIDER)
-        *out_value = ((const struct pnl_slider_widget *)widget->ctx)->value;
-    else
-        return PNL_ERR_ARG;
-    return PNL_OK;
-}
-
-int pnl_form_set_value(pnl_widget_t *widget, double value)
-{
-    struct pnl_choice_widget *choice = widget->ctx;
-    struct pnl_slider_widget *slider = widget->ctx;
-
-    if (widget->kind == PNL_WIDGET_CHECK) {
-        ((struct pnl_check_widget *)widget->ctx)->checked = value != 0.0;
-    } else if (widget->kind == PNL_WIDGET_CHOICE) {
-        if (value < 0.0 || value >= (double)choice->count)
-            return PNL_ERR_ARG;
-        choice->index = (size_t)value;
-    } else if (widget->kind == PNL_WIDGET_SLIDER) {
-        slider->value = pnl_slider_fit(slider, value);
-        pnl_glide_to(slider->app, &slider->glide, pnl_slider_share(slider, slider->value), PNL_MOTION_COUNT);
-    } else {
-        return PNL_ERR_ARG;
-    }
-    widget->app->dirty = 1;
-    return PNL_OK;
-}
-
-int pnl_form_set_range(pnl_widget_t *widget, double min, double max)
-{
-    struct pnl_slider_widget *slider = widget->ctx;
-
-    if (!(max > min))
-        return PNL_ERR_ARG;
-    slider->min = min;
-    slider->max = max;
-    return pnl_form_set_value(widget, slider->value);
-}

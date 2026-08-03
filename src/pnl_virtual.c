@@ -19,6 +19,8 @@ struct pnl_test {
     int width;
     int height;
     int keys[PNL_VIRTUAL_KEYS];
+    int keys_x[PNL_VIRTUAL_KEYS];
+    int keys_y[PNL_VIRTUAL_KEYS];
     size_t keys_len;
     long long clock_ms;
     long long clock_seen;
@@ -112,7 +114,12 @@ int pnl_term_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
     *out_key = PNL_KEY_NONE;
     if (test->keys_len > 0) {
         *out_key = test->keys[0];
-        memmove(test->keys, test->keys + 1, --test->keys_len * sizeof(*test->keys));
+        term->mouse_x = test->keys_x[0];
+        term->mouse_y = test->keys_y[0];
+        test->keys_len--;
+        memmove(test->keys, test->keys + 1, test->keys_len * sizeof(*test->keys));
+        memmove(test->keys_x, test->keys_x + 1, test->keys_len * sizeof(*test->keys_x));
+        memmove(test->keys_y, test->keys_y + 1, test->keys_len * sizeof(*test->keys_y));
     }
     pnl_unlock(&test->lock);
     return PNL_OK;
@@ -221,17 +228,44 @@ static void pnl_test_main(void *arg)
     pnl_unlock(&test->lock);
 }
 
+static int pnl_test_push_at(pnl_test_t *test, int key, int x, int y)
+{
+    int full;
+
+    pnl_lock(&test->lock);
+    full = test->keys_len == PNL_VIRTUAL_KEYS;
+    pnl_unlock(&test->lock);
+    if (full && pnl_test_settle(test) != PNL_OK)
+        return PNL_ERR_IO;
+    pnl_lock(&test->lock);
+    if (!test->finished) {
+        test->keys[test->keys_len] = key;
+        test->keys_x[test->keys_len] = x;
+        test->keys_y[test->keys_len] = y;
+        test->keys_len++;
+        test->idle = 0;
+    }
+    pnl_unlock(&test->lock);
+    return PNL_OK;
+}
+
 static int pnl_test_push(pnl_test_t *test, int key)
 {
-    pnl_lock(&test->lock);
-    if (test->finished) {
-        pnl_unlock(&test->lock);
-        return PNL_OK;
-    }
-    test->keys[test->keys_len++] = key;
-    test->idle = 0;
-    pnl_unlock(&test->lock);
-    return pnl_test_settle(test);
+    return pnl_test_push_at(test, key, 0, 0);
+}
+
+static int pnl_test_mouse(pnl_test_t *test, const char *token)
+{
+    int x = 0;
+    int y = 0;
+    char end = '\0';
+
+    if (strcmp(token, "wheelup") == 0 || strcmp(token, "wheeldown") == 0)
+        return pnl_test_push(test, token[5] == 'u' ? PNL_KEY_WHEEL_UP : PNL_KEY_WHEEL_DOWN);
+    if (sscanf(token, "click:%d,%d%c", &x, &y, &end) != 2 || x < 0 || y < 0 || x >= test->width ||
+        y >= test->height)
+        return PNL_ERR_ARG;
+    return pnl_test_push_at(test, PNL_KEY_CLICK, x, y);
 }
 
 static void pnl_test_free(pnl_test_t *test)
@@ -322,16 +356,10 @@ static int pnl_test_text(pnl_test_t *test, const char *text)
     int status = PNL_OK;
 
     while (*text != '\0' && status == PNL_OK) {
-        int cp = (unsigned char)*text++;
+        uint32_t cp;
 
-        if (cp >= 0x80) {
-            int extra = cp >= 0xf0 ? 3 : cp >= 0xe0 ? 2 : 1;
-
-            cp &= extra == 3 ? 0x07 : extra == 2 ? 0x0f : 0x1f;
-            while (extra-- > 0 && (*text & 0xc0) == 0x80)
-                cp = (cp << 6) | (*text++ & 0x3f);
-        }
-        status = pnl_test_push(test, cp);
+        text += pnl_utf8_next(text, strlen(text), &cp);
+        status = pnl_test_push(test, (int)cp);
     }
     return status;
 }
@@ -355,12 +383,14 @@ int pnl_test_keys(pnl_test_t *test, const char *keys)
             status = pnl_test_text(test, token);
         else if (token[0] == '\0')
             break;
+        else if (strncmp(token, "click:", 6) == 0 || strncmp(token, "wheel", 5) == 0)
+            status = pnl_test_mouse(test, token);
         else if (!pnl_key_parse(token, &key) || key == PNL_KEY_NONE)
             status = PNL_ERR_ARG;
         else
             status = pnl_test_push(test, key);
     }
-    return status;
+    return status == PNL_OK ? pnl_test_settle(test) : status;
 }
 
 int pnl_test_wait(pnl_test_t *test, int ms)
@@ -417,14 +447,16 @@ int pnl_test_expect(pnl_test_t *test, const char *path)
 
     if (test == NULL || path == NULL || strlen(path) + 5 > sizeof(fresh))
         return PNL_ERR_ARG;
-    saved = pnl_test_read(test->app, path);
-    if (saved == NULL || (update != NULL && strcmp(update, "update") == 0)) {
-        pnl_mem_free(&test->app->mem, saved);
+    if (update != NULL && strcmp(update, "update") == 0)
         return pnl_test_save(path, test->text);
+    snprintf(fresh, sizeof(fresh), "%s.new", path);
+    saved = pnl_test_read(test->app, path);
+    if (saved == NULL) {
+        pnl_test_save(fresh, test->text);
+        return PNL_ERR_NOT_FOUND;
     }
     same = strcmp(saved, test->text) == 0;
     pnl_mem_free(&test->app->mem, saved);
-    snprintf(fresh, sizeof(fresh), "%s.new", path);
     if (same) {
         remove(fresh);
         return PNL_OK;

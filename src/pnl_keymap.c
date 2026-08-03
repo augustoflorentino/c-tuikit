@@ -57,8 +57,10 @@ void pnl_key_label(int key, char *out, size_t out_len)
         snprintf(out, out_len, "ctrl-%c", 'a' + key - 1);
     else if (key >= 0x110000)
         snprintf(out, out_len, "0x%x", (unsigned int)key);
-    else if (key >= 0x80)
+    else if (key >= 0x80 && out_len > 4)
         out[pnl_utf8_put((uint32_t)key, out)] = '\0';
+    else if (key >= 0x80)
+        snprintf(out, out_len, "?");
     else
         snprintf(out, out_len, "%c", key);
 }
@@ -75,7 +77,7 @@ int pnl_app_bind(pnl_app_t *app, const char *key, const char *to)
     for (i = 0; i < app->bindings_len && app->bindings[i].from != from_key; i++)
         ;
     if (i == PNL_BINDINGS)
-        return PNL_ERR_NOMEM;
+        return PNL_ERR_LIMIT;
     app->bindings[i].from = from_key;
     app->bindings[i].to = to_key;
     if (i == app->bindings_len)
@@ -115,7 +117,7 @@ static char *pnl_keymap_trim(char *text)
     return text;
 }
 
-static void pnl_keymap_line(pnl_app_t *app, char *line)
+void pnl_keymap_line(pnl_app_t *app, char *line)
 {
     char *equals = (strchr)(line, '=');
 

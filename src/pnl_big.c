@@ -156,8 +156,8 @@ int pnl_art_size(const char *art, int *out_width)
         int w = pnl_text_width_n(line, len);
 
         width = w > width ? w : width;
-        line = end != NULL ? end + 1 : NULL;
-        lines += end != NULL;
+        line = end != NULL && end[1] != '\0' ? end + 1 : NULL;
+        lines += line != NULL;
     }
     *out_width = width;
     return lines;
@@ -170,7 +170,7 @@ int pnl_canvas_art(pnl_canvas_t *canvas, int x, int y, int style, int gradient, 
     int row;
     const char *line = art;
 
-    if (canvas == NULL || art == NULL)
+    if (canvas == NULL || art == NULL || canvas->screen->linear)
         return 0;
     lines = pnl_art_size(art, &width);
     for (row = 0; row < lines && line != NULL; row++) {
@@ -181,10 +181,9 @@ int pnl_canvas_art(pnl_canvas_t *canvas, int x, int y, int style, int gradient, 
 
         while (at < len) {
             char glyph[8];
-            size_t n = 1;
+            uint32_t cp;
+            size_t n = pnl_utf8_next(line + at, len - at, &cp);
 
-            while (at + n < len && ((unsigned char)line[at + n] & 0xc0) == 0x80 && n < sizeof(glyph) - 1)
-                n++;
             memcpy(glyph, line + at, n);
             glyph[n] = '\0';
             if (glyph[0] != ' ')
@@ -286,9 +285,8 @@ static int pnl_art_widget_height(void *ctx, pnl_app_t *app, int width)
     struct pnl_big_widget *art = ctx;
     int art_width = 0;
 
-    (void)app;
     (void)width;
-    return pnl_art_size(art->text, &art_width);
+    return app->screen.linear ? 0 : pnl_art_size(art->text, &art_width);
 }
 
 static void pnl_big_widget_release(void *ctx)
@@ -297,6 +295,16 @@ static void pnl_big_widget_release(void *ctx)
 
     pnl_mem_free(&big->app->mem, big->text);
     pnl_mem_free(&big->app->mem, big);
+}
+
+static int pnl_big_set(pnl_widget_t *widget, const char *text)
+{
+    return pnl_widget_copy(widget->app, &((struct pnl_big_widget *)widget->ctx)->text, text);
+}
+
+static const char *pnl_big_get(const pnl_widget_t *widget)
+{
+    return ((const struct pnl_big_widget *)widget->ctx)->text;
 }
 
 static int pnl_big_make(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, const char *text,
@@ -315,7 +323,9 @@ static int pnl_big_make(pnl_app_t *app, int kind, const pnl_widget_class_t *widg
         pnl_big_widget_release(big);
         return PNL_ERR_NOMEM;
     }
-    return pnl_widget_builtin(app, kind, widget_class, big, out_widget);
+    static const struct pnl_widget_ops big_ops = {pnl_big_set, pnl_big_get, NULL, NULL, NULL};
+
+    return pnl_widget_builtin(app, kind, widget_class, &big_ops, big, out_widget);
 }
 
 int pnl_widget_big(pnl_app_t *app, const char *text, int size, int style, int gradient, pnl_widget_t **out_widget)

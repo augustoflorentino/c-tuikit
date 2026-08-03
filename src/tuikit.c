@@ -222,9 +222,11 @@ void pnl_canvas_fill(pnl_canvas_t *canvas, int x, int y, int width, int height, 
 
     if (canvas == NULL || x < 0 || y < 0)
         return;
-    if (x + width > canvas->width)
+    if (width > canvas->width - x)
         width = canvas->width - x;
-    for (row = y; row < y + height && row < canvas->height; row++)
+    if (height > canvas->height - y)
+        height = canvas->height - y;
+    for (row = y; row < y + height; row++)
         pnl_screen_fill(canvas->screen, canvas->x + x, canvas->y + row, width, (uint32_t)style);
 }
 
@@ -268,6 +270,8 @@ const char *pnl_strerror(int status)
         return "not supported on this platform";
     case PNL_ERR_MISMATCH:
         return "screen differs from the snapshot";
+    case PNL_ERR_LIMIT:
+        return "fixed limit reached";
     default:
         return "unknown status";
     }

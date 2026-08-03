@@ -234,7 +234,7 @@ int pnl_widget_flow(pnl_app_t *app, pnl_widget_t **out_widget)
         pnl_mem_free(&app->mem, flow);
         return PNL_ERR_NOMEM;
     }
-    return pnl_widget_builtin(app, PNL_WIDGET_FLOW, &flow_class, flow, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_FLOW, &flow_class, NULL, flow, out_widget);
 }
 
 int pnl_widget_add_step(pnl_widget_t *widget, const char *label, int *out_step)
@@ -249,7 +249,7 @@ int pnl_widget_add_step(pnl_widget_t *widget, const char *label, int *out_step)
     flow = widget->ctx;
     pnl_lock(&flow->lock);
     if (flow->len == PNL_STEPS_MAX) {
-        status = PNL_ERR_NOMEM;
+        status = PNL_ERR_LIMIT;
     } else {
         memset(&flow->steps[flow->len], 0, sizeof(flow->steps[0]));
         pnl_live_copy(flow->steps[flow->len].label, PNL_STEP_LABEL, label);
@@ -363,9 +363,39 @@ static void pnl_scene_release(void *ctx)
     pnl_mem_free(&scene->app->mem, scene);
 }
 
+static int pnl_scene_set_state(pnl_widget_t *widget, double value)
+{
+    struct pnl_scene_widget *scene = widget->ctx;
+    int state;
+    int changed;
+
+    if (!(value >= -2147483647.0 && value <= 2147483647.0))
+        return PNL_ERR_ARG;
+    state = (int)value;
+
+    pnl_lock(&scene->lock);
+    changed = scene->state != state;
+    scene->state = state;
+    pnl_unlock(&scene->lock);
+    if (changed)
+        pnl_term_wake(&widget->app->term);
+    return PNL_OK;
+}
+
+static int pnl_scene_state(const pnl_widget_t *widget, double *out_value)
+{
+    struct pnl_scene_widget *scene = widget->ctx;
+
+    pnl_lock(&scene->lock);
+    *out_value = scene->state;
+    pnl_unlock(&scene->lock);
+    return PNL_OK;
+}
+
 int pnl_widget_scene(pnl_app_t *app, pnl_widget_t **out_widget)
 {
     static const pnl_widget_class_t scene_class = {pnl_scene_draw, NULL, pnl_scene_height, NULL, pnl_scene_release};
+    static const struct pnl_widget_ops scene_ops = {NULL, NULL, pnl_scene_set_state, pnl_scene_state, NULL};
     struct pnl_scene_widget *scene;
 
     if (out_widget != NULL)
@@ -381,7 +411,7 @@ int pnl_widget_scene(pnl_app_t *app, pnl_widget_t **out_widget)
         pnl_mem_free(&app->mem, scene);
         return PNL_ERR_NOMEM;
     }
-    return pnl_widget_builtin(app, PNL_WIDGET_SCENE, &scene_class, scene, out_widget);
+    return pnl_widget_builtin(app, PNL_WIDGET_SCENE, &scene_class, &scene_ops, scene, out_widget);
 }
 
 static int pnl_scene_split(struct pnl_scene_widget *scene, struct pnl_scene *shown, const char *frames)
@@ -423,7 +453,7 @@ int pnl_widget_add_scene(pnl_widget_t *widget, int state, const char *frames, in
     pnl_lock(&scene->lock);
     slot = pnl_scene_find(scene, state);
     if (status == PNL_OK && slot < 0 && scene->len == PNL_SCENES_MAX)
-        status = PNL_ERR_NOMEM;
+        status = PNL_ERR_LIMIT;
     if (status == PNL_OK && slot >= 0) {
         old = scene->scenes[slot];
         scene->scenes[slot] = next;
@@ -438,27 +468,3 @@ int pnl_widget_add_scene(pnl_widget_t *widget, int state, const char *frames, in
     return status;
 }
 
-int pnl_scene_set_state(pnl_widget_t *widget, double value)
-{
-    struct pnl_scene_widget *scene = widget->ctx;
-    int state = (int)value;
-    int changed;
-
-    pnl_lock(&scene->lock);
-    changed = scene->state != state;
-    scene->state = state;
-    pnl_unlock(&scene->lock);
-    if (changed)
-        pnl_term_wake(&widget->app->term);
-    return PNL_OK;
-}
-
-int pnl_scene_state(const pnl_widget_t *widget, double *out_value)
-{
-    struct pnl_scene_widget *scene = widget->ctx;
-
-    pnl_lock(&scene->lock);
-    *out_value = scene->state;
-    pnl_unlock(&scene->lock);
-    return PNL_OK;
-}

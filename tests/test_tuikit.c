@@ -1126,7 +1126,7 @@ static void test_custom_colors(void)
     while (pnl_app_color(app, 0x010101UL * (unsigned long)(count + 1), &color) == PNL_OK)
         count++;
     CHECK(count > 30 && count < 60);
-    CHECK(pnl_app_gradient(app, stops, 3, 24, &gradient) == PNL_ERR_NOMEM);
+    CHECK(pnl_app_gradient(app, stops, 3, 24, &gradient) == PNL_ERR_LIMIT);
     CHECK(pnl_app_add_action(app, "Colors", open_colors, &screen) == PNL_OK);
     CHECK(pnl_app_record(app, "colors.cast") == PNL_OK);
     CHECK(pnl_test_create(app, 30, 8, &test) == PNL_OK);
@@ -1197,6 +1197,144 @@ static void test_big_text(void)
     pnl_widget_destroy(stack);
     pnl_widget_destroy(big);
     pnl_widget_destroy(art);
+    pnl_app_destroy(app);
+}
+
+static void spin_work(void *ctx, pnl_task_t *task)
+{
+    long i;
+
+    (void)ctx;
+    CHECK(pnl_task_step(task, "spinning") == PNL_OK);
+    for (i = 0; i < 400000000L; i++) {
+        if (pnl_task_cancelled(task)) {
+            pnl_task_result(task, PNL_MARK_FAIL, "stopped early");
+            return;
+        }
+    }
+    pnl_task_result(task, PNL_MARK_OK, "ran out");
+}
+
+static void spin_action(void *ctx, pnl_app_t *app)
+{
+    (void)ctx;
+    CHECK(pnl_task_run(app, "spin", spin_work, NULL) == PNL_OK);
+}
+
+static const char *falling_cell(void *ctx, size_t row, size_t column, char *buf, size_t buf_len)
+{
+    (void)ctx;
+    if (column == 0)
+        snprintf(buf, buf_len, "row %zu", row);
+    else
+        snprintf(buf, buf_len, "%zu", 30000 - row);
+    return buf;
+}
+
+static void big_table_action(void *ctx, pnl_app_t *app)
+{
+    static const char *const headers[] = {"name", "size"};
+
+    (void)ctx;
+    CHECK(pnl_table_source(app, "big", headers, NULL, 2, 30000, falling_cell, NULL, NULL) == PNL_OK);
+}
+
+static void long_pager_action(void *ctx, pnl_app_t *app)
+{
+    char *text = malloc(8192);
+    size_t len = 0;
+    int i;
+
+    (void)ctx;
+    CHECK(text != NULL);
+    for (i = 1; i <= 300; i++)
+        len += (size_t)snprintf(text + len, 8192 - len, "line %03d\n", i);
+    CHECK(pnl_pager(app, "long", text, len) == PNL_OK);
+    free(text);
+}
+
+static int clicked;
+
+static void click_action(void *ctx, pnl_app_t *app)
+{
+    (void)app;
+    clicked = *(int *)ctx;
+}
+
+static int screen_row(const char *screen, const char *needle)
+{
+    const char *at = strstr(screen, needle);
+    int row = 0;
+
+    CHECK(at != NULL);
+    for (; screen < at; screen++)
+        row += *screen == '\n';
+    return row;
+}
+
+static void test_concurrency(void)
+{
+    static int ids[] = {1, 2};
+    pnl_app_t *app = NULL;
+    pnl_test_t *test = NULL;
+
+    then_calls = 0;
+    CHECK(pnl_app_create("busy", NULL, &app) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Count", task_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Spin", spin_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Big table", big_table_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Long pager", long_pager_action, NULL) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "First", click_action, &ids[0]) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Second", click_action, &ids[1]) == PNL_OK);
+    CHECK(pnl_test_create(app, 60, 20, &test) == PNL_OK);
+
+    CHECK(pnl_test_keys(test, "enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "counted") != NULL && strstr(pnl_test_screen(test), "one more") != NULL);
+    CHECK(steps_counted == 3 && then_calls == 1);
+    CHECK(pnl_test_keys(test, "esc down enter esc") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "stopped early") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "ran out") == NULL);
+
+    CHECK(pnl_test_keys(test, "esc down enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "row 0 ") != NULL || strstr(pnl_test_screen(test), "row 0\n") != NULL);
+    CHECK(pnl_test_keys(test, "right s") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "row 29999") != NULL && strstr(pnl_test_screen(test), "row 0 ") == NULL);
+    CHECK(pnl_test_keys(test, "/ \"row 1234\" enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "row 12345") != NULL && strstr(pnl_test_screen(test), "row 29999") == NULL);
+    CHECK(pnl_test_keys(test, "esc") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "> 3 Big table") != NULL);
+
+    CHECK(pnl_test_keys(test, "down enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "line 001") != NULL);
+    CHECK(pnl_test_keys(test, "/ \"line 250\" enter") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "line 250") != NULL && strstr(pnl_test_screen(test), "line 001") == NULL);
+    CHECK(pnl_test_keys(test, "g wheeldown") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "line 001") == NULL && strstr(pnl_test_screen(test), "line 004") != NULL);
+    CHECK(pnl_test_keys(test, "q") == PNL_OK);
+
+    clicked = 0;
+    {
+        char script[32];
+
+        snprintf(script, sizeof(script), "click:4,%d", screen_row(pnl_test_screen(test), "Second"));
+        CHECK(pnl_test_keys(test, script) == PNL_OK);
+    }
+    CHECK(clicked == 2);
+    CHECK(pnl_test_keys(test, "click:99,1") == PNL_ERR_ARG);
+    {
+        pnl_widget_t *outer = NULL;
+        pnl_widget_t *inner = NULL;
+
+        CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &outer) == PNL_OK);
+        CHECK(pnl_widget_stack(app, PNL_STACK_ROWS, &inner) == PNL_OK);
+        CHECK(pnl_widget_add(outer, inner, 0) == PNL_OK);
+        CHECK(pnl_widget_add(inner, outer, 0) == PNL_ERR_ARG);
+        CHECK(pnl_widget_add(inner, inner, 0) == PNL_ERR_ARG);
+        pnl_widget_destroy(outer);
+        pnl_widget_destroy(inner);
+    }
+    CHECK(pnl_test_keys(test, "click:x") == PNL_ERR_ARG);
+    pnl_test_destroy(test);
     pnl_app_destroy(app);
 }
 
@@ -1308,5 +1446,6 @@ int main(void)
     test_custom_colors();
     test_big_text();
     test_live_art();
+    test_concurrency();
     return 0;
 }

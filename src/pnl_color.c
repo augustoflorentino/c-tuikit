@@ -305,7 +305,7 @@ int pnl_app_color(pnl_app_t *app, unsigned long rgb, int *out_color)
     }
     slot = pnl_custom_run(palette, 1, 0);
     if (slot < 0)
-        return PNL_ERR_NOMEM;
+        return PNL_ERR_LIMIT;
     palette->custom[slot] = rgb;
     palette->custom_used[slot] = 1;
     *out_color = slot;
@@ -340,7 +340,7 @@ int pnl_app_gradient(pnl_app_t *app, const unsigned long *stops, size_t count, i
     palette = &app->screen.palette;
     first = pnl_custom_run(palette, steps, 1);
     if (first < 0)
-        return PNL_ERR_NOMEM;
+        return PNL_ERR_LIMIT;
     for (i = 0; i < steps; i++) {
         palette->custom[first + i] = pnl_gradient_rgb(stops, count, (double)i / (double)(steps - 1));
         palette->custom_used[first + i] = 2;
@@ -368,15 +368,17 @@ int pnl_canvas_gradient_text(pnl_canvas_t *canvas, int x, int y, int style, int 
 
     if (canvas == NULL || text == NULL)
         return x;
-    for (p = text; *p != '\0'; p++)
-        count += ((unsigned char)*p & 0xc0) != 0x80;
+    for (p = text; *p != '\0'; count++) {
+        uint32_t cp;
+
+        p += pnl_utf8_next(p, strlen(p), &cp);
+    }
     for (p = text; *p != '\0';) {
         char glyph[8];
-        size_t len = 1;
+        uint32_t cp;
+        size_t len = pnl_utf8_next(p, strlen(p), &cp);
         double t = count > 1 ? (double)index / (double)(count - 1) : 0.0;
 
-        while (p[len] != '\0' && ((unsigned char)p[len] & 0xc0) == 0x80 && len < sizeof(glyph) - 1)
-            len++;
         memcpy(glyph, p, len);
         glyph[len] = '\0';
         x = pnl_canvas_text(canvas, x, y, (style & ~0xff00) | PNL_FG(pnl_gradient_color(gradient, t)), glyph);

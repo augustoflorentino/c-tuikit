@@ -253,7 +253,7 @@ color at any point between 0 and 1. `PNL_METER_GRADIENT` paints bars along their
 charts, sparklines and plots by height. Colors are sent as they are in true color and fitted to
 the nearest one on 256 and 16 color terminals; with `NO_COLOR` they are left out. There is room
 for about fifty of them (a gradient takes one per step); past that the call returns
-`PNL_ERR_NOMEM`.
+`PNL_ERR_LIMIT`.
 
 ## Big letters and art
 
@@ -331,9 +331,16 @@ if (pnl_test_expect(test, "tests/snapshots/release.txt") != PNL_OK)
 pnl_test_destroy(test);
 ```
 
-A missing snapshot is written on the first run; a different screen is saved next to it as
-`.new` and the call returns `PNL_ERR_MISMATCH`. `TUIKIT_SNAPSHOTS=update` rewrites them all.
+A different screen is saved next to the snapshot as `.new` and the call returns
+`PNL_ERR_MISMATCH`. A missing snapshot is never created on its own, so a wrong path fails in CI:
+the screen goes to `.new` and the call returns `PNL_ERR_NOT_FOUND`. Run once with
+`TUIKIT_SNAPSHOTS=update` to write new snapshots or rewrite changed ones.
 Timers and toasts follow the virtual clock, so the same script gives the same screen.
+
+The keys of one script are queued together, so `"enter esc"` opens a task and cancels it while
+it runs. The call returns once the screen is still and every task and table sort has finished.
+Besides key names and quoted text, a script takes `click:X,Y` (a click at that column and row)
+and `wheelup` / `wheeldown`.
 
 `TUIKIT_RECORD=demo.cast tool` records a session as an asciicast file, ready for
 `asciinema play` or for turning into a GIF; `pnl_app_record(app, path)` does the same from code,
@@ -345,6 +352,15 @@ Conventions:
 - what `pnl_x_create` returns is released only by `pnl_x_destroy`, which accepts `NULL`
 - functions never take ownership of their arguments; returned pointers belong to the library
 - pass a `pnl_allocator_t` to `pnl_app_create`, or `NULL` for `malloc`/`free`
+- `PNL_ERR_NOMEM` means an allocation failed; `PNL_ERR_LIMIT` means a fixed limit was reached
+  (key bindings, custom colors, watched descriptors, steps of a flow, pictures of a scene)
+- components and callbacks run on the panel's thread, with these exceptions made to be called
+  from anywhere: `pnl_value_set*`, `pnl_log_write`, `pnl_task_*` inside the work function,
+  `pnl_task_show`, `pnl_widget_set_step` and `pnl_widget_set_value` on a scene
+- the `cell_fn` of `pnl_table_source` is called from the panel's thread and, for tables of more
+  than 20 000 rows, also from a worker thread at the same time while sorting or filtering. It
+  must only read data that stays the same while the table is open and write into the `buf` it
+  is given, never into shared or static memory
 
 `bench/run.sh` measures drawing, rendering, logs, values, a table of a million rows and the
 memory each part takes.

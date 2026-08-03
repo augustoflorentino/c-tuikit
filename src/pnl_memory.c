@@ -96,7 +96,7 @@ static void pnl_memory_unescape(char *text)
     *out = '\0';
 }
 
-static void pnl_memory_parse(pnl_app_t *app, char *data)
+void pnl_memory_parse(pnl_app_t *app, char *data)
 {
     char *line = data;
 

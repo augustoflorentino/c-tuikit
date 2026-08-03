@@ -8,6 +8,7 @@
 #define PNL_TABLE_COLUMN_MAX 40
 #define PNL_TABLE_MEASURE_ROWS 2000
 #define PNL_TABLE_SYNC_ROWS 20000
+#define PNL_TABLE_POLL_MS 20
 #define PNL_TABLE_CHECK_EVERY 4096
 #define PNL_TABLE_FILTER_MAX 128
 #define PNL_TABLE_FOOTER "up/down: move  left/right: column  s: sort  /: filter  q: back"
@@ -35,6 +36,8 @@ struct pnl_table {
     uint32_t *work;
     size_t work_len;
     uint32_t *scratch;
+    double *keys;
+    unsigned char *numeric;
     int *widths;
     int *flags;
     unsigned char *hidden;
@@ -51,6 +54,7 @@ struct pnl_table {
     int lock_ready;
     struct pnl_thread thread;
     int busy;
+    int poll_timer;
     int done;
     int cancel;
 };
@@ -99,17 +103,31 @@ static int pnl_table_compare(const struct pnl_table *table, size_t a, size_t b)
 {
     char left_buf[PNL_CELL_MAX];
     char right_buf[PNL_CELL_MAX];
-    const char *left = pnl_table_cell(table, a, table->job.column, left_buf);
-    const char *right = pnl_table_cell(table, b, table->job.column, right_buf);
-    double x;
-    double y;
     int result;
 
-    if (pnl_table_number(left, &x) && pnl_table_number(right, &y))
-        result = x < y ? -1 : x > y;
-    else
-        result = strcmp(left, right);
+    if (table->numeric[a] && table->numeric[b]) {
+        result = table->keys[a] < table->keys[b] ? -1 : table->keys[a] > table->keys[b];
+    } else {
+        result = strcmp(pnl_table_cell(table, a, table->job.column, left_buf),
+                        pnl_table_cell(table, b, table->job.column, right_buf));
+    }
     return table->job.descending ? -result : result;
+}
+
+static int pnl_table_keys(struct pnl_table *table)
+{
+    char buf[PNL_CELL_MAX];
+    size_t i;
+
+    for (i = 0; i < table->work_len; i++) {
+        size_t row = table->work[i];
+
+        if (pnl_table_cancelled(table, i))
+            return 0;
+        table->numeric[row] =
+            (unsigned char)pnl_table_number(pnl_table_cell(table, row, table->job.column, buf), &table->keys[row]);
+    }
+    return 1;
 }
 
 static int pnl_table_merge(struct pnl_table *table, size_t from, size_t middle, size_t to)
@@ -177,7 +195,7 @@ static int pnl_table_filter(struct pnl_table *table)
 
 static void pnl_table_compute(struct pnl_table *table)
 {
-    if (pnl_table_filter(table) && table->job.sorted)
+    if (pnl_table_filter(table) && table->job.sorted && pnl_table_keys(table))
         pnl_table_sort(table);
 }
 
@@ -224,6 +242,8 @@ static void pnl_table_finish(struct pnl_table *table)
     pnl_mem_free(&table->app->mem, table->scratch);
     table->scratch = NULL;
     table->busy = 0;
+    table->app->tasks_running--;
+    pnl_app_remove_timer(table->app, table->poll_timer);
     cancelled = table->cancel;
     table->cancel = 0;
     table->done = 0;
@@ -249,24 +269,11 @@ static int pnl_table_buffers(struct pnl_table *table)
         table->work = pnl_mem_alloc(&table->app->mem, count * sizeof(*table->work));
     if (table->scratch == NULL)
         table->scratch = pnl_mem_alloc(&table->app->mem, count * sizeof(*table->scratch));
-    return table->work != NULL && table->scratch != NULL;
-}
-
-static void pnl_table_start(struct pnl_table *table)
-{
-    pnl_table_stop(table);
-    if (!pnl_table_buffers(table))
-        return;
-    table->job = table->want;
-    if (table->rows > PNL_TABLE_SYNC_ROWS && pnl_term_wake_open(&table->app->term) == PNL_OK &&
-        pnl_thread_start(&table->thread, pnl_table_worker, table) == PNL_OK) {
-        table->busy = 1;
-        return;
-    }
-    pnl_table_compute(table);
-    pnl_mem_free(&table->app->mem, table->scratch);
-    table->scratch = NULL;
-    pnl_table_apply(table);
+    if (table->keys == NULL)
+        table->keys = pnl_mem_alloc(&table->app->mem, count * sizeof(*table->keys));
+    if (table->numeric == NULL)
+        table->numeric = pnl_mem_alloc(&table->app->mem, count);
+    return table->work != NULL && table->scratch != NULL && table->keys != NULL && table->numeric != NULL;
 }
 
 static void pnl_table_poll(struct pnl_table *table)
@@ -281,6 +288,32 @@ static void pnl_table_poll(struct pnl_table *table)
     if (done)
         pnl_table_finish(table);
 }
+
+static void pnl_table_tick(void *ctx, pnl_app_t *app)
+{
+    (void)app;
+    pnl_table_poll(ctx);
+}
+
+static void pnl_table_start(struct pnl_table *table)
+{
+    pnl_table_stop(table);
+    if (!pnl_table_buffers(table))
+        return;
+    table->job = table->want;
+    if (table->rows > PNL_TABLE_SYNC_ROWS && pnl_term_wake_open(&table->app->term) == PNL_OK &&
+        pnl_thread_start(&table->thread, pnl_table_worker, table) == PNL_OK) {
+        table->busy = 1;
+        table->app->tasks_running++;
+        pnl_app_add_timer(table->app, PNL_TABLE_POLL_MS, pnl_table_tick, table, &table->poll_timer);
+        return;
+    }
+    pnl_table_compute(table);
+    pnl_mem_free(&table->app->mem, table->scratch);
+    table->scratch = NULL;
+    pnl_table_apply(table);
+}
+
 
 static void pnl_table_widen(struct pnl_table *table, size_t row)
 {
@@ -584,6 +617,8 @@ static void pnl_table_drop(pnl_app_t *app, void *ctx)
     pnl_mem_free(&app->mem, table->order);
     pnl_mem_free(&app->mem, table->work);
     pnl_mem_free(&app->mem, table->scratch);
+    pnl_mem_free(&app->mem, table->keys);
+    pnl_mem_free(&app->mem, table->numeric);
     pnl_mem_free(&app->mem, table->widths);
     pnl_mem_free(&app->mem, table->flags);
     pnl_mem_free(&app->mem, table->hidden);
@@ -690,7 +725,7 @@ static int pnl_table_valid(const pnl_app_t *app, const char *title, const char *
                            size_t rows)
 {
     return app != NULL && title != NULL && headers != NULL && columns > 0 &&
-           rows <= ((size_t)-1) / sizeof(char *) / (columns + 1) - 1 && rows <= 0xffffffffu &&
+           columns < ((size_t)-1) / sizeof(char *) && rows <= ((size_t)-1) / sizeof(char *) / (columns + 1) - 1 && rows <= 0xffffffffu &&
            (app->running || app->cli);
 }
 

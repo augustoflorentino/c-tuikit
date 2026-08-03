@@ -232,14 +232,19 @@ static void pnl_term_take_unit(struct pnl_term *term, unsigned int unit)
 static int pnl_term_drain(struct pnl_term *term)
 {
     INPUT_RECORD records[PNL_TERM_RECORDS];
+    DWORD room = (DWORD)((PNL_INPUT_MAX - term->input_len) / 4);
     DWORD count = 0;
     DWORD i;
 
+    if (room > PNL_TERM_RECORDS)
+        room = PNL_TERM_RECORDS;
+    if (room == 0)
+        return term->input_len > 0;
     if (!GetNumberOfConsoleInputEvents(pnl_term_in(), &count))
         return -1;
     if (count == 0)
         return 0;
-    if (!ReadConsoleInputW(pnl_term_in(), records, PNL_TERM_RECORDS, &count))
+    if (!ReadConsoleInputW(pnl_term_in(), records, room, &count))
         return -1;
     for (i = 0; i < count; i++) {
         if (records[i].EventType == WINDOW_BUFFER_SIZE_EVENT)
@@ -288,7 +293,7 @@ int pnl_os_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
         if (filled <= 0)
             return filled < 0 ? PNL_ERR_IO : PNL_OK;
     }
-    if (term->input_len == 1 && term->input[0] == 0x1b && pnl_term_fill(term, PNL_ESCAPE_WAIT_MS) < 0)
+    if (pnl_term_complete(term) < 0)
         return PNL_ERR_IO;
     used = pnl_key_decode_at(term->input, term->input_len, out_key, &term->mouse_x, &term->mouse_y);
     memmove(term->input, term->input + used, term->input_len - used);

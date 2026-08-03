@@ -134,6 +134,60 @@ static size_t pnl_keys_utf8(const unsigned char *data, size_t data_len, int *out
     return need;
 }
 
+static int pnl_keys_partial_escape(const unsigned char *data, size_t data_len)
+{
+    size_t i;
+
+    if (data_len == 1)
+        return 1;
+    if (data[1] == 'O')
+        return data_len < 3;
+    if (data[1] == ']') {
+        for (i = 2; i < data_len; i++) {
+            if (data[i] == 0x07 || (data[i] == 0x1b && i + 1 < data_len && data[i + 1] == '\\'))
+                return 0;
+        }
+        return 1;
+    }
+    if (data[1] != '[')
+        return 0;
+    for (i = 2; i < data_len; i++) {
+        if (data[i] >= 0x40 && data[i] <= 0x7e)
+            return 0;
+    }
+    return 1;
+}
+
+int pnl_key_partial(const unsigned char *data, size_t data_len)
+{
+    size_t need;
+    size_t i;
+
+    if (data_len == 0)
+        return 0;
+    if (data[0] == 0x1b)
+        return pnl_keys_partial_escape(data, data_len);
+    if (data[0] < 0xc2 || data[0] > 0xf4)
+        return 0;
+    need = data[0] >= 0xf0 ? 4 : data[0] >= 0xe0 ? 3 : 2;
+    for (i = 1; i < data_len && i < need; i++) {
+        if ((data[i] & 0xc0) != 0x80)
+            return 0;
+    }
+    return data_len < need;
+}
+
+int pnl_term_complete(struct pnl_term *term)
+{
+    while (term->input_len < PNL_INPUT_MAX && pnl_key_partial(term->input, term->input_len)) {
+        int filled = pnl_term_fill(term, PNL_ESCAPE_WAIT_MS);
+
+        if (filled <= 0)
+            return filled;
+    }
+    return 1;
+}
+
 size_t pnl_key_decode(const unsigned char *data, size_t data_len, int *out_key)
 {
     int x;

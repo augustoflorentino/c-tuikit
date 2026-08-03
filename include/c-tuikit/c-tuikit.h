@@ -39,6 +39,7 @@ extern "C" {
 #define PNL_ERR_NOT_FOUND 5
 #define PNL_ERR_UNSUPPORTED 6
 #define PNL_ERR_MISMATCH 7
+#define PNL_ERR_LIMIT 8
 
 #define PNL_MARK_OK 0
 #define PNL_MARK_WAIT 1

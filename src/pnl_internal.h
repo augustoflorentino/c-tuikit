@@ -94,9 +94,18 @@ struct pnl_big_widget {
     int gradient;
 };
 
+struct pnl_widget_ops {
+    int (*set_text)(pnl_widget_t *widget, const char *text);
+    const char *(*get_text)(const pnl_widget_t *widget);
+    int (*set_value)(pnl_widget_t *widget, double value);
+    int (*get_value)(const pnl_widget_t *widget, double *out_value);
+    int (*set_range)(pnl_widget_t *widget, double min, double max);
+};
+
 struct pnl_widget {
     pnl_app_t *app;
     pnl_widget_class_t widget_class;
+    const struct pnl_widget_ops *ops;
     void *ctx;
     int kind;
     int focusable;
@@ -453,20 +462,16 @@ PNL_INTERNAL void pnl_inspect_toggle(pnl_app_t *app);
 PNL_INTERNAL void pnl_widget_paint(pnl_widget_t *widget, pnl_canvas_t *canvas);
 PNL_INTERNAL const char *pnl_widget_hints(const pnl_widget_t *widget);
 PNL_INTERNAL int pnl_widget_focusable(const pnl_widget_t *widget);
-PNL_INTERNAL int pnl_widget_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class, void *ctx,
-                                    pnl_widget_t **out_widget);
+PNL_INTERNAL int pnl_widget_builtin(pnl_app_t *app, int kind, const pnl_widget_class_t *widget_class,
+                                     const struct pnl_widget_ops *ops, void *ctx, pnl_widget_t **out_widget);
 PNL_INTERNAL int pnl_widget_copy(pnl_app_t *app, char **slot, const char *text);
 PNL_INTERNAL int pnl_banner_draw(pnl_app_t *app, pnl_canvas_t *canvas, int needed);
-PNL_INTERNAL int pnl_form_set_text(pnl_widget_t *widget, const char *text);
-PNL_INTERNAL const char *pnl_form_get_text(const pnl_widget_t *widget);
-PNL_INTERNAL int pnl_form_get_value(const pnl_widget_t *widget, double *out_value);
-PNL_INTERNAL int pnl_form_set_value(pnl_widget_t *widget, double value);
-PNL_INTERNAL int pnl_form_set_range(pnl_widget_t *widget, double min, double max);
 PNL_INTERNAL void pnl_widget_focus_edge(pnl_widget_t *widget, int last);
 PNL_INTERNAL void pnl_widget_changed(pnl_widget_t *widget);
 PNL_INTERNAL int pnl_art_size(const char *art, int *out_width);
-PNL_INTERNAL int pnl_scene_set_state(pnl_widget_t *widget, double value);
-PNL_INTERNAL int pnl_scene_state(const pnl_widget_t *widget, double *out_value);
+PNL_INTERNAL int pnl_theme_line(struct pnl_theme *theme, char *line, int *light_set);
+PNL_INTERNAL void pnl_memory_parse(pnl_app_t *app, char *data);
+PNL_INTERNAL void pnl_keymap_line(pnl_app_t *app, char *line);
 PNL_INTERNAL void pnl_edit_draw_styled(const struct pnl_edit *edit, pnl_canvas_t *canvas, int x, int y, int width,
                                        int focused, int style);
 PNL_INTERNAL void pnl_record_open(pnl_app_t *app);
@@ -536,6 +541,8 @@ PNL_INTERNAL int pnl_menu_key(pnl_app_t *app, int key);
 PNL_INTERNAL void pnl_menu_clear_lines(pnl_app_t *app);
 PNL_INTERNAL void pnl_menu_refresh(pnl_app_t *app);
 PNL_INTERNAL int pnl_valid_mark(int mark);
+PNL_INTERNAL int pnl_key_partial(const unsigned char *data, size_t data_len);
+PNL_INTERNAL int pnl_term_complete(struct pnl_term *term);
 PNL_INTERNAL size_t pnl_key_decode_at(const unsigned char *data, size_t data_len, int *out_key, int *out_x, int *out_y);
 PNL_INTERNAL int pnl_run_interactive(pnl_app_t *app);
 PNL_INTERNAL int pnl_cli_result(pnl_app_t *app, int mark, const char *text);

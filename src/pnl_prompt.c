@@ -183,8 +183,11 @@ static void pnl_input_recall(struct pnl_input_view *view, int key)
     if (index > 0 && (entry = pnl_history_entry(view->history, index - 1, &len)) == NULL)
         return;
     view->recalled = index;
-    if (len >= view->edit.cap)
+    if (len >= view->edit.cap) {
         len = view->edit.cap - 1;
+        while (len > 0 && ((unsigned char)entry[len] & 0xc0) == 0x80)
+            len--;
+    }
     memcpy(view->edit.text, entry, len);
     view->edit.text[len] = '\0';
     pnl_edit_init(&view->edit, view->edit.text, view->edit.cap);

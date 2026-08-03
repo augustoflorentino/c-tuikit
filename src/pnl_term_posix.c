@@ -227,7 +227,7 @@ int pnl_os_read_key(struct pnl_term *term, int timeout_ms, int *out_key)
         if (filled <= 0)
             return filled < 0 ? PNL_ERR_IO : PNL_OK;
     }
-    if (term->input_len == 1 && term->input[0] == 0x1b && pnl_term_fill(term, PNL_ESCAPE_WAIT_MS) < 0)
+    if (pnl_term_complete(term) < 0)
         return PNL_ERR_IO;
     used = pnl_key_decode_at(term->input, term->input_len, out_key, &term->mouse_x, &term->mouse_y);
     memmove(term->input, term->input + used, term->input_len - used);

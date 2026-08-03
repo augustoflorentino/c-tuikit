@@ -367,6 +367,7 @@ void pnl_timers_run(pnl_app_t *app)
         struct pnl_timer *timer = &app->timers[i];
         pnl_timer_fn fn = timer->fn;
         void *ctx = timer->ctx;
+        int id = timer->id;
 
         if (timer->due_ms > now)
             continue;
@@ -377,6 +378,8 @@ void pnl_timers_run(pnl_app_t *app)
         pnl_inspect_event(app, PNL_EVENT_TIMER, timer->id);
         if (fn != NULL)
             fn(ctx, app);
+        if (i >= app->timers_len || app->timers[i].id != id)
+            i = (size_t)-1;
     }
 }
 
@@ -410,7 +413,7 @@ int pnl_app_watch_fd(pnl_app_t *app, int fd, pnl_fd_fn fd_fn, void *fd_ctx)
         return PNL_ERR_ARG;
     i = pnl_watch_index(app, fd);
     if (i == app->watches_len && app->watches_len == PNL_WATCH_MAX)
-        return PNL_ERR_NOMEM;
+        return PNL_ERR_LIMIT;
     status = pnl_mem_grow(&app->mem, (void **)&app->watches, &app->watches_cap, i + 1, sizeof(*watch));
     if (status != PNL_OK)
         return status;
@@ -534,7 +537,7 @@ static void pnl_draw_views(pnl_app_t *app, pnl_canvas_t *canvas)
 static int pnl_draw(pnl_app_t *app)
 {
     size_t base = pnl_base_view(app);
-    const struct pnl_view *top = app->views_len ? &app->views[app->views_len - 1] : NULL;
+    const struct pnl_view *top;
     const char *footer = PNL_MENU_FOOTER;
     struct pnl_canvas canvas;
     long long started = pnl_clock_us();
@@ -560,6 +563,7 @@ static int pnl_draw(pnl_app_t *app)
     canvas.width = width;
     canvas.height = height > 4 ? height - 4 : 0;
     pnl_draw_views(app, &canvas);
+    top = app->views_len ? &app->views[app->views_len - 1] : NULL;
     if (top != NULL)
         footer = pnl_view_hints(app);
     pnl_draw_footer(app, footer, top != NULL && top->dialog_width > 0);
@@ -683,6 +687,17 @@ static int pnl_read_keys(pnl_app_t *app)
     return status;
 }
 
+static int pnl_watch_alive(const pnl_app_t *app, const struct pnl_watch *watch)
+{
+    size_t i;
+
+    for (i = 0; i < app->watches_len; i++) {
+        if (app->watches[i].fd == watch->fd && app->watches[i].fn == watch->fn && app->watches[i].ctx == watch->ctx)
+            return 1;
+    }
+    return 0;
+}
+
 static void pnl_dispatch_watches(pnl_app_t *app, const unsigned char *ready)
 {
     struct pnl_watch watches[PNL_WATCH_MAX];
@@ -694,6 +709,8 @@ static void pnl_dispatch_watches(pnl_app_t *app, const unsigned char *ready)
     memcpy(watches, app->watches, count * sizeof(*watches));
     for (i = 0; i < count && !app->quit; i++) {
         if (!ready[i])
+            continue;
+        if (!pnl_watch_alive(app, &watches[i]))
             continue;
         app->dirty = 1;
         pnl_inspect_event(app, PNL_EVENT_WATCH, watches[i].fd);

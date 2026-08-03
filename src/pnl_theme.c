@@ -84,7 +84,7 @@ static int pnl_theme_color(const char *text, unsigned long *out_rgb)
     return *end == '\0';
 }
 
-static int pnl_theme_line(struct pnl_theme *theme, char *line, int *light_set)
+int pnl_theme_line(struct pnl_theme *theme, char *line, int *light_set)
 {
     char *equal = (strchr)(line, '=');
     char *key;
