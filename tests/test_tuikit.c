@@ -1272,6 +1272,12 @@ static int screen_row(const char *screen, const char *needle)
     return row;
 }
 
+static void test_big_utf8(void)
+{
+    CHECK(pnl_big_width(PNL_BIG_SMALL, "\xc3\xa7") == pnl_big_width(PNL_BIG_SMALL, "?"));
+    CHECK(pnl_big_width(PNL_BIG_SMALL, "a\xc3\xa7") == pnl_big_width(PNL_BIG_SMALL, "a?"));
+}
+
 static void test_concurrency(void)
 {
     static int ids[] = {1, 2};
@@ -1447,5 +1453,6 @@ int main(void)
     test_big_text();
     test_live_art();
     test_concurrency();
+    test_big_utf8();
     return 0;
 }

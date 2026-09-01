@@ -70,17 +70,25 @@ int pnl_big_height(int size)
     return size == PNL_BIG_LARGE ? PNL_GLYPH_ROWS : (PNL_GLYPH_ROWS + 1) / 2;
 }
 
+static int pnl_big_next(const char **text)
+{
+    uint32_t cp;
+
+    *text += pnl_utf8_next(*text, strlen(*text), &cp);
+    return cp < 0x80 && pnl_glyph_rows((int)cp) != NULL ? (int)cp : '?';
+}
+
 int pnl_big_width(int size, const char *text)
 {
     int columns = 0;
-    const char *p;
+    const char *p = text;
 
     if (text == NULL || (size != PNL_BIG_SMALL && size != PNL_BIG_LARGE))
         return 0;
-    for (p = text; *p != '\0'; p++) {
-        int c = pnl_glyph_rows((unsigned char)*p) != NULL ? (unsigned char)*p : '?';
+    while (*p != '\0') {
+        int c = pnl_big_next(&p);
 
-        columns += pnl_glyph_columns(c) + (p[1] != '\0');
+        columns += pnl_glyph_columns(c) + (*p != '\0');
     }
     return columns * pnl_big_scale(size);
 }
@@ -129,14 +137,14 @@ int pnl_canvas_big(pnl_canvas_t *canvas, int x, int y, int size, int style, int 
 {
     int width = pnl_big_width(size, text);
     int start = 0;
-    const char *p;
+    const char *p = text;
 
     if (canvas == NULL || width == 0)
         return x;
     if (canvas->screen->linear)
         return pnl_canvas_text(canvas, x, y, style, text);
-    for (p = text; *p != '\0'; p++) {
-        int c = pnl_glyph_rows((unsigned char)*p) != NULL ? (unsigned char)*p : '?';
+    while (*p != '\0') {
+        int c = pnl_big_next(&p);
 
         pnl_big_glyph(canvas, x + start, y, size, style, gradient, start, width, c);
         start += (pnl_glyph_columns(c) + 1) * pnl_big_scale(size);

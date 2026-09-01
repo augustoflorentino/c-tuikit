@@ -1,0 +1,11 @@
+c-tuikit
+Copyright (c) 2026 Augusto Florentino
+
+This product is licensed under the MIT License; see LICENSE.
+
+It contains no code from other projects and links to nothing besides the C library and the
+platform's threads.
+
+The table of wide characters in src/pnl_width.c lists ranges of code points taken from the
+East Asian Width and emoji properties of the Unicode Character Database, published by
+Unicode, Inc. under the Unicode License (https://www.unicode.org/license.txt).

@@ -53,7 +53,6 @@ static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *foote
                             pnl_draw_fn draw_fn, pnl_key_fn key_fn, void *ctx)
 {
     struct pnl_view view;
-    int status;
 
     memset(&view, 0, sizeof(view));
     view.typing_ref = key_fn == pnl_confirm_key ? NULL : &pnl_typing;
@@ -66,10 +65,7 @@ static int pnl_prompt_modal(pnl_app_t *app, const char *title, const char *foote
     view.title = pnl_mem_copy(&app->mem, title);
     if (view.title == NULL)
         return PNL_ERR_NOMEM;
-    status = pnl_view_modal(app, &view);
-    if (status == PNL_ERR_NOMEM || status == PNL_ERR_TTY)
-        pnl_mem_free(&app->mem, view.title);
-    return status;
+    return pnl_view_modal(app, &view);
 }
 
 static void pnl_confirm_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)

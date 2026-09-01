@@ -169,8 +169,10 @@ int pnl_view_modal(pnl_app_t *app, struct pnl_view *view)
     size_t depth = app->views_len;
     int status = pnl_view_push_internal(app, view);
 
-    if (status != PNL_OK)
+    if (status != PNL_OK) {
+        pnl_mem_free(&app->mem, view->title);
         return status;
+    }
     status = pnl_loop(app, depth + 1);
     while (app->views_len > depth)
         pnl_view_pop(app);

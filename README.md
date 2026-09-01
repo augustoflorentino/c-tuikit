@@ -158,8 +158,16 @@ See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
 [`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table, and
 [`examples/monitor.c`](examples/monitor.c), a screen made only of components, and
 [`examples/gallery.c`](examples/gallery.c), which keeps generating new combinations of charts,
-bars, spinners and motion, and [`examples/form.c`](examples/form.c), a form with a live summary. The
-header `include/c-tuikit/c-tuikit.h` is the API reference.
+bars, spinners and motion, and [`examples/form.c`](examples/form.c), a form with a live summary.
+[`examples/README.md`](examples/README.md) says which one to start from.
+
+## Documentation
+
+- [docs/api.md](docs/api.md): every function, type and macro of `include/c-tuikit/c-tuikit.h`
+- [docs/threads.md](docs/threads.md): what runs on which thread and what may be called from
+  other threads
+- [docs/stability.md](docs/stability.md): what a release promises about the API, the ABI and
+  the files a user writes
 
 ## Components
 
@@ -371,8 +379,8 @@ Semantic Versioning. Compatible releases bump the minor version; incompatible on
 major version and the soname. Since 1.0.0 the API and the ABI of the shared library hold within a
 major version: CI compares every build against the baseline in `abi/`. A function on its way out
 is marked deprecated for at least one minor release before the next major removes it. See
-[CHANGELOG.md](CHANGELOG.md).
+[docs/stability.md](docs/stability.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE), [NOTICE](NOTICE) and [AUTHORS](AUTHORS).
