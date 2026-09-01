@@ -4,6 +4,66 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.6.0 - 2026-08-31
+
+A release about trust: the parts that run at the same time are now tested, and the rough edges a careful review found are gone.
+
+c-tuikit had grown fast through 6.x, and a library people build on has to be boring in the right
+places. This release adds no new screens. It goes over the code that runs on more than one
+thread, the paths that only fail when memory runs out, and the promises the documentation makes
+but never wrote down.
+
+Tested at last:
+
+- a task running on its own thread, finishing with its log, progress and follow-up, and a task
+  cancelled with esc while it runs
+- a table of 30 000 rows sorted and filtered on a worker thread, a pager search, wheel scrolling
+  and a mouse click on the menu
+- three new fuzz inputs next to the key decoder: theme lines, keymap lines and the memory file
+  (`fuzz/fuzz_files.c`)
+- all of it also runs clean under ThreadSanitizer
+
+Testing behaves differently:
+
+- `pnl_test_expect` no longer writes a missing snapshot and passes. It saves the screen as `.new`
+  and returns `PNL_ERR_NOT_FOUND`, so a wrong path fails in CI. `TUIKIT_SNAPSHOTS=update`
+  writes new snapshots
+- the keys of one `pnl_test_keys` script are queued together, so `"enter esc"` cancels a task
+  mid-run; the call still waits for every task and table sort to end
+- scripts take `click:X,Y`, `wheelup` and `wheeldown`
+
+Fixed:
+
+- an escape sequence split between two reads was dropped and the rest typed as text; the reader
+  now waits briefly for the end of an incomplete sequence or UTF-8 character
+- the footer of a frame could read a view freed when a callback opened a ninth screen
+- removing a timer from inside its own callback skipped the next timer that round
+- one watched descriptor's callback unwatching another no longer calls the removed one
+- a table worker covered by another screen is still collected, through a timer instead of the
+  draw
+- stacks refuse to be put inside themselves at any depth, instead of recursing forever
+- input, check, slider and button crashed when copying their label failed
+- on Windows, input arriving faster than it was read lost keys; the console is now read only as
+  far as there is room
+- history recall cut a long entry in the middle of a character
+- a scene state outside the range of an int, art ending in a newline (one line too many), art
+  in linear mode (now left out), `pnl_canvas_fill` with huge sizes, very large progress totals,
+  table sizes near the limit and slider steps far past the range are all handled
+- sorting a table reads each number once instead of on every comparison
+
+Under the hood:
+
+- components answer `set_text`, `get_text`, `set_value`, `get_value` and `set_range` through a
+  table of operations of their own, instead of chains of checks in four files
+- one UTF-8 decoder instead of three
+- `PNL_ERR_LIMIT` (new) tells a fixed limit apart from a failed allocation: key bindings, custom
+  colors, watched descriptors, steps of a flow and pictures of a scene return it where they
+  returned `PNL_ERR_NOMEM`
+- the README now says which calls may come from any thread, and that a `pnl_table_source`
+  callback runs on a worker thread too for tables over 20 000 rows
+- the ABI baseline covers 6.4 to 6.6, a stray object file left the repository, and 6.1 to 6.5
+  have their tags
+
 ## 6.5.0 - 2026-08-02
 
 Live art: the picture on the screen now follows the work.
