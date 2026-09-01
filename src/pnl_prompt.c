@@ -397,9 +397,12 @@ static int pnl_pick_cli(const char *title, const char *const *items, size_t item
         *out_ok = 1;
         return PNL_OK;
     }
-    for (i = 0; i < items_len && !*out_ok; i++) {
-        *out_ok = strcmp(items[i], line) == 0;
-        *out_index = i;
+    for (i = 0; i < items_len; i++) {
+        if (strcmp(items[i], line) == 0) {
+            *out_index = i;
+            *out_ok = 1;
+            break;
+        }
     }
     return PNL_OK;
 }

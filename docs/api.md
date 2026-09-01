@@ -516,7 +516,7 @@ Runs `work_fn` and shows its progress: the current step, a progress bar (or a mo
 elapsed seconds when the total is 0), the result and the last log lines. Escape or `q` asks
 the task to cancel; after it finishes any key goes back. In command mode it runs in the
 foreground and writes progress to stderr when stderr is a terminal. A task that sets no
-result ends with "finished" or "cancelled".
+result ends with "finished" (marked ok) or "cancelled" (marked as failed).
 
 Returns: `PNL_OK`; `PNL_ERR_ARG` if `app`, `title` or `work_fn` is `NULL`, or the app is
 neither running nor in command mode; `PNL_ERR_NOMEM`.
@@ -635,7 +635,8 @@ last pick for the same title is selected first. In command mode it prints a numb
 stderr when it is a terminal and reads a number or the exact text of an item.
 
 Returns: `PNL_OK`; `PNL_ERR_ARG` for a `NULL` argument or item, or `items_len` of 0;
-`PNL_ERR_NOMEM`. `*out_index` is the chosen index and `*out_ok` is 1 if an item was chosen.
+`PNL_ERR_NOMEM`. `*out_index` is the chosen index and `*out_ok` is 1 if an item was chosen;
+when nothing was chosen `*out_ok` and `*out_index` are 0.
 
 ### pnl_pager
 
@@ -1110,10 +1111,11 @@ int pnl_widget_choice(pnl_app_t *app, const char *label, const char *const *opti
 
 Creates a choice between options, which are copied. Left, right, space or a click change
 it. The value is the index of the chosen option. `pnl_widget_get_text` returns the chosen
-option and `pnl_widget_set_text` sets the label.
+option and `pnl_widget_set_text` chooses the option with that text.
 
 Returns: `PNL_OK`; `PNL_ERR_ARG` if `options` is `NULL`, `count` is 0 or an option is `NULL`;
-`PNL_ERR_NOMEM`. `pnl_widget_set_value` returns `PNL_ERR_ARG` for an index out of range.
+`PNL_ERR_NOMEM`. `pnl_widget_set_value` returns `PNL_ERR_ARG` for an index out of range and
+`pnl_widget_set_text` returns `PNL_ERR_NOT_FOUND` for text that is not one of the options.
 
 ### pnl_widget_slider
 

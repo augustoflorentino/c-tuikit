@@ -132,9 +132,19 @@ static int pnl_check_get(const pnl_widget_t *widget, double *out_value)
     return PNL_OK;
 }
 
-static int pnl_choice_set_label(pnl_widget_t *widget, const char *text)
+static int pnl_choice_pick(pnl_widget_t *widget, const char *text)
 {
-    return pnl_widget_copy(widget->app, &((struct pnl_choice_widget *)widget->ctx)->label, text);
+    struct pnl_choice_widget *choice = widget->ctx;
+    size_t i;
+
+    for (i = 0; i < choice->count; i++) {
+        if (strcmp(choice->options[i], text) == 0) {
+            choice->index = i;
+            widget->app->dirty = 1;
+            return PNL_OK;
+        }
+    }
+    return PNL_ERR_NOT_FOUND;
 }
 
 static const char *pnl_choice_option(const pnl_widget_t *widget)
@@ -406,7 +416,7 @@ int pnl_widget_choice(pnl_app_t *app, const char *label, const char *const *opti
 {
     static const pnl_widget_class_t choice_class = {pnl_choice_draw, pnl_choice_key, pnl_field_line, pnl_choice_hints,
                                                     pnl_choice_release};
-    static const struct pnl_widget_ops choice_ops = {pnl_choice_set_label, pnl_choice_option, pnl_choice_set, pnl_choice_get, NULL};
+    static const struct pnl_widget_ops choice_ops = {pnl_choice_pick, pnl_choice_option, pnl_choice_set, pnl_choice_get, NULL};
     struct pnl_choice_widget *choice;
     size_t i;
 

@@ -1037,6 +1037,11 @@ static void test_forms(void)
     CHECK(pnl_widget_set_text(fields[0], long_text) == PNL_ERR_ARG);
     CHECK(pnl_widget_get_value(fields[0], &value) == PNL_ERR_ARG);
     CHECK(pnl_widget_set_value(fields[2], 3.0) == PNL_ERR_ARG);
+    CHECK(pnl_widget_set_text(fields[2], "blue") == PNL_OK);
+    CHECK(strcmp(pnl_widget_get_text(fields[2]), "blue") == 0);
+    CHECK(pnl_widget_get_value(fields[2], &value) == PNL_OK && value == 2.0);
+    CHECK(pnl_widget_set_text(fields[2], "pink") == PNL_ERR_NOT_FOUND);
+    CHECK(pnl_widget_set_text(fields[2], "red") == PNL_OK);
     CHECK(pnl_widget_set_value(fields[3], 4.6) == PNL_OK);
     CHECK(pnl_widget_get_value(fields[3], &value) == PNL_OK && value == 4.0);
     CHECK(pnl_widget_set_value(fields[3], 0.0) == PNL_OK);
@@ -1204,11 +1209,11 @@ static void spin_work(void *ctx, pnl_task_t *task)
 {
     long i;
 
-    (void)ctx;
     CHECK(pnl_task_step(task, "spinning") == PNL_OK);
     for (i = 0; i < 400000000L; i++) {
         if (pnl_task_cancelled(task)) {
-            pnl_task_result(task, PNL_MARK_FAIL, "stopped early");
+            if (ctx == NULL)
+                pnl_task_result(task, PNL_MARK_FAIL, "stopped early");
             return;
         }
     }
@@ -1217,8 +1222,7 @@ static void spin_work(void *ctx, pnl_task_t *task)
 
 static void spin_action(void *ctx, pnl_app_t *app)
 {
-    (void)ctx;
-    CHECK(pnl_task_run(app, "spin", spin_work, NULL) == PNL_OK);
+    CHECK(pnl_task_run(app, "spin", spin_work, ctx) == PNL_OK);
 }
 
 static const char *falling_cell(void *ctx, size_t row, size_t column, char *buf, size_t buf_len)
@@ -1292,6 +1296,7 @@ static void test_concurrency(void)
     CHECK(pnl_app_add_action(app, "Long pager", long_pager_action, NULL) == PNL_OK);
     CHECK(pnl_app_add_action(app, "First", click_action, &ids[0]) == PNL_OK);
     CHECK(pnl_app_add_action(app, "Second", click_action, &ids[1]) == PNL_OK);
+    CHECK(pnl_app_add_action(app, "Quiet spin", spin_action, &ids[0]) == PNL_OK);
     CHECK(pnl_test_create(app, 60, 20, &test) == PNL_OK);
 
     CHECK(pnl_test_keys(test, "enter") == PNL_OK);
@@ -1326,6 +1331,10 @@ static void test_concurrency(void)
         CHECK(pnl_test_keys(test, script) == PNL_OK);
     }
     CHECK(clicked == 2);
+    CHECK(pnl_test_keys(test, "7 esc") == PNL_OK);
+    CHECK(strstr(pnl_test_screen(test), "!!  cancelled") != NULL);
+    CHECK(strstr(pnl_test_screen(test), "cancelled") != NULL);
+    CHECK(pnl_test_keys(test, "esc") == PNL_OK);
     CHECK(pnl_test_keys(test, "click:99,1") == PNL_ERR_ARG);
     {
         pnl_widget_t *outer = NULL;

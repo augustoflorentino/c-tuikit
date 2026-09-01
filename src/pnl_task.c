@@ -282,7 +282,7 @@ static void pnl_task_draw(void *ctx, pnl_app_t *app, pnl_canvas_t *canvas)
     if (finished && task->result_set)
         pnl_draw_mark(canvas, 2, task->result_mark, task->result);
     else if (finished)
-        pnl_draw_mark(canvas, 2, PNL_MARK_OK, task->cancel ? "cancelled" : "finished");
+        pnl_draw_mark(canvas, 2, task->cancel ? PNL_MARK_FAIL : PNL_MARK_OK, task->cancel ? "cancelled" : "finished");
     else
         pnl_task_draw_progress(task, canvas, 2);
     pnl_task_draw_log(task, canvas, 4);
