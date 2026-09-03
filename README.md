@@ -1,21 +1,105 @@
-# c-tuikit
+<div align="center">
 
-Interactive panels for command line tools written in C. Instead of printing a numbered menu and
-reading a number in a loop, the tool shows a screen: what is going on right now, the actions it
-can take, and the outcome of each one.
+<h1>c-tuikit</h1>
 
-```
-service - demo
+<p><b>Terminal panels for C tools, and their command line twins.</b></p>
 
-  ok  config   file found
-  ok  service  running for 42s
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/gallery-light.gif">
+  <img alt="The gallery example: charts, bars, spinners and big counters in gradients, changing on their own" src="docs/screens/gallery-dark.gif" width="860">
+</picture>
 
-  > 1 Start
-    2 Stop
-    q Quit
+<p>
+<a href="#a-tour">Tour</a> ·
+<a href="#build-and-install">Build</a> ·
+<a href="#usage">Usage</a> ·
+<a href="#components">Components</a> ·
+<a href="#testing-a-tool">Testing</a> ·
+<a href="docs/api.md">API</a> ·
+<a href="CHANGELOG.md">Changelog</a>
+</p>
 
-up/down: move  enter: choose  ?: help  q: quit
-```
+</div>
+
+Instead of printing a numbered menu and reading a number in a loop, a tool built on c-tuikit shows
+a screen: what is going on right now, the actions it can take, and the outcome of each one. The
+same actions are subcommands when there is no terminal, so the tool works in scripts and pipes
+without a second code path.
+
+C99, threads and nothing else. Linux, macOS and the Windows console (Windows 10 or later).
+
+Every moving picture on this page is a real session of a program in [`examples/`](examples),
+recorded with `TUIKIT_RECORD` on a dark and on a light background.
+
+## A tour
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/deploy-light.gif">
+  <img alt="deploy: a confirmation dialog, then a pipeline of four steps running with progress and a log" src="docs/screens/deploy-dark.gif">
+</picture>
+<p><b><a href="examples/deploy.c">deploy.c</a></b>: a small tool built the way a real one would be.
+Its pipeline is the banner, a dialog asks before it starts, and the work runs on a thread with
+progress, a log and esc to cancel.</p>
+</td>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/dashboard-light.gif">
+  <img alt="dashboard: services with load bars, a chart panel and tabs for alerts and notes" src="docs/screens/dashboard-dark.gif">
+</picture>
+<p><b><a href="examples/dashboard.c">dashboard.c</a></b>: a screen made of panels and tabs. Tab
+moves the focus, <code>[</code> and <code>]</code> switch tabs, and the bars shift from green to
+red as the load rises.</p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/csv-light.gif">
+  <img alt="csv: a table of one million orders, sorted by a column and filtered by a city" src="docs/screens/csv-dark.gif">
+</picture>
+<p><b><a href="examples/csv.c">csv.c</a></b>: a CSV file of a million rows opened as a table.
+Sorting and filtering run on a worker thread, so keys never wait for them.</p>
+</td>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/tail-light.gif">
+  <img alt="tail: a log file followed live, with levels colored and errors counted" src="docs/screens/tail-dark.gif">
+</picture>
+<p><b><a href="examples/tail.c">tail.c</a></b>: a file read on a timer into a live log. It
+follows the end, pauses while you scroll and counts the errors in a status line.</p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/form-light.gif">
+  <img alt="form: text fields, a hidden token, choices, a slider and checkboxes with a live summary" src="docs/screens/form-dark.gif">
+</picture>
+<p><b><a href="examples/form.c">form.c</a></b>: a form with a live summary. Text, secrets,
+choices, a slider and checkboxes, with a callback on every change.</p>
+</td>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/monitor-light.gif">
+  <img alt="monitor: a clock in big letters, meters, a load chart, a braille latency plot and an event log" src="docs/screens/monitor-dark.gif">
+</picture>
+<p><b><a href="examples/monitor.c">monitor.c</a></b>: a screen made only of components, with a
+clock in big letters written from scratch as a component of its own.</p>
+</td>
+</tr>
+</table>
+
+[`examples/basic.c`](examples/basic.c) is a tour of every feature and
+[`examples/gallery.c`](examples/gallery.c), at the top of this page, keeps making up new
+combinations of charts, bars, spinners and motion. [`examples/README.md`](examples/README.md)
+says which one to start from.
+
+## What it does
+
+**Panels**
 
 - status lines with a mark (`ok`, `..`, `!!`), a label and a value, refreshed on a timer while the
   panel waits for a key; a value that changes is highlighted for a moment
@@ -25,68 +109,55 @@ up/down: move  enter: choose  ?: help  q: quit
   name with `:`; `?` lists the keys of the current screen
 - an action may leave a result, open a live screen of its own, or hand the terminal back
   (`pnl_app_with_terminal`) to print or start other programs
+- screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); panels and table
+  columns marked optional fold away when the terminal gets narrow
+- dialogs drawn over the current screen (`pnl_view_push_dialog`) and short notifications in the
+  corner that go away on their own (`pnl_toast`)
+
+**Work and data**
+
 - slow work runs on a thread with progress, a log and esc to cancel (`pnl_task_run`)
 - ready-made screens: confirmation, text input, filterable pick list, pager with search and a
   table you can sort and filter; each one degrades to plain stdin and stdout on the command line
 - tables of millions of rows read from a callback (`pnl_table_source`), sorted and filtered on a
   thread without blocking keys
-- optional memory between runs (`pnl_app_set_memory`): the last action, the last item picked,
-  input history and the filter and order of each table
 - a live log fed from any thread (`pnl_log_*`): follows the end, pauses while you scroll, filters
   by level and by text
+- optional memory between runs (`pnl_app_set_memory`): the last action, the last item picked,
+  input history and the filter and order of each table
 - a bell and a desktop notification when a long task ends while you are in another window
   (`pnl_notify`; `TUIKIT_NOTIFY=bell` or `off`)
-- keys the user can remap in `~/.config/tuikit/keys` or per tool (`ctrl-n = down`, `q = none`),
-  or from code with `pnl_app_bind`
-- the same actions are subcommands: `tool start`, `tool status --json`, `tool --help`
+
+**Look**
+
 - colors by role (accent, ok, warn, fail, muted...) fitted to the terminal: true color, 256 or
   16 colors, light or dark background, `NO_COLOR`; themes built in or from a file
-  (`TUIKIT_THEME=warm`, `TUIKIT_THEME=~/.config/mytool/theme.txt`); colors and gradients of your
-  own from RGB, see [Colors of your own](#colors-of-your-own)
 - charts for the canvas: bars (with the percentage inside if you like), sparklines, column
   charts several rows tall, labeled columns side by side and line plots drawn with braille dots;
   each one can shift from green to red as the value rises
 - waiting indicators: five spinners (`pnl_canvas_spinner`: dots, line, arc, blocks, bounce) and
-  a bar that sweeps back and forth when there is no end to measure (`pnl_canvas_busy`), which
-  tasks without a total now show
-- a frame clock for small time-based animations: spinners, smooth bars, a fading highlight on
-  values that change; optional sliding selection, screen transitions, pulse, typewriter and
-  entrances (`PNL_MOTION_ENTER`: dialogs grow in and shrink away, notifications slide out, menu
-  items arrive one after the other) and feedback (`PNL_MOTION_FEEDBACK`: a dialog shakes at a
-  key it does not take, the chosen action flashes, a light runs along progress bars) and live
-  numbers (`PNL_MOTION_COUNT`: a number in a status line counts up or down to its new value, a
-  meter glides to its new level)
-  (`TUIKIT_MOTION=all`). Animations never hold back a key and turn off with `TUIKIT_MOTION=off`
-  or on their own over a slow SSH link
-- components (`pnl_widget_t`) you put together into screens: text, bars, graphs, spinners and the
-  live log come ready, stacks arrange them in rows or columns, and a component of your own is a
-  draw callback away; see [Components](#components)
-- forms built from components: text fields (also hidden, for secrets), checkboxes, choices,
-  sliders and buttons, with tab, enter and the arrows moving between them and a callback on
-  every change
-- big letters and ASCII art: a built-in block font in two sizes for numbers that matter (a clock,
-  a total, a percentage), and a banner on the main screen with the tool's own art or its name
-  in big letters; see [Big letters and art](#big-letters-and-art)
-- live art: a diagram of steps that follows a task as it runs, and pictures that change with the
-  state of the tool, both drawn from the tool's own art
-- screens split into panels side by side, stacked or in tabs (`pnl_layout_*`); tab moves the
-  focus, `[` and `]` switch tabs, and panels and table columns marked optional fold away when the
-  terminal gets narrow
-- dialogs drawn over the current screen (`pnl_view_push_dialog`; confirmation, input and pick
-  lists use them) and short notifications in the corner that go away on their own (`pnl_toast`)
+  a bar that sweeps back and forth when there is no end to measure (`pnl_canvas_busy`)
+- big letters in two sizes, banners and art that follows the work: a diagram of steps that
+  tracks a running task and pictures that change with the state of the tool
+- a frame clock for small animations: spinners, smooth bars, a fading highlight on values that
+  change; optional sliding selection, screen transitions, entrances, feedback and numbers that
+  count up to their new value (`TUIKIT_MOTION=all`). Animations never hold back a key and turn
+  off with `TUIKIT_MOTION=off` or on their own over a slow SSH link
+
+**Input and tooling**
+
+- keys the user can remap in `~/.config/tuikit/keys` or per tool (`ctrl-n = down`, `q = none`),
+  or from code with `pnl_app_bind`
 - the mouse works too: click an action, a row, a table header, a panel or a tab; the wheel
   scrolls. `TUIKIT_MOUSE=off` leaves the mouse to the terminal
-- web addresses anywhere on screen become clickable links (OSC 8), pointing to the whole address
-  even when the screen cuts it short; `pnl_canvas_link` links any text, `TUIKIT_LINKS=off` turns
-  them off
+- web addresses anywhere on screen become clickable links (OSC 8); `pnl_canvas_link` links any
+  text, `TUIKIT_LINKS=off` turns them off
 - f12 opens the inspector, an X-ray of the running program: frame times with a sparkline, the
-  stack of screens, how many actions, values, timers, watches and tasks are alive, the state of
-  animations and of the terminal, and the last events (keys, timers, wakes, watches, resizes);
-  `TUIKIT_INSPECT=off` turns it off
+  stack of screens, how many actions, values, timers, watches and tasks are alive, and the last
+  events; `TUIKIT_INSPECT=off` turns it off
 - for everyone: `TUIKIT_LINEAR=on` turns the panel into plain lines a screen reader can follow,
   `TUIKIT_CONTRAST=high` pushes every color to a strong contrast, and every action works from the
   keyboard alone
-- no dependencies besides threads; Linux, macOS and the Windows console (Windows 10 or later)
 
 ## Build and install
 
@@ -109,7 +180,9 @@ Or with pkg-config:
 cc app.c $(pkg-config --cflags --libs c-tuikit)
 ```
 
-## Single-file form
+Add `-DC_TUIKIT_BUILD_EXAMPLES=ON` to build the programs on this page into `build/`.
+
+### Single-file form
 
 `scripts/amalgamate.sh` writes `dist/c-tuikit/c-tuikit.h`. Copy it into your project and, in exactly
 one `.c` file:
@@ -145,29 +218,33 @@ return exit_code;
 ```
 
 `pnl_status_line` works only inside the status callback; `pnl_value_set` works anywhere, from any
-thread; `pnl_result` and `pnl_task_run` while
-the panel or a command runs. Without a command and with a terminal, `pnl_app_run` opens the
-panel; otherwise it prints the status lines, which makes the tool usable in scripts and pipes.
-Work given to `pnl_task_run` runs on a thread in the panel and in the foreground on the command
-line, so the same function serves both.
+thread; `pnl_result` and `pnl_task_run` while the panel or a command runs.
 
-See [`examples/basic.c`](examples/basic.c), a tour of every feature, and
-[`examples/deploy.c`](examples/deploy.c), a small tool built the way a real one would be, and
-[`examples/dashboard.c`](examples/dashboard.c), a screen made of panels and tabs,
-[`examples/tail.c`](examples/tail.c), which follows a log file, and
-[`examples/csv.c`](examples/csv.c), which opens a CSV file of any size as a table, and
-[`examples/monitor.c`](examples/monitor.c), a screen made only of components, and
-[`examples/gallery.c`](examples/gallery.c), which keeps generating new combinations of charts,
-bars, spinners and motion, and [`examples/form.c`](examples/form.c), a form with a live summary.
-[`examples/README.md`](examples/README.md) says which one to start from.
+### The same tool without a terminal
 
-## Documentation
+Without a command and with a terminal, `pnl_app_run` opens the panel; otherwise it prints the
+status lines. Every action is a subcommand too, `--json` gives output a script can read, and
+`--yes` answers the confirmations. Work given to `pnl_task_run` runs on a thread in the panel and
+in the foreground on the command line, so the same function serves both.
 
-- [docs/api.md](docs/api.md): every function, type and macro of `include/c-tuikit/c-tuikit.h`
-- [docs/threads.md](docs/threads.md): what runs on which thread and what may be called from
-  other threads
-- [docs/stability.md](docs/stability.md): what a release promises about the API, the ABI and
-  the files a user writes
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/cli-light.png">
+  <img alt="The basic and deploy examples run as commands: status as text and as JSON, and a deploy answered with --yes" src="docs/screens/cli-dark.png" width="560">
+</picture>
+</p>
+
+### Keys
+
+`?` lists the keys of the screen you are on and `:` runs any action by name. Both work on every
+screen of every tool, and so does the mouse.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/keys-light.png">
+  <img alt="The help screen of the basic example next to the action palette filtered by the letters lo" src="docs/screens/keys-dark.png">
+</picture>
+</p>
 
 ## Components
 
@@ -209,6 +286,18 @@ Components are changed from the panel's own thread (actions, timers, keys) and m
 screens that show them. See [`examples/monitor.c`](examples/monitor.c), with a clock made from
 scratch.
 
+### Layouts that fold
+
+Panels and table columns marked optional give way when the terminal gets narrow. The same
+dashboard at 96 and at 48 columns:
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/responsive-light.png">
+  <img alt="The dashboard example at 96 columns with two panels side by side, and at 48 columns with the panels stacked" src="docs/screens/responsive-dark.png">
+</picture>
+</p>
+
 ### Forms
 
 Text fields, checkboxes, choices, sliders and buttons are components that take the focus. Put
@@ -234,13 +323,22 @@ the number behind it: the slider position, the index of the choice, 1 or 0 for a
 `pnl_widget_set_text` and `pnl_widget_set_value` fill them from code without calling the change
 callback. While a text field has the focus every key is typed into it, even `q` and `?`; esc
 still goes back. A component of your own joins the tab order with `pnl_widget_set_focusable`
-and draws itself highlighted when `pnl_canvas_focused` says so. See
-[`examples/form.c`](examples/form.c).
+and draws itself highlighted when `pnl_canvas_focused` says so.
 
-## Colors of your own
+## Colors and themes
 
-Roles keep a tool readable on any terminal and theme. When a part needs a color of its own,
-register it once and use it like any other:
+Parts of the screen ask for a role, never for a color, and the role is fitted to the terminal
+and its background. Four themes come built in, and `TUIKIT_THEME=~/.config/mytool/theme.txt`
+loads one from a file:
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screens/themes-light.png">
+  <img alt="The deploy example running under the default, warm, contrast and mono themes" src="docs/screens/themes-dark.png" width="860">
+</picture>
+</p>
+
+When a part needs a color of its own, register it once and use it like any other:
 
 ```c
 int orange, sunset;
@@ -315,13 +413,8 @@ pnl_widget_set_value(scene, FAILED);
 `pnl_app_set_banner_widget` puts any component where the banner goes, so the main screen shows
 how the last run went. `pnl_task_show` draws a component above the step, progress and log of a
 running task. The state numbers belong to the tool; the library only matches them. In linear
-mode scenes are left out and a flow is read as a list.
-
-`pnl_canvas_art` draws art of several lines, leaving its spaces untouched so it can sit over
-other things. In linear mode big letters are written as plain text, so a screen reader reads
-the number and not the blocks. `examples/deploy.c` opens with its pipeline as a live
-banner and shows a package travelling to the server while it deploys; the monitor clock and the
-gallery counters use big letters.
+mode scenes are left out and a flow is read as a list. The deploy example in the tour opens with
+its pipeline as a live banner and shows a package travelling to the server while it deploys.
 
 ## Testing a tool
 
@@ -351,10 +444,14 @@ Besides key names and quoted text, a script takes `click:X,Y` (a click at that c
 and `wheelup` / `wheeldown`.
 
 `TUIKIT_RECORD=demo.cast tool` records a session as an asciicast file, ready for
-`asciinema play` or for turning into a GIF; `pnl_app_record(app, path)` does the same from code,
-and under test it records the scripted session with the virtual clock.
+`asciinema play` or for turning into a GIF, which is how the pictures on this page were made;
+`pnl_app_record(app, path)` does the same from code, and under test it records the scripted
+session with the virtual clock.
 
-Conventions:
+`bench/run.sh` measures drawing, rendering, logs, values, a table of a million rows and the
+memory each part takes.
+
+## Conventions
 
 - every function that can fail returns `PNL_OK` or an error code; `pnl_strerror` describes it
 - what `pnl_x_create` returns is released only by `pnl_x_destroy`, which accepts `NULL`
@@ -370,8 +467,13 @@ Conventions:
   must only read data that stays the same while the table is open and write into the `buf` it
   is given, never into shared or static memory
 
-`bench/run.sh` measures drawing, rendering, logs, values, a table of a million rows and the
-memory each part takes.
+## Documentation
+
+- [docs/api.md](docs/api.md): every function, type and macro of `include/c-tuikit/c-tuikit.h`
+- [docs/threads.md](docs/threads.md): what runs on which thread and what may be called from
+  other threads
+- [docs/stability.md](docs/stability.md): what a release promises about the API, the ABI and
+  the files a user writes
 
 ## Versioning
 
