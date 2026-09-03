@@ -4,6 +4,39 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 6.7.0 - 2026-09-03
+
+A release about being read: c-tuikit now has the documents a library needs, and writing them turned up the last few places where the code said one thing and did another.
+
+Explaining every function in plain words is a good way to find the ones that do not behave.
+Five did not, and they are fixed here.
+
+New documents:
+
+- `docs/api.md`: every function, type and macro of the header, with what each one returns
+- `docs/threads.md`: what runs on the panel thread, what may be called from other threads, and
+  what a table callback must respect when sorting runs on a worker
+- `docs/stability.md`: what patch, minor and major releases promise about the API, the ABI, the
+  files users write and the command line
+- `examples/README.md`: which example to start from
+- `AUTHORS` and `NOTICE`
+
+Fixed:
+
+- confirm, input and pick freed their title twice when the dialog failed for lack of memory
+- big letters drew one `?` for each byte of a character outside the font; now one per character
+- a task cancelled without a result of its own was shown as `cancelled` with an ok mark; it is
+  now marked as failed
+- `pnl_pick` on the command line left the index at the last item when the answer matched
+  nothing; it now stays 0
+
+Updating:
+
+- `pnl_widget_set_text` on a choice now chooses the option with that text, matching what
+  `pnl_widget_get_text` returns, and gives `PNL_ERR_NOT_FOUND` for text that is not an option.
+  It used to change the label. A tool that renamed a choice this way should create it with the
+  label it needs
+
 ## 6.6.0 - 2026-08-31
 
 A release about trust: the parts that run at the same time are now tested, and the rough edges a careful review found are gone.
